@@ -416,3 +416,34 @@ est_varphi_main <- function(data, R,
 
 }
 
+
+
+#' @title est_varphi_eem
+#' @description Function for obtaining estimate of E[phi|Z] via empirical efficiency maximization
+#'
+#' @param data A data frame
+#' @param R A character string containing randomization variable name
+#' @param phi_1_hat A list containing the estimate of phi under A=1
+#' @param phi_0_hat A list containing the estimate of phi under A=0
+#' @param eem_ind A logical value indicating whether to estimate via EEM
+#' @param hal_ind A logical value indicating whether to estimate via HAL
+#' @param sl.lib A character vector containing the names of the superlearner algorithms
+#'
+#' @return A list containing the estimate of E[phi|Z]
+#' @export
+est_varphi_eem <- function(data, R,
+                           phi_1_hat, phi_0_hat,
+                           Rprobs,
+                           eem_ind,
+                           hal_ind,
+                           sl.lib) {
+
+  # Make psuedo outcomes
+  ytilde1 <- (data[,R]/data[,Rprobs] -1)^(-1) * (data[,R]/data[,Rprobs]) * phi_1_hat
+  ytilde0 <- (data[,R]/data[,Rprobs] -1)^(-1) * (data[,R]/data[,Rprobs]) * phi_0_hat
+
+  #
+
+
+}
+
