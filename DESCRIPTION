@@ -1,11 +1,22 @@
 Package: drcmd
-Title: What the Package Does (One Line, Title Case)
+Title: Doubly-Robust Causal Inference with Missing Data
 Version: 0.0.0.9000
 Authors@R: 
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Description: Doubly-robust estimation of counterfactual means in the presence of missing
+    data. The drcmd() function estimates counterfactual means for binary point treatments
+    and reports average treatment effects, as well as causal risk ratios and odds ratios
+    for binary outcomes. General missingness patterns in the data are allowed and automatically
+    determined by the function -- the only requirement is that any missingness occurs at random
+    conditional on variables that are always available. For scenarios where non-missingness 
+    probabilities are known, as is common in two-phase sampling designs, users can provide
+    the non-missingness probabilities through the Rprobs argument. Users can fit nuisance 
+    functions through either highly-adaptive LASSO (HAL) or SuperLearner, the latter of which
+    the user must specify libraries.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
+Depends:
+    SuperLearner

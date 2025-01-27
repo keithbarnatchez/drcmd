@@ -3,35 +3,36 @@
 #' @title find_missing_pattern
 #' @description Find the missing pattern in the data
 #' @param data A data frame
-#' @param Y A character string containing outcome variable name
-#' @param A A character string containing treatment variable name
-#' @param X A character vector containing covariate variable names
-#' @param W A character vector containing weight variable names
-#' @param R A character string containing randomization variable name
+#' @param Y A vector or data frame containing outcome values
+#' @param A A vector or data frame  containing treatment variable values
+#' @param X A data frame containing covariate values
+#' @param W A data frame containing proxy variable values
+#' @param R A vector containing missingness indicator variable
 #'
 #' @return A character string containing the missing pattern
 #' @export
-find_missing_pattern <- function(data,
-                                 Y,A,X,W,R) {
+find_missing_pattern <- function(Y,A,X,W) {
+
+  # Combine variables into a single data frame
+  data <- cbind(X,W,data.frame(Y=Y,A=A))
 
   # find variables that are never missing
   never_missing <- colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)]
-  Rstr <- R
 
-  if (is.na(R)) {
-    # make variable that indicates complete cases
-    Rvals <- as.numeric(apply(data,1,function(x) sum(is.na(x))==0))
-    never_missing <- colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)]
-    Rstr <- 'R'
-  } else {
-    Rvals <- data[,R]
-    # remove R from never_missing
-    never_missing <- never_missing[!never_missing %in% R]
-  }
+  # find variables that are sometimes missing
+  sometimes_missing <- colnames(data)[apply(data,2,function(x) sum(is.na(x))>0)]
 
-  return(list(Z=never_missing,
-              Rstr=Rstr,
-              Rvals=Rvals))
+  # make variable that indicates complete cases and df of all complete data
+  R <- as.numeric(apply(data,1,function(x) sum(is.na(x))==0))
+  Z <- data[,colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)]]
+
+  # If any values of Y, X or Z equal NA, set them to 0
+  X[is.na(X)] <- 0
+  Y[is.na(Y)] <- 0
+  A[is.na(A)] <- 0
+
+  return(list(Z=Z,R=R,X=X,Y=Y,A=A,
+              U=sometimes_missing))
 
 }
 
@@ -77,25 +78,32 @@ check_r_ind <- function(data,
 
 }
 
-check_entry_errors <- function(Y,A,X,W,R, hal_ind,sl.lib,eem_ind,Rprobs,k) {
+check_entry_errors <- function(Y,A,X,W,R,
+                               hal_ind,sl.lib,eem_ind,Rprobs,k) {
 
-  # Make sure Y,A and R are characters
-  if ( !is.character(Y) | (length(Y)>1) ) {
-    stop('Y must be a character string')
-  }
-  if (!is.character(A) | (length(A)>1) ) {
-    stop('A must be a string')
-  }
-  if (is.character(R) & (length(R)>1) ) {
-    stop('R must be a string or not provided')
+ # Make sure Y is a vector
+  if (!is.vector(Y) | (length(Y)>1) ) {
+    stop('Y must be a vector')
   }
 
-  # Make sure X and W are character vectors
-  if (!is.character(X) ) {
-    stop('X must be a character vector')
+  # Make sure A is a vector
+  if (!is.vector(A) | (length(A)>1) ) {
+    stop('A must be a vector')
   }
-  if (!is.character(W) ) {
-    stop('W must be a character vector')
+
+  # Make sure A is 0/1 binary
+  if (!check_binary(A)) {
+    stop('A must be binary')
+  }
+
+  # Make sure X is a data frame
+  if (!is.data.frame(X) | (length(X)>1) ) {
+    stop('X must be a data frame')
+  }
+
+  # Make sure W is a data frame
+  if (!is.data.frame(W) | (length(W)>1) ) {
+    stop('W must be a data frame')
   }
 
   # Check that hal_ind is a logical
@@ -111,6 +119,49 @@ check_entry_errors <- function(Y,A,X,W,R, hal_ind,sl.lib,eem_ind,Rprobs,k) {
   }
 
   return(TRUE)
+
+}
+
+
+#' @title Clean SuperLearner libraries
+#'
+#' @description Internal function for setting SuperLearner libraries before they
+#' are passed into estimation procedures. Default libraries from the sl_learners
+#' argument are used to fill in missing libraries for any nuisance function with
+#' libraries left unspecified
+#'
+#' @param sl_learners Either null, or a character vector containing SuperLearner
+#'  libraries to use for estimating all nuisance functions. User can alternatively
+#'  specify libraries for each nuisance function for added flexibility
+#' @param m_sl_learners Either null, or a character vector containing SuperLearner
+#' libraries to be used for the outcome regression
+#' @param g_sl_learners Either null, or a character vector containing SuperLearner
+#' libraries to be used for the propensity scores
+#' @param r_sl_learners Either null, or a character vector containing SuperLearner
+#' libraries to be used for the missingness indicator regression
+#' @param po_sl_learners Either null, or a character vector containing SuperLearner
+#' libraries to be used for the pseudo outcome regression
+#'
+#' @return A list of
+clean_sl_libraries <- function(sl_learners,
+                               m_sl_learners,g_sl_learners,
+                               r_sl_learners,po_sl_learners) {
+
+  out_list <- list(sl_learners=sl_learners,
+                   m_sl_learners=sl_learners,
+                   g_sl_learners=sl_learners,
+                   r_sl_learners=sl_learners,
+                   po_sl_learners=sl_learners)
+  if (!is.null(sl_learners)) {
+    out_list <- lapply(out_list, function(x) if (is.null(x)) sl_learners else x)
+  } else {
+    if( any(sapply(list(m_sl_learners,g_sl_learners,r_sl_learners,po_sl_learners),
+                   is.null)) ) {
+      stop('Missing superlearner libraries. Make sure all libraries are specified, either through specifying default values through sl_learners or specifying learners for each nuisance function')
+    }
+  }
+
+  return(out_list)
 
 }
 
@@ -142,19 +193,17 @@ make_output_obj <- function() {
 #'
 #'
 #'
-create_folds <- function(data, k) {
+create_folds <- function(n, k) {
 
-  n <- nrow(data)
   if (k==1) {
     return(list(test=1:n, train=1:n))
   }
 
-  # Step 1: Randomly split the data into K pieces
-  set.seed(123)  # Optional: set a seed for reproducibility
+  # Randomly split the data into K pieces
   indices <- sample(seq_len(n))
   split_indices <- split(indices, cut(seq_along(indices), breaks = k, labels = FALSE))
 
-  # Step 2: Create train-test pairs
+  # Create train-test pairs
   splits <- lapply(seq_len(k), function(i) {
     test_indices <- split_indices[[i]]
     train_indices <- setdiff(indices, test_indices)
