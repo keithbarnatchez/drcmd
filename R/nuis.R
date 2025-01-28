@@ -140,8 +140,9 @@ est_kappa <- function (idx,Z, R,
 #'
 #' @return A list containing the estimate of E[phi|Z]
 #' @export
-est_varphi_main <- function(idx, R,
+est_varphi_main <- function(idx, R,Z,
                             phi_1_hat, phi_0_hat,
+                            kappa_hat,
                             eem_ind,
                             hal_ind,
                             sl_learners){
@@ -150,9 +151,11 @@ est_varphi_main <- function(idx, R,
   if (eem_ind==TRUE) { # estimate via EEM
     return(est_varphi_eem(idx, R, Z,
                           phi_1_hat, phi_0_hat,
+                          kappa_hat,
                           hal_ind,
                           sl_learners))
   } else {
+    # browser()
     return(est_varphi(idx, R, Z,
                       phi_1_hat, phi_0_hat,
                       hal_ind,
@@ -177,7 +180,7 @@ est_varphi <- function(idx, R, Z,
                        phi_1_hat, phi_0_hat,
                        hal_ind,
                        sl_learners) {
-
+  print('of is g')
   if (hal_ind==TRUE) { # estimate via HAL
     varphi_1_hat <- hal9001::fit_hal(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
     varphi_0_hat <- hal9001::fit_hal(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
@@ -210,31 +213,30 @@ est_varphi <- function(idx, R, Z,
 #' @export
 est_varphi_eem <- function(idx, R, Z,
                            phi_1_hat, phi_0_hat,
-                           Rprobs,
-                           eem_ind,
+                           kappa_hat,
                            hal_ind,
                            sl_learners) {
-
+  print('of is ye')
   # Make pseudo outcomes
-  ytilde1 <- (R/Rprobs -1)^(-1) * (R/Rprobs) * phi_1_hat
-  ytilde0 <- (R/Rprobs -1)^(-1) * (R/Rprobs) * phi_0_hat
+  ytilde1 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_1_hat
+  ytilde0 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_0_hat
 
   # Estimate E[phi|Z] via EEM
   if (hal_ind==TRUE) { # estimate via HAL
     varphi_1_hat <- hal9001::fit_hal(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
                                    family=gaussian(),SL.library=sl_learners,
-                                   obsWeights=(R[idx]/Rprobs[idx] - 1)^2)
+                                   obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
     varphi_0_hat <- hal9001::fit_hal(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
                                    family=gaussian(),SL.library=sl_learners,
-                                   obsWeights=(R[idx]/Rprobs[idx] - 1)^2)
+                                   obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
 
   } else { # estimate via SL
     varphi_1_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
                                              family=gaussian(),SL.library=sl_learners,
-                                             obsWeights=(R[idx]/Rprobs[idx] - 1)^2)
+                                             obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
     varphi_0_hat <- SuperLearner::SuperLearner(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
                                                family=gaussian(),SL.library=sl_learners,
-                                               obsWeights=(R[idx]/Rprobs[idx] - 1)^2)
+                                               obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
 
   }
   return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat))

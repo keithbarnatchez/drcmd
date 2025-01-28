@@ -42,8 +42,6 @@
 #' If >0, uses bootstrap to obtain SEs. If =0, uses asymptotic analytical SEs.
 #' @return A list of results
 #'
-#' @export
-#'
 #' @examples
 #' n <- 1e3
 #' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
@@ -51,6 +49,8 @@
 #' Y[R==0] <- NA
 #'
 #' results <- drcmd(Y,A,X,R=R)
+#'
+#' @export
 drcmd <- function(Y, A, X, W=NA, R=NA,
                   hal_ind=TRUE,
                   sl_learners=NULL,
@@ -72,7 +72,19 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 
   # Estimate
   res <- list()
-  res$estimates <- drcmd_est(Y,A,X,Z,R,hal_ind,sl_learners,eem_ind,Rprobs,k)
+  res$results <- drcmd_est(Y,A,X,Z,R,hal_ind,sl_learners,eem_ind,Rprobs,k)
+
+  # Additional packaging
+  params <- list()
+  params$hal_ind <- hal_ind
+  params$sl_learners <- sl_learners
+  params$m_sl_learners <- m_sl_learners
+  params$g_sl_learners <- g_sl_learners
+  params$r_sl_learners <- r_sl_learners
+  params$po_sl_learners <- po_sl_learners
+  params$eem_ind <- eem_ind
+  params$Rprobs <- Rprobs
+  params$k <- k
   res$Z <- colnames(Z)
   res$U <- V$U
   class(res) <- 'drcmd'
@@ -107,13 +119,23 @@ drcmd_est <- function(Y,A,X,Z,R,hal_ind,sl_learners,eem_ind,Rprobs,k) {
     splits <- create_folds(length(Y),k)
 
     # Use lapply to get point ests for each fold
-    ests <- lapply(1:k, function(i) drcmd_est_fold(splits[[i]],Y,A,X,Z,R,hal_ind,sl_learners,eem_ind,Rprobs))
-    ests <- as.list(colMeans(do.call(rbind, lapply(ests, as.data.frame))))
-    return(ests)
+    res <- lapply(1:k, function(i) drcmd_est_fold(splits[[i]],Y,A,X,Z,R,hal_ind,sl_learners,eem_ind,Rprobs))
+
+    # Extract ests and SEs from each fold
+    ests_df <- do.call(rbind, lapply(res, function(x) x$ests))
+    vars_df <- do.call(rbind, lapply(res, function(x) x$vars))
+
+    # Combine
+    ests <- colMeans(ests_df)
+    e_ests_sq <- colMeans( (sweep(ests_df,2,ests,'-'))^2 )
+    vars <- colMeans( sweep(vars_df,2,e_ests_sq,'+') )
+    res <- list(estimates=ests,ses=sqrt(vars))
+    return(res)
   } else {
     splits <- create_folds(length(Y),k)
-    ests <- drcmd_est_fold(splits,Y,A,X,Z,R,hal_ind,sl_learners,eem_ind,Rprobs)
-    return(ests)
+    res <- drcmd_est_fold(splits,Y,A,X,Z,R,hal_ind,sl_learners,eem_ind,Rprobs)
+    res <- list(estimates=res$ests,ses=sqrt(res$vars))
+    return(res)
   }
 }
 
@@ -149,12 +171,13 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,hal_ind,sl_learners,eem_ind,Rprobs) 
 
   # Get varphi
   phi_1_hat <- phi_hat$phi_1_hat ; phi_0_hat <- phi_hat$phi_0_hat
-  varphi_hat <- est_varphi(test,R,Z,phi_1_hat,phi_0_hat,hal_ind,sl_learners)
+  varphi_hat <- est_varphi_main(test,R,Z,phi_1_hat,phi_0_hat,
+                                nuisance_ests$kappa_hat,
+                                eem_ind,
+                                hal_ind,sl_learners)
 
   # Form final est for this fold
   ests <- est_psi(test, R, Z, nuisance_ests$kappa_hat, phi_hat,varphi_hat)
-
-  # Get the standard error
 
   # Return results
   return(ests)
@@ -229,6 +252,8 @@ get_phi_hat <- function(Y, A, X, R, g_hat, m_a_hat, kappa_hat,
 est_psi <- function(idx, R, Z,
                     kappa_hat, phi_hat,varphi_hat) {
 
+  n <- length(idx)
+
   # Set up necessary objects
   phi_1_hat <- phi_hat$phi_1_hat
   phi_0_hat <- phi_hat$phi_0_hat
@@ -236,14 +261,36 @@ est_psi <- function(idx, R, Z,
   varphi_0_hat <- predict(varphi_hat$varphi_0_hat, newdata=Z)$pred
 
   # Form estimates of psi1 and psi0 via EICs
-  psi_1_hat <- mean((R[idx]/kappa_hat[idx])*phi_1_hat[idx] - (R[idx]/kappa_hat[idx] - 1)*varphi_1_hat[idx])
-  psi_0_hat <- mean((R[idx]/kappa_hat[idx])*phi_0_hat[idx] - (R[idx]/kappa_hat[idx] - 1)*varphi_0_hat[idx])
+  psi_1_ic <- (R[idx]/kappa_hat[idx])*phi_1_hat[idx] - (R[idx]/kappa_hat[idx] - 1)*varphi_1_hat[idx]
+  psi_0_ic <- (R[idx]/kappa_hat[idx])*phi_0_hat[idx] - (R[idx]/kappa_hat[idx] - 1)*varphi_0_hat[idx]
+
+  psi_1_hat <- mean(psi_1_ic)
+  psi_0_hat <- mean(psi_0_ic)
 
   # Get specific
   psi_hat_ate <- psi_1_hat - psi_0_hat
   psi_hat_rr <- psi_1_hat/psi_0_hat
   psi_hat_or <- (psi_1_hat/(1-psi_1_hat)) / (psi_0_hat/(1-psi_0_hat))
 
-  return(list(psi_1_hat=psi_1_hat,psi_0_hat=psi_0_hat,psi_hat_ate=psi_hat_ate))
+  return(list(ests = data.frame(psi_1_hat=mean(psi_1_ic),
+                                psi_0_hat=mean(psi_0_ic),
+                                psi_hat_ate=mean(psi_1_ic - psi_0_ic),
+                                psi_hat_rr=mean(psi_1_ic)/mean(psi_0_ic),
+                                psi_hat_or=(mean(psi_1_ic)/(1-mean(psi_1_ic))) / (mean(psi_0_ic)/(1-mean(psi_0_ic)))
+              ),
+              vars = data.frame(psi_1_hat=var(psi_1_ic)/n,
+                                psi_0_hat=var(psi_0_ic)/n,
+                                psi_hat_ate=var(psi_1_ic - psi_0_ic)/n,
+                                psi_hat_rr=var(psi_1_ic)/var(psi_0_ic)/n,
+                                psi_hat_or=((var(psi_1_ic)/(1-var(psi_1_ic))) / (var(psi_0_ic)/(1-var(psi_0_ic))))/n
+              )
+         )
+  )
+
+  # return(list(psi_1_hat=list(est=mean(psi_1_ic), var=var(psi_1_ic)),
+  #             psi_0_hat=list(est=mean(psi_0_ic), var=var(psi_0_ic)),
+  #             psi_hat_ate=list(est=mean(psi_1_ic - psi_0_ic), var=var(psi_1_ic - psi_0_ic))
+  #       )
+  # )
 
 }

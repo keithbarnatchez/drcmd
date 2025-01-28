@@ -185,14 +185,15 @@ make_output_obj <- function() {
 }
 
 
+#' @title Create folds for cross-fitting
+#' @description Given length of data, creates k folds and returns a list of all
+#' possible train-test pairs
 #'
+#' @param n Length of data
+#' @param k Number of desired folds
 #'
-#'
-#'
-#'
-#'
-#'
-#'
+#' @return A list of train-test pairs
+#' @export
 create_folds <- function(n, k) {
 
   if (k==1) {
@@ -211,6 +212,20 @@ create_folds <- function(n, k) {
   })
 
   return(splits)
+}
+
+
+
+#' @title Clean output from crossfit procedure
+#'
+#' @description Transforms crossfit output into estimates with SEs for each
+#' estimand
+#'
+#' @param results Output from crossfit procedure
+#' @return A list of estimates with SEs
+#' @export
+clean_crossfit_output <- function(results) {
+
 }
 
 

@@ -5,6 +5,7 @@ rm(list=ls())
 source('../R/utils.R')
 source('../R/drcmd.R')
 source('../R/nuis.R')
+source('../R/methods.R')
 #-------------------------------------------------------------------------------
 # Params for functions
 
@@ -26,7 +27,7 @@ df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
 # X = data.frame(cbind(X,X))
 W = X[,0]
 
-drcmd_res <- drcmd(Y,A,X, hal_ind=FALSE,sl.lib=sl.lib)
+drcmd_res <- drcmd(Y,A,X, hal_ind=FALSE,sl_learners=sl.lib,eem_ind=TRUE,k=1)
 #-------------------------------------------------------------------------------
 # Test sub functions
 
@@ -51,4 +52,27 @@ est_psi(idx, R, Z, kappa_hat, phi_hat,varphi_hat)
 
 drcmd_res <- drcmd(Y,A,X)
 #-------------------------------------------------------------------------------
+
+ates <- rep(NA,100)
+atyes <- rep(NA,100)
+for (s in 1:100) {
+  n <- 1e3
+  X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
+  Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
+
+
+  # Make Y NA is R==0
+  Y[R==0] <- NA
+
+  df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
+
+  # X = data.frame(cbind(X,X))
+  W = X[,0]
+
+  drcmd_res <- drcmd(Y,A,X, hal_ind=FALSE,sl.lib=sl.lib,eem_ind=TRUE)
+  ates[s] <- drcmd_res$estimates$psi_hat_ate
+
+  drcmd_res <- drcmd(Y,A,X, hal_ind=FALSE,sl.lib=sl.lib,eem_ind=FALSE)
+  atyes[s] <- drcmd_res$estimates$psi_hat_ate
+}
 

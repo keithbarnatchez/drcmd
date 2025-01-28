@@ -8,15 +8,38 @@
 
 Users can fit nuisance functions through either SuperLearner or the highly-adaptive LASSO. 
 
- Please see -- for full technical details.
+Please see -- for full technical details.
 
 ------------------------------------------------------------------------
 ## Installation
 
-
+```r
+devtools::install_github('keithbarnatchez/drcmd')
+```
 
 ------------------------------------------------------------------------
 ## Example
+
+```r
+# Params for functions
+hal_ind <- FALSE # TRUE = use highly-adaptive LASSO
+eem_ind <- FALSE # TRUE = fit PO regression with empirical efficiency maximiztion
+sl_learners <- 'SL.glm' # default superlearner libraries 
+k <- 1 # number of cross-fitting folds
+#-------------------------------------------------------------------------------
+# Simulate simple missing outcome data structure
+n <- 1e3
+X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
+Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
+
+# Make Y NA if R==0
+Y[R==0] <- NA
+
+
+drcmd_res <- drcmd(Y,A,X, 
+hal_ind=FALSE,sl_learners=sl_learners,
+eem_ind=eem_ind,k=k)
+```
 
 ------------------------------------------------------------------------
 ## Citation
