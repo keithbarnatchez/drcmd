@@ -216,7 +216,7 @@ est_varphi_eem <- function(idx, R, Z,
                            kappa_hat,
                            hal_ind,
                            sl_learners) {
-  print('of is ye')
+
   # Make pseudo outcomes
   ytilde1 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_1_hat
   ytilde0 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_0_hat
