@@ -62,7 +62,7 @@ est_m_a <- function(idx, Y, A, X, R,
   yfam <- check_binary(Y)
 
   data <- cbind(X,A)
-  if (m_learners=='hal') { # estimate via HAL
+  if (all(m_learners=='hal')) { # estimate via HAL
     m_a_hat<- hal9001::fit_hal(Y=Y[idx],X=data[idx,],
                                weights=R[idx]/kappa_hat[idx])
     # get fitted values under A=1
@@ -93,14 +93,24 @@ est_m_a <- function(idx, Y, A, X, R,
 #' @param A A binary treatment variable (1=treated, 0=control)
 #' @param X Dataframe containing baseline covariates
 #' @param R Binary missingness indicator, where 0 indicates missing data
-#' @param g_learners A character vector containing the names of the superlearner algorithms
+#' @param g_learners A character vector containing the names of the learners for estimation
 #'
 #' @return A list containing the estimate of E[Y|A=a,X,W]
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 1000
+#' X <- rnorm(n)
+#' A <- rbinom(n,1,plogis(X))
+#' R <- rbinom(n,1,plogis(X))
+#' X <- data.frame(X)
+#' g_learners <- c('SL.glm','SL.gam')
+#' est_g(idx=1:n, A=A, X=X, R=R, kappa_hat=kappa_hat, g_learners=g_learners)
+#' }
 est_g <- function(idx,A, X, R, kappa_hat,
                   g_learners) {
 
-  if (g_learners=='hal') { # estimate via HAL
+  if (all(g_learners=='hal')) { # estimate via HAL
     g_hat<- hal9001::fit_hal(Y=A[idx],X=X[idx,,drop=FALSE],weights=R[idx]/kappa_hat[idx])
     g_hat <- predict(g_hat, new_data=X)
   } else { # estimate via SL
@@ -112,17 +122,37 @@ est_g <- function(idx,A, X, R, kappa_hat,
   return(g_hat)
 }
 
-# note: handle user supplied r probs outside of this function
+#' @title Estimate complete case propensity scores
+#'
+#' @description Function for obtaining complete case propensity score estimates
+#'
+#' @param idx Indices to carry out estimation over
+#' @param Z Dataframe containing all non-missing variables
+#' @param R Binary missingness indicator, where 0 indicates missing data
+#' @param r_learners A character vector specifying learners to be used for estimation
+#'
+#' @return A numeric vector containing the estimate of E[R|Z]
+#' @export
+#' @examples
+#' \dontrun{
+#' n <- 1000
+#' Z <- rnorm(n)
+#' R <- rbinom(n,1,plogis(Z))
+#' Z <- data.frame(Z)
+#' g_learners <- c('SL.glm','SL.gam')
+#' est_g(idx=1:n, Z=Z, R=R, r_learners=r_learners)
+#' }
 est_kappa <- function (idx,Z, R,
                        r_learners) {
 
+
   # if estimating via highly adaptive lasso
-  if (r_learners=='hal') { # estimate via HAL
+  if (all(r_learners=='hal')) { # estimate via HAL
     kappa_hat <- hal9001::fit_hal(Y=R[idx],X=Z[idx,], family = 'binomial')
     kappa_hat <- predict(kappa_hat, new_data=Z)
   } else {  # estimate via SL
     loadNamespace("SuperLearner")
-    kappa_hat <- SuperLearner::SuperLearner(Y=R[idx],X=Z[idx,],
+    kappa_hat <- SuperLearner::SuperLearner(Y=R[idx],X=Z[idx,,drop=FALSE],
                                             family=binomial(),
                                             SL.library=r_learners)
     kappa_hat <- predict(kappa_hat, newdata=Z)$pred
@@ -186,7 +216,7 @@ est_varphi <- function(idx, R, Z,
                        po_learners) {
 
 
-  if (po_learners=='hal') { # estimate via HAL
+  if (all(po_learners=='hal')) { # estimate via HAL
     varphi_1_hat <- hal9001::fit_hal(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
     varphi_0_hat <- hal9001::fit_hal(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
     varphi_1_hat <- predict(varphi_1_hat, new_data=Z)
@@ -233,7 +263,7 @@ est_varphi_eem <- function(idx, R, Z,
 
   # Estimate E[phi|Z] via EEM
   #### ***** need to update hal code below
-  if (po_learners=='hal') { # estimate via HAL
+  if (all(po_learners=='hal')) { # estimate via HAL
     varphi_1_hat <- hal9001::fit_hal(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
                                    weights=(R[idx]/kappa_hat[idx] - 1)^2)
     varphi_0_hat <- hal9001::fit_hal(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],

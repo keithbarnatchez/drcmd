@@ -1,6 +1,7 @@
 #' @title Print drcmd object
 #' @description S3 method for printing drcmd objects. Provides concise summary
-#' of results, and prints values of optional arguments
+#' of results, and prints values of optional arguments. Use summary() function for
+#' more detailed summary of results.
 #' @param x An object of class drcmd
 #' @export
 print.drcmd <- function(x, ...) {
@@ -21,9 +22,11 @@ print.drcmd <- function(x, ...) {
 #' @title Summarize results from drcmd
 #' @description S3 method for summarizng drcmd results. Provides detailed summary
 #' of estimation output, while also providing information on missingness
-#' mechanism. Can optionally print out values of user-supplied arguments
+#' mechanism. Can optionally print out values of user-supplied arguments by setting
+#' detail=TRUE
 #'
 #' @param results An object of class drcmd
+#' @param detail Logical. If TRUE, print out values of user-supplied arguments
 #'
 #' @return No return value. Called for printing a detailed results summary
 #'
@@ -34,7 +37,7 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
   cat("======================================================================\n")
 
   # Define the header for the table with better spacing
-  cat(sprintf("%-15s %12s %12s %26s\n", "Metric", "Estimate", "SE", "95% CI"))
+  cat(sprintf("%-15s %12s %12s %26s\n", "Estimand", "Estimate", "SE", "95% CI"))
   cat("----------------------------------------------------------------------\n")
 
   # Function to compute confidence interval
@@ -76,8 +79,16 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
 #' @title Plot results from drcmd object
 #' @description S3 method for plotting results from drcmd object. Plots are
 #' available for the following: (1) psuedo outcome regression fit, (2) influence
-#' curve distribution,
+#' curve distribution, (3) treatment propensity score distribution, and (4)
+#' complete-case propensity score distribution. When type='All' (the default),
+#' user can view all four plots in succession interactively
 #'
+#' @param x An object of class drcmd
+#' @param type Character denoting type of plot to generate. Must be one of 'All', 'PO',
+#'  'IC', 'g_hat', 'r_hat'
+#'
+#' @return No return value. Called for plotting results from drcmd object
+#' @export
 plot.drcmd <- function(x, type = "All") {
 
   # First check if type is valid

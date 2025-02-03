@@ -67,12 +67,12 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
     W <- X[,0]
   }
 
-  # Throw errors if anything is entered incorrectly
-  # check_entry_errors(Y,A,X,W,R, hal_ind,sl_learners,eem_ind,Rprobs)
-
   # Clean up learners
   learners <- clean_learners(default_learners,m_learners,g_learners,r_learners,
                              po_learners)
+
+  # Throw errors if anything is entered incorrectly
+  check_entry_errors(Y,A,X,W,R,eem_ind,Rprobs,k,nboot)
 
   # Identify missing data structure
   V <- find_missing_pattern(Y,A,X,W)
@@ -84,6 +84,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                            learners$m_learners,learners$g_learners,
                            learners$r_learners,learners$po_learners,
                            eem_ind,Rprobs,k,c)
+
 
   # Additional packaging of params used in estimation
   params <- list()

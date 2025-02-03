@@ -26,9 +26,50 @@ df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
 # X = data.frame(cbind(X,X))
 W = X[,0]
 
-drcmd_res <- drcmd(Y,A,X, default_learners=c('SL.nnet'),eem_ind=FALSE,k=1)
+drcmd_res <- drcmd(Y,A,X, default_learners= c('SL.glm','SL.glm.interaction','SL.earth','SL.gam'),
+                   eem_ind=FALSE,k=1)
 summary(drcmd_res)
 plot(drcmd_res)
+#-------------------------------------------------------------------------------
+# Try with missing outcome and treatment
+
+n <- 1e3
+X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+Y <- rnorm(n) + A + X + X^2 + A*X + sin(X)
+Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
+
+# Make Y NA if R==0
+Y[R==0] <- NA
+A[R==0] <- NA
+
+df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
+
+# X = data.frame(cbind(X,X))
+W = X[,0]
+
+drcmd_res <- drcmd(Y,A,X, default_learners= c('SL.glm','SL.glm.interaction','SL.earth','SL.gam'),
+                   eem_ind=FALSE,k=1)
+#-------------------------------------------------------------------------------
+# Missng outcome and proxy used
+
+
+n <- 1e3
+X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+Y <- rnorm(n) + A + X + X^2 + A*X + sin(X)
+Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
+
+# Make Y NA if R==0
+Y[R==0] <- NA
+
+df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
+
+W <- data.frame(Ystar)
+
+drcmd_res <- drcmd(Y,A,X,
+                   W=data.frame(Ystar),
+                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth','SL.gam'),
+                   eem_ind=FALSE,k=1)
+summary(drcmd_res)
 #-------------------------------------------------------------------------------
 # Test sub functions
 

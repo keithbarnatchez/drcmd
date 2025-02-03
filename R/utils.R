@@ -14,7 +14,8 @@
 find_missing_pattern <- function(Y,A,X,W) {
 
   # Combine variables into a single data frame
-  data <- cbind(X,W,data.frame(Y=Y,A=A))
+  data <- cbind(X,W,
+                data.frame(Y=Y,A=A))
 
   # find variables that are never missing
   never_missing <- colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)]
@@ -24,7 +25,7 @@ find_missing_pattern <- function(Y,A,X,W) {
 
   # make variable that indicates complete cases and df of all complete data
   R <- as.numeric(apply(data,1,function(x) sum(is.na(x))==0))
-  Z <- data[,colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)]]
+  Z <- data[,colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)],drop=FALSE]
 
   # If any values of Y, X or Z equal NA, set them to 0
   # Some learners don't support NAs
@@ -92,22 +93,21 @@ check_r_ind <- function(data,
 #'
 #'
 check_entry_errors <- function(Y,A,X,W,R,
-                               default_learners,
                                eem_ind,Rprobs,
                                k,nboot) {
 
  # Make sure Y is a vector
-  if (!is.vector(Y) | (length(Y)>1) ) {
+  if (!is.vector(Y)) {
     stop('Y must be a vector')
   }
 
   # Make sure A is a vector
-  if (!is.vector(A) | (length(A)>1) ) {
+  if (!is.vector(A) ) {
     stop('A must be a vector')
   }
 
   # Make sure A is 0/1 binary
-  if (!check_binary(A)) {
+  if (!check_binary(A[!is.na(A)])) {
     stop('A must be binary')
   }
 
@@ -132,8 +132,26 @@ check_entry_errors <- function(Y,A,X,W,R,
   }
 
   # check that Rprobs is a vector of values between 0 and 1 inclusive
-  if (!is.numeric(Rprobs) | any(Rprobs < 0) | any(Rprobs > 1)  | length(Rprobs)!=length(A) ) {
-    stop('When specicified, Rprobs must be a vector of sampling probabilities between 0 and 1 inclusive')
+  if (!is.na(Rprobs)) {
+    if (!is.numeric(Rprobs) | any(Rprobs < 0) | any(Rprobs > 1)  | length(Rprobs)!=length(A) ) {
+      stop('When specicified, Rprobs must be a vector of sampling probabilities between 0 and 1 inclusive')
+    }
+  }
+  # make sure cross-fitting folds is an integer
+  if (!is.numeric(k)) {
+    stop('k must be a an integer')
+  } else{
+    if (floor(k) != k) {
+      stop('k must be an integer')
+    }
+  }
+
+  if (!is.numeric(nboot)) {
+    stop('nboot must be a an integer')
+  } else{
+    if (floor(nboot) != nboot) {
+      stop('nboot must be an integer')
+    }
   }
 
   return(TRUE)
@@ -261,7 +279,6 @@ create_folds <- function(n, k) {
 }
 
 
-
 #' @title Clean nuisance function output from crossfit procedure
 #'
 #' @description Transforms nuisance output across folds into a dataframe of avgerge
@@ -273,5 +290,3 @@ create_folds <- function(n, k) {
 clean_crossfit_nuis <- function(results) {
   1
 }
-
-
