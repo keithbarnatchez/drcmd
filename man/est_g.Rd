@@ -2,30 +2,26 @@
 % Please edit documentation in R/nuis.R
 \name{est_g}
 \alias{est_g}
-\title{est_g}
+\title{Estimate the propensity score}
 \usage{
-est_g(idx, A, X, R, kappa_hat, hal_ind, sl.lib)
+est_g(idx, A, X, R, kappa_hat, g_learners)
 }
 \arguments{
-\item{A}{A character string containing treatment variable name}
+\item{idx}{Indices to carry out estimation over}
 
-\item{X}{A character vector containing covariate variable names}
+\item{A}{A binary treatment variable (1=treated, 0=control)}
 
-\item{R}{A character string containing randomization variable name}
+\item{X}{Dataframe containing baseline covariates}
 
-\item{hal_ind}{A logical value indicating whether to estimate via HAL}
+\item{R}{Binary missingness indicator, where 0 indicates missing data}
 
-\item{sl.lib}{A character vector containing the names of the superlearner algorithms}
+\item{g_learners}{A character vector containing the names of the superlearner algorithms}
 
-\item{data}{A data frame}
-
-\item{Y}{A character string containing outcome variable name}
-
-\item{W}{A character vector containing weight variable names}
+\item{Y}{Outcome variable. Can be continuous or binary}
 }
 \value{
 A list containing the estimate of E\link{Y|A=a,X,W}
 }
 \description{
-Function for obtaining estimate of E\link{Y|A=a,X,W}
+Function for obtaining propensity score estimates
 }

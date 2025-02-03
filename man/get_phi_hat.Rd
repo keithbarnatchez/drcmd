@@ -2,37 +2,28 @@
 % Please edit documentation in R/drcmd.R
 \name{get_phi_hat}
 \alias{get_phi_hat}
-\title{get_phi_hat}
+\title{Estimate full data EIF}
 \usage{
-get_phi_hat(Y, A, X, R, g_hat, m_a_hat, kappa_hat, hal_ind, sl.lib)
+get_phi_hat(Y, A, X, R, g_hat, m_a_hat, kappa_hat)
 }
 \arguments{
-\item{Y}{A character string containing outcome variable name}
+\item{Y}{Outcome variable. Can be continuous or binary}
 
-\item{A}{A character string containing treatment variable name}
+\item{A}{A binary treatment variable (1=treated, 0=control)}
 
-\item{X}{A character vector containing covariate variable names}
+\item{X}{Dataframe containing baseline covariates}
 
-\item{R}{A character string containing randomization variable name}
+\item{R}{Binary missingness indicator}
 
 \item{g_hat}{A fitted propensity score model}
 
 \item{m_a_hat}{A fitted outcome model}
 
-\item{kappa_hat}{A fitted sampling probs model}
+\item{kappa_hat}{Missingness probabilities}
 
-\item{hal_ind}{A logical indicating whether to use highly adaptive lasso}
-
-\item{sl.lib}{A character string indicating the superlearner library to use}
-
-\item{data}{A data frame}
-
-\item{Z}{A character vector containing the names of the variables in Z}
-}
-\value{
-A list containing the estimated EIFs for A=1 and A=0
+\item{Z}{Dataframe containing all variables that are never subject to missingness}
 }
 \description{
 Function for obtaining estimate of E\link{phi|Z}, where phi is the
-full data EIF
+full data EIF, through weighted regression on complete cases
 }

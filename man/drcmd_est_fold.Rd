@@ -2,37 +2,57 @@
 % Please edit documentation in R/drcmd.R
 \name{drcmd_est_fold}
 \alias{drcmd_est_fold}
-\title{drcmd_est_fold}
+\title{Calculate point estimates within a single cross-fitting fold}
 \usage{
-drcmd_est_fold(splits, Y, A, X, Z, R, hal_ind, sl.lib, eem_ind, Rprobs)
+drcmd_est_fold(
+  splits,
+  Y,
+  A,
+  X,
+  Z,
+  R,
+  m_learners,
+  g_learners,
+  r_learners,
+  po_learners,
+  eem_ind,
+  Rprobs
+)
 }
 \arguments{
-\item{splits}{A list of train/test splits}
+\item{splits}{A list of train/test indices}
 
-\item{Y}{A character string}
+\item{Y}{Outcome variable. Can be continuous or binary}
 
-\item{A}{A character string}
+\item{A}{A binary treatment variable (1=treated, 0=control)}
 
-\item{X}{A character vector}
+\item{X}{Dataframe containing baseline covariates}
 
-\item{Z}{A character vector}
+\item{Z}{Dataframe containing all variables that are never subject to missingness}
 
-\item{R}{A character vector}
+\item{R}{Binary missingness indicator}
 
-\item{hal_ind}{A logical indicating whether to use highly adaptive lasso}
+\item{m_learners}{A character vector containing learners to be used for the
+outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
 
-\item{sl.lib}{A character string indicating the superlearner library to use}
+\item{g_learners}{A character vector containing learners to be used for the
+propensity score. User can specify 'hal' or a vector of SuperLearner libraries}
 
-\item{eem_ind}{A logical indicating whether to use ensemble of estimators}
+\item{r_learners}{A character vector containing learners to be used for the
+missingness indicator regression. User can specify 'hal' or a vector of
+SuperLearner libraries}
+
+\item{po_learners}{A character vector containing learners to be used for the
+pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
+
+\item{eem_ind}{A logical indicating whether to use empirical efficiency maximization}
 
 \item{Rprobs}{A vector of probabilities for R}
-
-\item{data}{A data frame}
 
 \item{k}{A numeric indicating the number of folds for cross-fitting}
 }
 \value{
-A list of results
+A list of results from estimation on current fold
 }
 \description{
 Outer function for obtaining point estimates for single fold

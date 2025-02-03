@@ -1,10 +1,18 @@
 # Compare performance of drcmd to tmle, drtmle, and AIPW when outcome is MAR
 #-------------------------------------------------------------------------------
 # set up main params
-
-n <- 1e3
+rm(list=ls())
+n_grid <- c(500,1000,2500,5000)
 #-------------------------------------------------------------------------------
-# Params for dtcmd
+# Load in relevant stuff from drcmd
+
+source('../R/utils.R')
+source('../R/drcmd.R')
+source('../R/nuis.R')
+source('../R/methods.R')
+library(tictoc)
+#-------------------------------------------------------------------------------
+# Params for drcmd
 
 hal_ind <- FALSE
 eem_ind <- TRUE
@@ -16,7 +24,10 @@ drcmdests <- rep(NA,100) ; drcmdtimes <- rep(NA,100)
 tmleests <- rep(NA,100) ; tmletimes <- rep(NA,100)
 aipwests <- rep(NA,100) ; aipwtimes <- rep(NA,100)
 drtmleests <- rep(NA,100) ; drtmletimes <- rep(NA,100)
-for (ss in 1:100) {
+
+res_df <- data.frame()
+for (n in n_grid) {
+for (ss in 1:10) {
   print(ss)
   # Simulate data
   X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
@@ -29,26 +40,26 @@ for (ss in 1:100) {
                                  Q.SL.library = sl_learners,
                                  g.SL.library = sl_learners,
                             k_split = k)$fit()$summary()
-  aipwests[ss] <- tempaipw$estimates$RD[1]
+  aipwests <- tempaipw$estimates$RD[1]
   temp <- toc()
-  aipwtimes[ss] <- temp$toc - temp$tic
+  aipwtimes <- temp$toc - temp$tic
 
   # drcmd
   tic()
-  drcmdests[ss] <- drcmd(Y,A,X, hal_ind=hal_ind,
-                        sl_learners = sl_learners,
+  drcmdests <- drcmd(Y,A,X,
+                        default_learners = sl_learners,
                         eem_ind=eem_ind)$results$estimates$psi_hat_ate
   temp <- toc()
-  drcmdtimes[ss] <- temp$toc - temp$tic
+  drcmdtimes <- temp$toc - temp$tic
 
   # tmle
   tic()
-  tmleests[ss] <- tmle::tmle(Y,A,X, Delta=R,
+  tmleests <- tmle::tmle(Y,A,X, Delta=R,
                              Q.SL.library = sl_learners,
                              g.SL.library = sl_learners,
                              g.Delta.SL.library = sl_learners)$estimates$ATE$psi
   temp <- toc()
-  tmletimes[ss] <- temp$toc - temp$tic
+  tmletimes <- temp$toc - temp$tic
 
   # drtmle
   tic()
@@ -58,9 +69,17 @@ for (ss in 1:100) {
                                SL_Qr = sl_learners,
                                SL_gr = sl_learners,
                                a_0=c(1,0))
-  drtmleests[ss] <- tempdrtmle$drtmle$est[1] - tempdrtmle$drtmle$est[2]
+  drtmleests <- tempdrtmle$drtmle$est[1] - tempdrtmle$drtmle$est[2]
   temp <- toc()
-  drtmletimes[ss] <- temp$toc - temp$tic
+  drtmletimes <- temp$toc - temp$tic
+
+  # update results
+  res_df <- rbind(res_df,data.frame(n=n,ss=ss,
+                                    drcmdests=drcmdests,tmleests=tmleests,
+                                    aipwests=aipwests,drtmleests=drtmleests,
+                                    drcmdtimes=drcmdtimes,tmletimes=tmletimes,
+                                    aipwtimes=aipwtimes,drtmletimes=drtmletimes))
+}
 }
 #-------------------------------------------------------------------------------
 # Plots for estimation
@@ -89,5 +108,32 @@ results %>% ggplot(aes(x=est,y=method,fill=method)) +
   theme(legend.position = 'bottom')
 ggsave('figures/packages_ests.pdf',width=8,height=4,units='in')
 #-------------------------------------------------------------------------------
+# Plots for timing
 
+# reshape to wide format, removng est from each name
+results <- data.frame(drcmdtimes,tmletimes,aipwtimes,drtmletimes) %>%
+  pivot_longer(cols=everything(),names_to='method',values_to='time') %>%
+  mutate(method = case_when(method=='drcmdtimes' ~ 'drcmd',
+                            method=='tmletimes' ~ 'tmle',
+                            method=='aipwtimes' ~ 'AIPW',
+                            method=='drtmletimes' ~ 'drtmle'))
 
+results %>% ggplot(aes(x=time,y=method,fill=method)) +
+  geom_density_ridges(alpha = 0.5,
+                      scale = 1,
+                      rel_min_height = 0.015,
+                      quantile_lines = T,
+                      quantiles = 0.5,
+                      panel_scaling = F) +
+  theme_bw() +
+  labs(title='Comparison of DR causal inference packages: time to run',
+       subtitle='Outcome missing at random conditional on measured covariates',
+       fill='Package',
+       x='Time to run (seconds)',
+       y='Package') +
+  theme(legend.position = 'bottom')
+ggsave('figures/packages_times.pdf',width=8,height=4,units='in')
+#-------------------------------------------------------------------------------
+results <- drcmd(Y,A,X, hal_ind=hal_ind,
+      sl_learners = sl_learners,
+      eem_ind=eem_ind)

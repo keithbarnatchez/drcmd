@@ -2,26 +2,24 @@
 % Please edit documentation in R/nuis.R
 \name{est_m_a}
 \alias{est_m_a}
-\title{est_m_a}
+\title{Function for estimating outcome regression}
 \usage{
-est_m_a(idx, Y, A, X, R, kappa_hat, hal_ind, sl.lib)
+est_m_a(idx, Y, A, X, R, kappa_hat, m_learners)
 }
 \arguments{
-\item{Y}{A character string containing outcome variable name}
+\item{idx}{Indices to carry out estimation over}
 
-\item{A}{A character string containing treatment variable name}
+\item{Y}{Outcome variable. Can be continuous or binary}
 
-\item{X}{A character vector containing the names of the variables in X}
+\item{A}{A binary treatment variable (1=treated, 0=control)}
 
-\item{R}{A character string containing randomization variable name}
+\item{X}{Dataframe containing baseline covariates}
+
+\item{R}{Binary missingness indicator, where 0 indicates missing data}
 
 \item{kappa_hat}{A numeric vector containing the fitted values of kappa}
 
-\item{hal_ind}{A logical value indicating whether to estimate via HAL}
-
-\item{sl.lib}{A character vector containing the names of the superlearner algorithms}
-
-\item{data}{A data frame}
+\item{m_learners}{A character vector containing the names of the superlearner algorithms}
 }
 \value{
 A list containing the estimate of E\link{Y|A=a,X}

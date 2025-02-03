@@ -2,30 +2,47 @@
 % Please edit documentation in R/nuis.R
 \name{get_nuisance_ests}
 \alias{get_nuisance_ests}
-\title{get_nuisance_ests}
+\title{Obtain nuisance function estimates}
 \usage{
-get_nuisance_ests(idx, Y, A, X, Z, R, hal_ind, sl.lib, Rprobs)
+get_nuisance_ests(
+  idx,
+  Y,
+  A,
+  X,
+  Z,
+  R,
+  m_learners,
+  g_learners,
+  r_learners,
+  Rprobs
+)
 }
 \arguments{
-\item{Y}{A character string containing outcome variable name}
+\item{idx}{Indices to carry out estimation over}
 
-\item{A}{A character string containing treatment variable name}
+\item{Y}{Outcome variable. Can be continuous or binary}
 
-\item{X}{A character vector containing covariate names}
+\item{A}{A binary treatment variable (1=treated, 0=control)}
 
-\item{Z}{A character vector containing first stage variable names}
+\item{X}{Dataframe containing baseline covariates}
 
-\item{R}{A character vector containing missing data indicator}
+\item{Z}{Dataframe containing all non-missing variables}
 
-\item{hal_ind}{A logical indicating whether to use highly adaptive lasso}
+\item{R}{Binary missingness indicator, where 0 indicates missing data}
 
-\item{sl.lib}{A character string indicating the superlearner library to use}
+\item{m_learners}{A character vector containing learners to be used for the
+outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
+
+\item{g_learners}{A character vector containing learners to be used for the
+propensity score. User can specify 'hal' or a vector of SuperLearner libraries}
+
+\item{r_learners}{A character vector containing learners to be used for the
+missingness indicator regression. User can specify 'hal' or a vector of
+SuperLearner libraries}
 
 \item{Rprobs}{A vector of probabilities for R}
 
-\item{data}{A data frame}
-
-\item{eem_ind}{A logical indicating whether to use ensemble of estimators}
+\item{eem_ind}{A logical indicating whether to use empirical efficiency maximization}
 }
 \value{
 A list of nuisance estimates

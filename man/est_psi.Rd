@@ -2,11 +2,13 @@
 % Please edit documentation in R/drcmd.R
 \name{est_psi}
 \alias{est_psi}
-\title{est_psi}
+\title{Obtain estimates for current cross fitting fold}
 \usage{
 est_psi(idx, R, Z, kappa_hat, phi_hat, varphi_hat)
 }
 \arguments{
+\item{idx}{A data frame}
+
 \item{R}{A character string containing randomization variable name}
 
 \item{Z}{A character vector containing the names of the variables in Z}
@@ -16,12 +18,12 @@ est_psi(idx, R, Z, kappa_hat, phi_hat, varphi_hat)
 \item{phi_hat}{A list containing the estimate of E\link{phi|Z}}
 
 \item{varphi_hat}{A list containing the estimate of E\link{phi|Z}}
-
-\item{data}{A data frame}
 }
 \value{
-A numeric value containing the estimate of E\link{psi}
+A list of point estimates and standard errors for counterfactual means
+and various counterfactual contrasts
 }
 \description{
-Function for obtaining estimate of the full data EIC, psi
+Function for obtaining counterfactual mean estimates for the current
+fold of the cross-fitting procedure
 }

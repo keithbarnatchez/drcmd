@@ -1,0 +1,138 @@
+---
+author: |
+    | Keith Barnatchez
+    | Harvard University
+    | Department of Biostatistics
+    | keithbarnatchez@g.harvard.edu
+title: '`drcmd`: Doubly-Robust Causal Inference with Missing Data'
+abstract: >
+  
+preamble: >
+  \usepackage{amsmath}
+# documentclass: jss
+# classoption: article
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{`drcmd`: Doubly-Robust Causal Inference with Missing Data}
+  %\VignetteEncoding{UTF-8}
+---
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });
+</script>
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+source('../R/utils.R')
+source('../R/drcmd.R')
+source('../R/nuis.R')
+source('../R/methods.R')
+```
+
+# Introduction \label{intro}
+
+**Note**: Package is still in development. Vignette here will be very generic until package is ready for CRAN submission, but all necessary details on how to use the package will be outlined below.
+
+# Using `drcmd` \label{using}
+
+## Installation
+
+
+```{r install, eval=FALSE} 
+devtools::install_github('keithbarnatchez/drcmd')
+```
+
+Note: Eventually we'll have a CRAN option as well
+
+## Estimation of causal effects
+
+To illustrate the use of the `drcmd` package, we will consider a simple missing data problem where the outcome of interest $Y$ is missing at random conditional on measured covariates $\mathbf X$: $Y \perp R | X$.
+We will assume a cheap proxy variable for $Y$, denoted $Y^*$, is available for all subjects but not predictive of missingness (so that it is not necessary to satisfy the MAR assumption).
+
+```{r simdata}
+n <- 1e3
+X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
+Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
+Y[R==0] <- NA # Make Y NA is R==0
+
+df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
+head(df)
+```
+
+The main function from the `drcmd` package is `drcmd()`. The core arguments are `Y`, `A` and `X`, representing the outcome, binary treatment and covariates. Users can additionally specify proxy variables `W` that are (i) predictive of the missing variables, (ii) possibly influence the missingness mechanism, and (iii) wouldn't be involved in a causal analysis under the presence of complete data. Such variables commonly arise in semi-supervised inference, where cheap proxies are often available for expensive-to-measure variables. In our running example, we have that $Y^*=W$. In practice, $W$ can be multi-dimensional when multiple proxies are available.
+
+Missing data are allowed in the outcome, treatment, and covariates (including any subset of covariates), as well as any combination of the three. The only requirement for running `drcmd` is that there exists at *least* one variable that is never missing, either in `Y`, `A`, `X`, `W`. Note that this does **not** guarantee identifiability of the causal estimands $\mathbb{E}[Y(1)]$ or $\mathbb{E}[Y(0)]$. The validity of the resulting estimates hinges on the MAR assumption holding, a determination that should be made through subject matter expertise.
+
+Along with specifying variables, users can also specify means by which to estimate all nuisance functions. All nuisance functions can be estimated through either the highly-adaptive LASSO (HAL) or a Super Learner. There are 4 nuisance functions that are fit by `drcmd`, for $a = 0,1$:
+$$
+\begin{aligned}
+&1. \  m_a(X) = \mathbb{E}(Y|A=a,X) \\
+&2. \ g_a(X) = \mathbb{P}(A=a|X) \\
+&3. \ r(X)  = \mathbb{P}(R=1|Z) \\
+&4. \ \varphi_a(Z) = \mathbb{E}(\chi_a(X,A,Y) | Z, R=1),
+\end{aligned}
+$$
+
+where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ --.
+
+Users can estimate nuisance functions through Super Learner via the `SuperLearner` package or the Highly-Adaptive LASSO (HAL) via the `hal9001` package. 
+
+or specify learners for each nuisance function through the arguments. Below we demonstrate an example call of `drcmd()` which specifies the use of 
+
+```{r drcmd-simple}
+res <- drcmd(Y=Y, A=A, X=X,
+             default_learners='SL.glm')
+```
+
+
+Users can view a summary of the estimation procedure by calling the `summary()` function, which provides point estimates, standard errors and 95\% CIs for main causal estimands
+
+```{r drcmd_summary}
+summary(res)
+```
+
+## Additional features
+
+### Diagnostic plots
+
+While users can extract output from the results structure to construct plots manually, `drcmd` comes with numerous built-in plotting functions to help users diagnose potential issues in the fitting procedure.
+Users can specify their desired plot with the `type` argument: (i) `PO`: residuals of psuedo-outcome regression vs predicted values, (ii) `IC`: density plots of the influence curves for $\mathbb{E}[Y(1)]$, $\mathbb{E}[Y(0)]$ and the ATE, (iii) `g_hat`: Density plots of fitted treatment propensity scores among complete cases, (iv) `r`_hat`: Density plots of fitted complete case propensity scores among complete cases.
+
+```{r diagplotPO}
+plot(res,type='PO')
+```
+
+Alternative, users can cycle through all diagnostic plots by leaving the type argument unspecified or setting it to `'All'`
+
+```{r diagplotPOAll, eval=FALSE}
+plot(res)
+```
+
+### Cross-fitting
+
+```{r drcmd_simple, eval=FALSE}
+res <- drcmd(Y=Y, A=A, X=X,
+             default_learners='SL.glm',
+             k=3)
+```
+
+
+
+### Empirical efficiency maximixation
+
+In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to be an inherently difficult nuisance function to estimate. While `drcmd` estimates this regression through conventional regression methods by default, users can optionally fit $\varphi_a$ through empirical efficiency maximixation (EEM) by setting the argument `eem_ind` to `TRUE`. Given an implicitly-defined function class determined through choice of nuisance learner for $\varphi_a$, rather than attempt minimize the  MSE $\hat \varphi_a - \varphi_a||$, EEM minimizes the asymptotic variance of the estimator of the causal estimand:
+
+put formula here
+
+```{r drcmd_eem, eval=FALSE}
+res <- drcmd(Y=Y, A=A, X=X,
+             default_learners='SL.glm',
+             k=1,
+             eem_ind=TRUE)
+```
+
+### Bootstrap SEs
+
+
+

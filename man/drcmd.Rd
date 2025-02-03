@@ -10,8 +10,11 @@ drcmd(
   X,
   W = NA,
   R = NA,
-  hal_ind = TRUE,
-  sl.lib = NA,
+  default_learners = NULL,
+  m_learners = NULL,
+  g_learners = NULL,
+  r_learners = NULL,
+  po_learners = NULL,
   eem_ind = FALSE,
   Rprobs = NA,
   k = 1,
@@ -19,33 +22,69 @@ drcmd(
 )
 }
 \arguments{
-\item{Y}{A character string containing outcome variable name}
+\item{Y}{Outcome variable. Can be continuous or binary}
 
-\item{A}{A character string containing treatment variable name}
+\item{A}{A binary treatment variable (1=treated, 0=control)}
 
-\item{X}{A character vector containing covariate names}
+\item{X}{Dataframe containing baseline covariates}
 
-\item{W}{A character vector containing variable names solely used for imputation}
+\item{W}{Dataframe containing variables solely predictive of missingness, but not
+a cause of the outcome or exposure.}
 
-\item{R}{(optional) A character string specifying the missingness indicator, where 0 indicates missing data. If not specified, the function will identify the missingness indicator}
+\item{R}{(optional) A character string specifying the missingness indicator,
+where 0 indicates missing data. If not specified, the function will create the
+missingness indicator by identifying the missingness pattern in the data}
 
-\item{hal_ind}{A logical indicating whether to use highly adaptive lasso}
+\item{m_learners}{A character vector containing learners to be used for the
+outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
 
-\item{sl.lib}{A character string indicating the superlearner library to use}
+\item{g_learners}{A character vector containing learners to be used for the
+propensity score. User can specify 'hal' or a vector of SuperLearner libraries}
 
-\item{eem_ind}{A logical indicating whether to use ensemble of estimators}
+\item{r_learners}{A character vector containing learners to be used for the
+missingness indicator regression. User can specify 'hal' or a vector of
+SuperLearner libraries}
 
-\item{Rprobs}{A vector of probabilities for R}
+\item{po_learners}{A character vector containing learners to be used for the
+pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
+
+\item{eem_ind}{A logical indicating whether to use empirical efficiency maximization}
+
+\item{Rprobs}{A vector of probabilities for the missingness indicator. Only
+suitable for study designs where researcher controls mechanism by which variables
+are missing (e.g. two-phase sample designs). Defaults to NA, in which case
+missingness probabilities are estimated.}
 
 \item{k}{A numeric indicating the number of folds for cross-fitting}
 
-\item{nboot}{A numeric indicating the number of desired bootstrap samples. If >0, uses bootstrap to obtain SEs. If =0, uses asymptotic analytical SEs.}
+\item{nboot}{A numeric indicating the number of desired bootstrap samples.
+If >0, uses bootstrap to obtain SEs. If =0, uses asymptotic analytical SEs.}
 
-\item{data}{A data frame}
+\item{deafult_learners}{A character vector containing SuperLearner libraries to use
+for estimating all nuisance functions. User can alternatively specify libraries
+for each nuisance function for added flexibility}
 }
 \value{
-A list of results
+An S3 object of class drcmd containing estimation results, information
+on the missing data structure, and parameters used in the estimation
 }
 \description{
-drcmd is a function
+Doubly-robust estimation of counterfactual means in the presence of missing
+and reports average treatment effects, as well as causal risk ratios and odds ratios
+for binary outcomes. General missingness patterns in the data are allowed and automatically
+determined by the function -- the only requirement is that any missingness occurs at random
+conditional on variables that are always available. For scenarios where non-missingness
+probabilities are known, as is common in two-phase sampling designs, users can provide
+the non-missingness probabilities through the Rprobs argument. Users can fit nuisance
+functions through either highly-adaptive LASSO (HAL) or SuperLearner, the latter of which
+the user must specify libraries.
+}
+\examples{
+n <- 1e3
+X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
+Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
+Y[R==0] <- NA
+
+results <- drcmd(Y,A,X,R=R)
+
 }

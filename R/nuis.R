@@ -7,22 +7,35 @@
 #' @param X Dataframe containing baseline covariates
 #' @param Z Dataframe containing all non-missing variables
 #' @param R Binary missingness indicator, where 0 indicates missing data
-#' @param hal_ind A logical indicating whether to use highly adaptive lasso
-#' @param sl_learners A character string indicating the superlearner library to use
-#' @param eem_ind A logical indicating whether to use ensemble of estimators
+#' @param m_learners A character vector containing learners to be used for the
+#' outcome regression. User can specify 'hal' or a vector of SuperLearner libraries
+#' @param g_learners A character vector containing learners to be used for the
+#' propensity score. User can specify 'hal' or a vector of SuperLearner libraries
+#' @param r_learners A character vector containing learners to be used for the
+#' missingness indicator regression. User can specify 'hal' or a vector of
+#' SuperLearner libraries
+#' @param eem_ind A logical indicating whether to use empirical efficiency maximization
 #' @param Rprobs A vector of probabilities for R
 #'
 #' @return A list of nuisance estimates
 #' @export
-get_nuisance_ests <- function(idx,Y,A,X,Z,R,hal_ind,sl_learners,Rprobs) {
+get_nuisance_ests <- function(idx,Y,A,X,Z,R,
+                              m_learners,g_learners,r_learners,
+                              Rprobs,c) {
 
   kappa_hat <- Rprobs
   if (is.na(Rprobs)) {
-    kappa_hat <- est_kappa(idx,Z,R,hal_ind,sl_learners)
+    kappa_hat <- est_kappa(idx,Z,R,r_learners)
   }
 
-  m_a_hat <- est_m_a(idx,Y,A,X,R,kappa_hat,hal_ind,sl_learners)
-  g_hat <- est_g(idx,A,X,R,kappa_hat,hal_ind,sl_learners)
+  m_a_hat <- est_m_a(idx,Y,A,X,R,kappa_hat,m_learners)
+  g_hat <- est_g(idx,A,X,R,kappa_hat,g_learners)
+
+  # Trimming
+  if (!is.null(c)) {
+    kappa_hat <- truncate_r(kappa_hat,c)
+    g_hat <- truncate_g(g_hat,c)
+  }
 
   return(list(kappa_hat=kappa_hat,m_a_hat=m_a_hat,g_hat=g_hat))
 
@@ -38,20 +51,18 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,hal_ind,sl_learners,Rprobs) {
 #' @param X Dataframe containing baseline covariates
 #' @param R Binary missingness indicator, where 0 indicates missing data
 #' @param kappa_hat A numeric vector containing the fitted values of kappa
-#' @param hal_ind A logical value indicating whether to estimate via HAL
-#' @param sl_learners A character vector containing the names of the superlearner algorithms
+#' @param m_learners A character vector containing the names of the superlearner algorithms
 #' @return A list containing the estimate of E[Y|A=a,X]
 #' @export
 est_m_a <- function(idx, Y, A, X, R,
                     kappa_hat,
-                    hal_ind,
-                    sl_learners) {
+                    m_learners) {
 
-  # note: need to
+  # note: need to make family checking automatic
   yfam <- check_binary(Y)
 
   data <- cbind(X,A)
-  if (hal_ind==TRUE) { # estimate via HAL
+  if (m_learners=='hal') { # estimate via HAL
     m_a_hat<- hal9001::fit_hal(Y=Y[idx],X=data[idx,],
                                weights=R[idx]/kappa_hat[idx])
     # get fitted values under A=1
@@ -61,7 +72,7 @@ est_m_a <- function(idx, Y, A, X, R,
     m_0_hat <- predict(m_a_hat, new_data=data)
   } else { # estimate via SL *** need dynamic family ***
     m_a_hat <- SuperLearner::SuperLearner(Y=Y[idx],X=data[idx,],
-                                          SL.library=sl_learners,
+                                          SL.library=m_learners,
                                           obsWeights=R[idx]/kappa_hat[idx])
     # get fitted values under A=1
     data[,ncol(data)] <- 1
@@ -70,7 +81,7 @@ est_m_a <- function(idx, Y, A, X, R,
     m_0_hat <- predict(m_a_hat, newdata=data)$pred
   }
 
-  return(m_a_hat)
+  return(list(m_1_hat=m_1_hat,m_0_hat=m_0_hat))
 }
 
 
@@ -82,43 +93,39 @@ est_m_a <- function(idx, Y, A, X, R,
 #' @param A A binary treatment variable (1=treated, 0=control)
 #' @param X Dataframe containing baseline covariates
 #' @param R Binary missingness indicator, where 0 indicates missing data
-#' @param hal_ind A logical value indicating whether to estimate via HAL
-#' @param sl_learners A character vector containing the names of the superlearner algorithms
+#' @param g_learners A character vector containing the names of the superlearner algorithms
 #'
 #' @return A list containing the estimate of E[Y|A=a,X,W]
 #' @export
 est_g <- function(idx,A, X, R, kappa_hat,
-                  hal_ind,
-                  sl_learners) {
+                  g_learners) {
 
-  if (hal_ind==TRUE) { # estimate via HAL
+  if (g_learners=='hal') { # estimate via HAL
     g_hat<- hal9001::fit_hal(Y=A[idx],X=X[idx,,drop=FALSE],weights=R[idx]/kappa_hat[idx])
+    g_hat <- predict(g_hat, new_data=X)
   } else { # estimate via SL
     g_hat <- SuperLearner::SuperLearner(Y=A[idx],X=X[idx,,drop=FALSE],
-                                        family=binomial(),SL.library=sl_learners,
+                                        family=binomial(),SL.library=g_learners,
                                         obsWeights=R[idx]/kappa_hat[idx])
+    g_hat <- predict(g_hat, newdata=X)$pred
   }
   return(g_hat)
 }
 
 # note: handle user supplied r probs outside of this function
 est_kappa <- function (idx,Z, R,
-                       hal_ind,
-                       sl_learners) {
+                       r_learners) {
 
   # if estimating via highly adaptive lasso
-  if (hal_ind==TRUE) { # estimate via HAL
+  if (r_learners=='hal') { # estimate via HAL
     kappa_hat <- hal9001::fit_hal(Y=R[idx],X=Z[idx,], family = 'binomial')
     kappa_hat <- predict(kappa_hat, new_data=Z)
-  }
-
-  # if estimating via superlearner
-  if (hal_ind==FALSE) { # estimate via SL
+  } else {  # estimate via SL
     loadNamespace("SuperLearner")
     kappa_hat <- SuperLearner::SuperLearner(Y=R[idx],X=Z[idx,],
-                                            family=binomial(),SL.library=sl_learners)
+                                            family=binomial(),
+                                            SL.library=r_learners)
     kappa_hat <- predict(kappa_hat, newdata=Z)$pred
-
   }
 
   return(kappa_hat)
@@ -126,9 +133,11 @@ est_kappa <- function (idx,Z, R,
 }
 
 
-#' @title est_varphi
+#' @title Perform pseudo-outcome regression
 #'
-#' @description Function for obtaining estimate of E[phi|Z]
+#' @description Function for obtaining estimate of E[phi_a|Z] through pseudo-outcome
+#' regression. Calls inner function to perform estimation, depending on whether
+#' user wishes to perform empirical efficiency maximization or not
 #' @param idx Indices to carry out estimation over
 #' @param Y Outcome variable. Can be continuous or binary
 #' @param A A binary treatment variable (1=treated, 0=control)
@@ -138,67 +147,70 @@ est_kappa <- function (idx,Z, R,
 #' @param phi_hat A list containing the estimate of phi
 #' @param eem_ind A logical value indicating whether to estimate via EEM
 #'
-#' @return A list containing the estimate of E[phi|Z]
+#' @return A list containing the estimate of E[phi_a|Z] for a=0 and a=1
 #' @export
 est_varphi_main <- function(idx, R,Z,
                             phi_1_hat, phi_0_hat,
                             kappa_hat,
                             eem_ind,
-                            hal_ind,
-                            sl_learners){
+                            po_learners){
 
 
   if (eem_ind==TRUE) { # estimate via EEM
     return(est_varphi_eem(idx, R, Z,
                           phi_1_hat, phi_0_hat,
                           kappa_hat,
-                          hal_ind,
-                          sl_learners))
+                          po_learners))
   } else {
     # browser()
     return(est_varphi(idx, R, Z,
                       phi_1_hat, phi_0_hat,
-                      hal_ind,
-                      sl_learners))
+                      po_learners))
   }
 
 
 }
 
-#' @title Estimation of E[phi|Z]
+#' @title Perform pseudo-outcome regression with conventional loss function
 #' @description Outer function for obtaining estimate of E[phi|Z]
 #' @param idx Indices to carry out estimation over
 #' @param R Binary missingness indicator, where 0 indicates missing data
 #' @param Z Dataframe containing all non-missing variables
 #' @param phi_1_hat A numeric vector containing the fitted values of phi under A=1
 #' @param phi_0_hat A numeric vector containing the fitted values of phi under A=0
-#' @param hal_ind A logical value indicating whether to estimate via HAL
-#' @param sl_learners A character vector containing the names of the superlearner algorithms
-#' @return A list containing the estimate of E[phi|Z]
+#' @param po_learners A character vector containing the names of the superlearner algorithms
+#' @return A list containing the estimate of E[phi|Z] for a=0 and a=1
 #' @export
 est_varphi <- function(idx, R, Z,
                        phi_1_hat, phi_0_hat,
-                       hal_ind,
-                       sl_learners) {
-  print('of is g')
-  if (hal_ind==TRUE) { # estimate via HAL
+                       po_learners) {
+
+
+  if (po_learners=='hal') { # estimate via HAL
     varphi_1_hat <- hal9001::fit_hal(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
     varphi_0_hat <- hal9001::fit_hal(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
+    varphi_1_hat <- predict(varphi_1_hat, new_data=Z)
+    varphi_0_hat <- predict(varphi_0_hat, new_data=Z)
   } else { # estimate via SL
     varphi_1_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],
-                                               family=gaussian(),SL.library=sl_learners,
+                                               family=gaussian(),
+                                               SL.library=po_learners,
                                                obsWeights=R[idx])
     varphi_0_hat <- SuperLearner::SuperLearner(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],
-                                               family=gaussian(),SL.library=sl_learners,
+                                               family=gaussian(),
+                                               SL.library=po_learners,
                                                obsWeights=R[idx])
+    varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
+    varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
   }
 
   return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat))
 }
 
 
-#' @title est_varphi_eem
-#' @description Function for obtaining estimate of E[phi|Z] via empirical efficiency maximization
+#' @title Perform pseudo-outcome regression with empirical efficiency maximization
+#' @description Function for obtaining estimate of E[phi_a|Z] via empirical efficiency
+#' maximization
 #'
 #' @param data A data frame
 #' @param R Binary missingness indicator, where 0 indicates missing data
@@ -206,39 +218,38 @@ est_varphi <- function(idx, R, Z,
 #' @param phi_1_hat Vector of predicted phi under A=1
 #' @param phi_0_hat Vector of predicted phi under A=0
 #' @param eem_ind A logical value indicating whether to estimate via EEM
-#' @param hal_ind A logical value indicating whether to estimate via HAL
-#' @param sl_learners A character vector containing the names of the superlearner algorithms
+#' @param po_learners A character vector containing the names of the superlearner algorithms
 #'
-#' @return A list containing the estimate of E[phi|Z]
+#' @return A list containing the estimate of E[phi_a|Z] for a=0 and a=1
 #' @export
 est_varphi_eem <- function(idx, R, Z,
                            phi_1_hat, phi_0_hat,
                            kappa_hat,
-                           hal_ind,
-                           sl_learners) {
+                           po_learners) {
 
   # Make pseudo outcomes
   ytilde1 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_1_hat
   ytilde0 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_0_hat
 
   # Estimate E[phi|Z] via EEM
-  if (hal_ind==TRUE) { # estimate via HAL
+  #### ***** need to update hal code below
+  if (po_learners=='hal') { # estimate via HAL
     varphi_1_hat <- hal9001::fit_hal(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
-                                   family=gaussian(),SL.library=sl_learners,
-                                   obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
+                                   weights=(R[idx]/kappa_hat[idx] - 1)^2)
     varphi_0_hat <- hal9001::fit_hal(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
-                                   family=gaussian(),SL.library=sl_learners,
-                                   obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
+                                   weights=(R[idx]/kappa_hat[idx] - 1)^2)
+    varphi_1_hat <- predict(varphi_1_hat, new_data=Z)
+    varphi_0_hat <- predict(varphi_0_hat, new_data=Z)
 
   } else { # estimate via SL
     varphi_1_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
-                                             family=gaussian(),SL.library=sl_learners,
+                                             family=gaussian(),SL.library=po_learners,
                                              obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
     varphi_0_hat <- SuperLearner::SuperLearner(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
-                                               family=gaussian(),SL.library=sl_learners,
+                                               family=gaussian(),SL.library=po_learners,
                                                obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
-
+    varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
+    varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
   }
   return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat))
 }
-

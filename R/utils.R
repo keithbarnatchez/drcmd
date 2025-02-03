@@ -27,6 +27,7 @@ find_missing_pattern <- function(Y,A,X,W) {
   Z <- data[,colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)]]
 
   # If any values of Y, X or Z equal NA, set them to 0
+  # Some learners don't support NAs
   X[is.na(X)] <- 0
   Y[is.na(Y)] <- 0
   A[is.na(A)] <- 0
@@ -78,8 +79,22 @@ check_r_ind <- function(data,
 
 }
 
+#' @title Check arguments to drcmd for entry errors
+#'
+#' @description Checks if the arguments to main function drcmd are correctly specified.
+#' Returns TRUE if all checks are passed, throws an error with message otherwise.
+#'
+#' @param Y A vector or data frame containing outcome values
+#' @param A A vector or data frame  containing treatment variable values
+#' @param X A data frame containing covariate values
+#' @param W A data frame containing proxy variable values
+#' @param R A vector containing missingness indicator variable
+#'
+#'
 check_entry_errors <- function(Y,A,X,W,R,
-                               hal_ind,sl.lib,eem_ind,Rprobs,k) {
+                               default_learners,
+                               eem_ind,Rprobs,
+                               k,nboot) {
 
  # Make sure Y is a vector
   if (!is.vector(Y) | (length(Y)>1) ) {
@@ -106,11 +121,9 @@ check_entry_errors <- function(Y,A,X,W,R,
     stop('W must be a data frame')
   }
 
-  # Check that hal_ind is a logical
-  if (!is.logical(hal_ind) | (length(hal_ind)>1) ) {
-    stop('hal_ind must be a logical')
-  } else if ( (hal_ind == FALSE) & is.na(sl.lib) ) {
-    stop('If not using HAL, must provide superlearner library')
+  # Make sure Y A X and W have same # of observations
+  if (length(Y) != nrow(X) | length(Y) != nrow(W) | length(A) != nrow(X) | length(A) != nrow(W) | length(Y) != length(A) | nrow(X) != nrow(W) ) {
+    stop('Y, A, X and W must have the same number of observations')
   }
 
   # check that eem_ind is a logical
@@ -118,8 +131,45 @@ check_entry_errors <- function(Y,A,X,W,R,
     stop('eem_ind must be a logical')
   }
 
+  # check that Rprobs is a vector of values between 0 and 1 inclusive
+  if (!is.numeric(Rprobs) | any(Rprobs < 0) | any(Rprobs > 1)  | length(Rprobs)!=length(A) ) {
+    stop('When specicified, Rprobs must be a vector of sampling probabilities between 0 and 1 inclusive')
+  }
+
   return(TRUE)
 
+}
+
+#' @title Truncate treatment propensity scores
+#'
+#' @description Truncate propensity scores to interval [c, 1-c]
+#' @param x A vector of treatment propensity scores
+#'
+#' @return A vector of treatment propensity scores truncated to interval [c, 1-c]
+#' @export
+#'
+truncate_g <- function(x, c=0.01) {
+  if (any( (x > 1 - c) | (x < c))) {
+    warning(cat("Propensity scores outside of ",c," and ",1-c,". Truncating to cutoffs"))
+  }
+  x <- ifelse(x > 1 - c, 1 - c, ifelse(x < c, c, x))
+  return(x)
+}
+
+#' @title Truncate complete case propensity scores
+#'
+#' @description Truncate propensity scores to interval [c, 1-c]
+#' @param x A vector of complete case propensity scores
+#'
+#' @return A vector of complete propensity scores truncated to interval [c, 1-c]
+#' @export
+#'
+truncate_r <- function(x, c=0.01) {
+  if (any( (x > 1 - c) | (x < c))) {
+    warning(cat("Complete case probabilities outside of ",c," and ",1-c,". Truncating to cutoffs"))
+  }
+  x <- ifelse(x > 1 - c, 1 - c, ifelse(x < c, c, x))
+  return(x)
 }
 
 
@@ -143,21 +193,21 @@ check_entry_errors <- function(Y,A,X,W,R,
 #' libraries to be used for the pseudo outcome regression
 #'
 #' @return A list of
-clean_sl_libraries <- function(sl_learners,
-                               m_sl_learners,g_sl_learners,
-                               r_sl_learners,po_sl_learners) {
+clean_learners <- function(default_learners,
+                               m_learners,g_learners,
+                               r_learners,po_learners) {
 
-  out_list <- list(sl_learners=sl_learners,
-                   m_sl_learners=sl_learners,
-                   g_sl_learners=sl_learners,
-                   r_sl_learners=sl_learners,
-                   po_sl_learners=sl_learners)
-  if (!is.null(sl_learners)) {
-    out_list <- lapply(out_list, function(x) if (is.null(x)) sl_learners else x)
+  out_list <- list(default_learners=default_learners,
+                   m_learners=m_learners,
+                   g_learners=g_learners,
+                   r_learners=r_learners,
+                   po_learners=po_learners)
+  if (!is.null(default_learners)) {
+    out_list <- lapply(out_list, function(x) if (is.null(x)) default_learners else x)
   } else {
-    if( any(sapply(list(m_sl_learners,g_sl_learners,r_sl_learners,po_sl_learners),
+    if( any(sapply(list(m_learners,g_learners,r_learners,po_learners),
                    is.null)) ) {
-      stop('Missing superlearner libraries. Make sure all libraries are specified, either through specifying default values through sl_learners or specifying learners for each nuisance function')
+      stop('Missing learner specifications. Make sure all learners are specified, either through specifying default values through default_learners or specifying learners for each nuisance function')
     }
   }
 
@@ -178,10 +228,6 @@ check_binary <- function(x) {
   } else {
     return(FALSE)
   }
-}
-
-make_output_obj <- function() {
-
 }
 
 
@@ -216,16 +262,16 @@ create_folds <- function(n, k) {
 
 
 
-#' @title Clean output from crossfit procedure
+#' @title Clean nuisance function output from crossfit procedure
 #'
-#' @description Transforms crossfit output into estimates with SEs for each
-#' estimand
+#' @description Transforms nuisance output across folds into a dataframe of avgerge
+#' prediction at each point for each nuisance function
 #'
-#' @param results Output from crossfit procedure
-#' @return A list of estimates with SEs
+#' @param results Nuisance functions output from drcmd_est
+#' @return A dataframe of averaged nuisance estimates across all folds
 #' @export
-clean_crossfit_output <- function(results) {
-
+clean_crossfit_nuis <- function(results) {
+  1
 }
 
 

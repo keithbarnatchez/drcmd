@@ -2,30 +2,41 @@
 % Please edit documentation in R/nuis.R
 \name{est_varphi_main}
 \alias{est_varphi_main}
-\title{est_varphi}
+\title{Perform pseudo-outcome regression}
 \usage{
-est_varphi_main(data, R, phi_1_hat, phi_0_hat, eem_ind, hal_ind, sl.lib)
+est_varphi_main(
+  idx,
+  R,
+  Z,
+  phi_1_hat,
+  phi_0_hat,
+  kappa_hat,
+  eem_ind,
+  po_learners
+)
 }
 \arguments{
-\item{data}{A data frame}
+\item{idx}{Indices to carry out estimation over}
 
-\item{R}{A character string containing randomization variable name}
+\item{R}{Binary missingness indicator, where 0 indicates missing data}
+
+\item{Z}{Dataframe containing all non-missing variables}
 
 \item{eem_ind}{A logical value indicating whether to estimate via EEM}
 
-\item{Y}{A character string containing outcome variable name}
+\item{Y}{Outcome variable. Can be continuous or binary}
 
-\item{A}{A character string containing treatment variable name}
+\item{A}{A binary treatment variable (1=treated, 0=control)}
 
-\item{X}{A character vector containing covariate variable names}
-
-\item{Z}{A character vector containing the names of the variables in Z}
+\item{X}{Dataframe containing baseline covariates}
 
 \item{phi_hat}{A list containing the estimate of phi}
 }
 \value{
-A list containing the estimate of E\link{phi|Z}
+A list containing the estimate of E\link{phi_a|Z} for a=0 and a=1
 }
 \description{
-Function for obtaining estimate of E\link{phi|Z}
+Function for obtaining estimate of E\link{phi_a|Z} through pseudo-outcome
+regression. Calls inner function to perform estimation, depending on whether
+user wishes to perform empirical efficiency maximization or not
 }

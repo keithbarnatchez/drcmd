@@ -2,28 +2,29 @@
 % Please edit documentation in R/nuis.R
 \name{est_varphi_eem}
 \alias{est_varphi_eem}
-\title{est_varphi_eem}
+\title{Perform pseudo-outcome regression with empirical efficiency maximization}
 \usage{
-est_varphi_eem(data, R, phi_1_hat, phi_0_hat, Rprobs, eem_ind, hal_ind, sl.lib)
+est_varphi_eem(idx, R, Z, phi_1_hat, phi_0_hat, kappa_hat, po_learners)
 }
 \arguments{
+\item{R}{Binary missingness indicator, where 0 indicates missing data}
+
+\item{Z}{Dataframe containing all non-missing variables}
+
+\item{phi_1_hat}{Vector of predicted phi under A=1}
+
+\item{phi_0_hat}{Vector of predicted phi under A=0}
+
+\item{po_learners}{A character vector containing the names of the superlearner algorithms}
+
 \item{data}{A data frame}
 
-\item{R}{A character string containing randomization variable name}
-
-\item{phi_1_hat}{A list containing the estimate of phi under A=1}
-
-\item{phi_0_hat}{A list containing the estimate of phi under A=0}
-
 \item{eem_ind}{A logical value indicating whether to estimate via EEM}
-
-\item{hal_ind}{A logical value indicating whether to estimate via HAL}
-
-\item{sl.lib}{A character vector containing the names of the superlearner algorithms}
 }
 \value{
-A list containing the estimate of E\link{phi|Z}
+A list containing the estimate of E\link{phi_a|Z} for a=0 and a=1
 }
 \description{
-Function for obtaining estimate of E\link{phi|Z} via empirical efficiency maximization
+Function for obtaining estimate of E\link{phi_a|Z} via empirical efficiency
+maximization
 }
