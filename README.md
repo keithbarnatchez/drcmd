@@ -8,7 +8,7 @@
 
 Users can fit nuisance functions through either SuperLearner or the highly-adaptive LASSO. 
 
-Please see -- for full technical details.
+Please see the package vignette and documentation for further details.
 
 ------------------------------------------------------------------------
 ## Installation
@@ -22,9 +22,8 @@ devtools::install_github('keithbarnatchez/drcmd')
 
 ```r
 # Params for functions
-hal_ind <- FALSE # TRUE = use highly-adaptive LASSO
-eem_ind <- FALSE # TRUE = fit PO regression with empirical efficiency maximiztion
-sl_learners <- 'SL.glm' # default superlearner libraries 
+eem_ind <- FALSE # TRUE = fit pseudo-outcome regression with empirical efficiency maximiztion
+default_learners <- 'SL.glm' # default learners used for nuisance functions 
 k <- 1 # number of cross-fitting folds
 #-------------------------------------------------------------------------------
 # Simulate simple missing outcome data structure
@@ -45,7 +44,3 @@ eem_ind=eem_ind,k=k)
 ## Citation
 
 ------------------------------------------------------------------------
-
-
-
-## References
