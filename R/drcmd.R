@@ -15,8 +15,8 @@
 #' @param Y Outcome variable. Can be continuous or binary
 #' @param A A binary treatment variable (1=treated, 0=control)
 #' @param X Dataframe containing baseline covariates
-#' @param W Dataframe containing variables solely predictive of missingness, but not
-#' a cause of the outcome or exposure.
+#' @param W (optional) Dataframe containing variables solely predictive of missingness,
+#'  but not a cause of the outcome or exposure.
 #' @param R (optional) A character string specifying the missingness indicator,
 #' where 0 indicates missing data. If not specified, the function will create the
 #' missingness indicator by identifying the missingness pattern in the data
@@ -212,6 +212,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   # Get varphi
   phi_1_hat <- phi_hat$phi_1_hat
   phi_0_hat <- phi_hat$phi_0_hat
+  # browser()
   varphi_hat <- est_varphi_main(test,R,Z,phi_1_hat,phi_0_hat,
                                 nuisance_ests$kappa_hat,
                                 eem_ind,
@@ -283,6 +284,7 @@ get_phi_hat <- function(Y, A, X, R, g_hat, m_a_hat, kappa_hat) {
 est_psi <- function(idx, R, Z,
                     kappa_hat, phi_hat,varphi_hat) {
 
+  # browser()
   n <- length(idx)
 
   # Set up necessary objects
@@ -290,10 +292,12 @@ est_psi <- function(idx, R, Z,
   phi_0_hat <- phi_hat$phi_0_hat
   varphi_1_hat <- varphi_hat$varphi_1_hat
   varphi_0_hat <- varphi_hat$varphi_0_hat
+  varphi_diff_hat <- varphi_hat$varphi_diff_hat
 
   # Form estimates of psi1 and psi0 via EICs
   psi_1_ic <- (R[idx]/kappa_hat[idx])*phi_1_hat[idx] - (R[idx]/kappa_hat[idx] - 1)*varphi_1_hat[idx]
   psi_0_ic <- (R[idx]/kappa_hat[idx])*phi_0_hat[idx] - (R[idx]/kappa_hat[idx] - 1)*varphi_0_hat[idx]
+  psi_ate_ic <- (R[idx]/kappa_hat[idx])*(phi_1_hat[idx] - phi_0_hat[idx]) - (R[idx]/kappa_hat[idx] - 1)*varphi_diff_hat[idx]
 
   # Get estimates of E[Y(1)] and E[Y(0)]
   psi_1_hat <- mean(psi_1_ic)
@@ -301,18 +305,21 @@ est_psi <- function(idx, R, Z,
 
   # Get estimates of contrasts
   psi_hat_ate <- psi_1_hat - psi_0_hat
+  psi_hat_ate_direct <- mean(psi_ate_ic)
   psi_hat_rr <- psi_1_hat/psi_0_hat # risk ratio (only useful if binary)
   psi_hat_or <- (psi_1_hat/(1-psi_1_hat)) / (psi_0_hat/(1-psi_0_hat)) # odds ratio (only useful if binary)
 
   return(list(ests = data.frame(psi_1_hat=mean(psi_1_ic),
                                 psi_0_hat=mean(psi_0_ic),
                                 psi_hat_ate=mean(psi_1_ic - psi_0_ic),
+                                psi_hat_ate_direct=mean(psi_ate_ic),
                                 psi_hat_rr=mean(psi_1_ic)/mean(psi_0_ic),
                                 psi_hat_or=(mean(psi_1_ic)/(1-mean(psi_1_ic))) / (mean(psi_0_ic)/(1-mean(psi_0_ic)))
               ),
               vars = data.frame(psi_1_hat=var(psi_1_ic)/n,
                                 psi_0_hat=var(psi_0_ic)/n,
                                 psi_hat_ate=var(psi_1_ic - psi_0_ic)/n,
+                                psi_hat_ate_direct=var(psi_ate_ic)/n,
                                 psi_hat_rr=var(psi_1_ic)/var(psi_0_ic)/n,
                                 psi_hat_or=((var(psi_1_ic)/(1-var(psi_1_ic))) / (var(psi_0_ic)/(1-var(psi_0_ic))))/n
               )

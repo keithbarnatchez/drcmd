@@ -2,7 +2,7 @@
 % Please edit documentation in R/drcmd.R
 \name{get_phi_hat}
 \alias{get_phi_hat}
-\title{Estimate full data EIF}
+\title{Contruct full data EIF estimate}
 \usage{
 get_phi_hat(Y, A, X, R, g_hat, m_a_hat, kappa_hat)
 }
@@ -15,15 +15,15 @@ get_phi_hat(Y, A, X, R, g_hat, m_a_hat, kappa_hat)
 
 \item{R}{Binary missingness indicator}
 
-\item{g_hat}{A fitted propensity score model}
+\item{g_hat}{Propensity score predictions}
 
-\item{m_a_hat}{A fitted outcome model}
+\item{m_a_hat}{List of outcome predictions under A=0/1}
 
 \item{kappa_hat}{Missingness probabilities}
 
 \item{Z}{Dataframe containing all variables that are never subject to missingness}
 }
 \description{
-Function for obtaining estimate of E\link{phi|Z}, where phi is the
-full data EIF, through weighted regression on complete cases
+Function for constructing estimate of the full data EIF, given
+propensity score and outcome model fits
 }

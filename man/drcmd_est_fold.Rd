@@ -16,7 +16,8 @@ drcmd_est_fold(
   r_learners,
   po_learners,
   eem_ind,
-  Rprobs
+  Rprobs,
+  c
 )
 }
 \arguments{
@@ -49,7 +50,7 @@ pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner li
 
 \item{Rprobs}{A vector of probabilities for R}
 
-\item{k}{A numeric indicating the number of folds for cross-fitting}
+\item{c}{}
 }
 \value{
 A list of results from estimation on current fold

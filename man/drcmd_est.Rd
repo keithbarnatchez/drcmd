@@ -16,7 +16,8 @@ drcmd_est(
   po_learners,
   eem_ind,
   Rprobs,
-  k
+  k,
+  c
 )
 }
 \arguments{

@@ -15,7 +15,7 @@ est_g(idx, A, X, R, kappa_hat, g_learners)
 
 \item{R}{Binary missingness indicator, where 0 indicates missing data}
 
-\item{g_learners}{A character vector containing the names of the superlearner algorithms}
+\item{g_learners}{A character vector containing the names of the learners for estimation}
 
 \item{Y}{Outcome variable. Can be continuous or binary}
 }
@@ -24,4 +24,15 @@ A list containing the estimate of E\link{Y|A=a,X,W}
 }
 \description{
 Function for obtaining propensity score estimates
+}
+\examples{
+\dontrun{
+n <- 1000
+X <- rnorm(n)
+A <- rbinom(n,1,plogis(X))
+R <- rbinom(n,1,plogis(X))
+X <- data.frame(X)
+g_learners <- c('SL.glm','SL.gam')
+est_g(idx=1:n, A=A, X=X, R=R, kappa_hat=kappa_hat, g_learners=g_learners)
+}
 }

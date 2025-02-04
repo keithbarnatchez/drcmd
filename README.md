@@ -23,7 +23,7 @@ devtools::install_github('keithbarnatchez/drcmd')
 ```r
 # Params for functions
 eem_ind <- FALSE # TRUE = fit pseudo-outcome regression with empirical efficiency maximiztion
-default_learners <- 'SL.glm' # default learners used for nuisance functions 
+default_learners <- c('SL.glm','SL.gam') # default learners used for nuisance functions 
 k <- 1 # number of cross-fitting folds
 #-------------------------------------------------------------------------------
 # Simulate simple missing outcome data structure
@@ -34,9 +34,8 @@ Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
 # Make Y NA if R==0
 Y[R==0] <- NA
 
-
 drcmd_res <- drcmd(Y,A,X, 
-hal_ind=FALSE,sl_learners=sl_learners,
+default_learners=default_learners,
 eem_ind=eem_ind,k=k)
 ```
 

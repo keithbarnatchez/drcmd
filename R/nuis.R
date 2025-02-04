@@ -23,6 +23,7 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
                               m_learners,g_learners,r_learners,
                               Rprobs,c) {
 
+  # browser()
   kappa_hat <- Rprobs
   if (is.na(Rprobs)) {
     kappa_hat <- est_kappa(idx,Z,R,r_learners)
@@ -111,7 +112,8 @@ est_g <- function(idx,A, X, R, kappa_hat,
                   g_learners) {
 
   if (all(g_learners=='hal')) { # estimate via HAL
-    g_hat<- hal9001::fit_hal(Y=A[idx],X=X[idx,,drop=FALSE],weights=R[idx]/kappa_hat[idx])
+    g_hat<- hal9001::fit_hal(Y=A[idx],X=X[idx,,drop=FALSE],weights=R[idx]/kappa_hat[idx],
+                             family=binomial())
     g_hat <- predict(g_hat, new_data=X)
   } else { # estimate via SL
     g_hat <- SuperLearner::SuperLearner(Y=A[idx],X=X[idx,,drop=FALSE],
@@ -215,12 +217,16 @@ est_varphi <- function(idx, R, Z,
                        phi_1_hat, phi_0_hat,
                        po_learners) {
 
+  print('it mid')
 
   if (all(po_learners=='hal')) { # estimate via HAL
     varphi_1_hat <- hal9001::fit_hal(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
     varphi_0_hat <- hal9001::fit_hal(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
+    varphi_diff_hat <- hal9001::fit_hal(Y=phi_1_hat[idx]-phi_0_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
+
     varphi_1_hat <- predict(varphi_1_hat, new_data=Z)
     varphi_0_hat <- predict(varphi_0_hat, new_data=Z)
+    varphi_diff_hat <- predict(varphi_diff_hat, new_data=Z)
   } else { # estimate via SL
     varphi_1_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],
                                                family=gaussian(),
@@ -230,11 +236,17 @@ est_varphi <- function(idx, R, Z,
                                                family=gaussian(),
                                                SL.library=po_learners,
                                                obsWeights=R[idx])
+    varphi_diff_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx]-phi_0_hat[idx],X=Z[idx,,drop=FALSE],
+                                                 family=gaussian(),
+                                                 SL.library=po_learners,
+                                                 obsWeights=R[idx])
     varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
     varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
+    varphi_diff_hat <- predict(varphi_diff_hat, newdata=Z)$pred
   }
 
-  return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat))
+  return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat,
+              varphi_diff_hat=varphi_diff_hat))
 }
 
 
@@ -257,6 +269,8 @@ est_varphi_eem <- function(idx, R, Z,
                            kappa_hat,
                            po_learners) {
 
+  print('it evm')
+
   # Make pseudo outcomes
   ytilde1 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_1_hat
   ytilde0 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_0_hat
@@ -268,8 +282,11 @@ est_varphi_eem <- function(idx, R, Z,
                                    weights=(R[idx]/kappa_hat[idx] - 1)^2)
     varphi_0_hat <- hal9001::fit_hal(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
                                    weights=(R[idx]/kappa_hat[idx] - 1)^2)
+    varphi_diff_hat <- hal9001::fit_hal(Y=ytilde1[idx]-ytilde0[idx],X=Z[idx,,drop=FALSE],
+                                     weights=(R[idx]/kappa_hat[idx] - 1)^2)
     varphi_1_hat <- predict(varphi_1_hat, new_data=Z)
     varphi_0_hat <- predict(varphi_0_hat, new_data=Z)
+    varphi_diff_hat <- predict(varphi_diff_hat, new_data=Z)
 
   } else { # estimate via SL
     varphi_1_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
@@ -280,6 +297,12 @@ est_varphi_eem <- function(idx, R, Z,
                                                obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
     varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
     varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
+
+    varphi_diff_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx]-ytilde0[idx],X=Z[idx,,drop=FALSE],
+                                                  family=gaussian(),SL.library=po_learners,
+                                                  obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
+    varphi_diff_hat <- predict(varphi_diff_hat, newdata=Z)$pred
   }
-  return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat))
+  return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat,
+              varphi_diff_hat=varphi_diff_hat))
 }

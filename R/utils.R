@@ -97,12 +97,12 @@ check_entry_errors <- function(Y,A,X,W,R,
                                k,nboot) {
 
  # Make sure Y is a vector
-  if (!is.vector(Y)) {
+  if (!is.double(Y) & !is.integer(Y)) {
     stop('Y must be a vector')
   }
 
   # Make sure A is a vector
-  if (!is.vector(A) ) {
+  if (!is.vector(A) & !is.integer(A) ) {
     stop('A must be a vector')
   }
 
@@ -112,12 +112,12 @@ check_entry_errors <- function(Y,A,X,W,R,
   }
 
   # Make sure X is a data frame
-  if (!is.data.frame(X) | (length(X)>1) ) {
+  if (!is.data.frame(X) ) {
     stop('X must be a data frame')
   }
 
   # Make sure W is a data frame
-  if (!is.data.frame(W) | (length(W)>1) ) {
+  if (!is.data.frame(W)  ) {
     stop('W must be a data frame')
   }
 

@@ -6,8 +6,19 @@
 \usage{
 \method{plot}{drcmd}(x, type = "All")
 }
+\arguments{
+\item{x}{An object of class drcmd}
+
+\item{type}{Character denoting type of plot to generate. Must be one of 'All', 'PO',
+'IC', 'g_hat', 'r_hat'}
+}
+\value{
+No return value. Called for plotting results from drcmd object
+}
 \description{
 S3 method for plotting results from drcmd object. Plots are
 available for the following: (1) psuedo outcome regression fit, (2) influence
-curve distribution,
+curve distribution, (3) treatment propensity score distribution, and (4)
+complete-case propensity score distribution. When type='All' (the default),
+user can view all four plots in succession interactively
 }

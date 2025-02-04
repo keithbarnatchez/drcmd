@@ -18,6 +18,7 @@ drcmd(
   eem_ind = FALSE,
   Rprobs = NA,
   k = 1,
+  c = 0.01,
   nboot = 0
 )
 }
@@ -28,8 +29,8 @@ drcmd(
 
 \item{X}{Dataframe containing baseline covariates}
 
-\item{W}{Dataframe containing variables solely predictive of missingness, but not
-a cause of the outcome or exposure.}
+\item{W}{(optional) Dataframe containing variables solely predictive of missingness,
+but not a cause of the outcome or exposure.}
 
 \item{R}{(optional) A character string specifying the missingness indicator,
 where 0 indicates missing data. If not specified, the function will create the
@@ -56,6 +57,9 @@ are missing (e.g. two-phase sample designs). Defaults to NA, in which case
 missingness probabilities are estimated.}
 
 \item{k}{A numeric indicating the number of folds for cross-fitting}
+
+\item{c}{Cutoff for treatment and complete case propensity scores. Estimates outside
+of \link{c, 1-c} are set to c or 1-c, respectively}
 
 \item{nboot}{A numeric indicating the number of desired bootstrap samples.
 If >0, uses bootstrap to obtain SEs. If =0, uses asymptotic analytical SEs.}

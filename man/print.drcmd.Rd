@@ -11,5 +11,6 @@
 }
 \description{
 S3 method for printing drcmd objects. Provides concise summary
-of results, and prints values of optional arguments
+of results, and prints values of optional arguments. Use summary() function for
+more detailed summary of results.
 }

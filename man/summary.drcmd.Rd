@@ -7,6 +7,8 @@
 \method{summary}{drcmd}(x, detail = FALSE, ...)
 }
 \arguments{
+\item{detail}{Logical. If TRUE, print out values of user-supplied arguments}
+
 \item{results}{An object of class drcmd}
 }
 \value{
@@ -15,5 +17,6 @@ No return value. Called for printing a detailed results summary
 \description{
 S3 method for summarizng drcmd results. Provides detailed summary
 of estimation output, while also providing information on missingness
-mechanism. Can optionally print out values of user-supplied arguments
+mechanism. Can optionally print out values of user-supplied arguments by setting
+detail=TRUE
 }
