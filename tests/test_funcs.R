@@ -13,6 +13,7 @@ eem_ind <- FALSE
 default_learners <- 'SL.glm'
 #-------------------------------------------------------------------------------
 # Make a couple functions for simming simple data structure
+
 n <- 1e3
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
 Y <- rnorm(n) + A + X + X^2 + A*X + sin(X)
@@ -22,9 +23,6 @@ Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
 Y[R==0] <- NA
 
 df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
-
-# X = data.frame(cbind(X,X))
-W = X[,0]
 
 drcmd_res <- drcmd(Y,A,X, default_learners= c('SL.glm','SL.glm.interaction','SL.earth','SL.gam'),
                    eem_ind=TRUE,k=1,Rprobs=plogis(X$X))
@@ -52,7 +50,6 @@ drcmd_res <- drcmd(Y,A,X, default_learners= c('SL.glm','SL.glm.interaction','SL.
 #-------------------------------------------------------------------------------
 # Missng outcome and proxy used
 
-
 n <- 1e3
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
 Y <- rnorm(n) + A + X + X^2 + A*X + sin(X)
@@ -69,7 +66,8 @@ W <- data.frame(Ystar)
 
 drcmd_res <- drcmd(Y,A,X,
                    W=data.frame(Ystar),
-                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth','SL.gam'),
+                   default_learners= c('SL.glm','SL.glm.interaction',
+                                       'SL.earth','SL.gam'),
                    eem_ind=TRUE,k=2)
 summary(drcmd_res)
 #-------------------------------------------------------------------------------
@@ -120,16 +118,9 @@ gamma <- rep(1,p) # interaction effects with tmt c(0.5,2.1,-1.2)
 eta <- c(0.6,-0.2,0.8,0.1,-0.3)
 rho=0.2
 #-------------------------------------------------------------------------------
+# Brief sim emulating paper 2 params
+
 trim <- function(p,cutoff=0.05) {
-  #' Function for trimming probabilities
-  #'
-  #' Arguments:
-  #' - p: A vector of probabilities
-  #' - cutoff: The cutoff value
-  #'
-  #' Outputs:
-  #' - A vector of probabilities, with values below/above the cutoff set to the
-  #'  cutoff
 
   # trim lower piece
   p <- ifelse(p<cutoff,cutoff,p)
@@ -147,7 +138,7 @@ expit <- function(o) {
 nsim <- 70
 drcmd_evm_ests <- rep(NA,nsim)
 drcmd_mid_ests <- rep(NA,nsim)
-drcmd_beast_ests <- rep(NA,nsim)
+drcmd_direct_ests <- rep(NA,nsim)
 oracle_ests <- rep(NA,nsim)
 
 drcmd_evm_cov <- rep(NA,nsim)
@@ -187,18 +178,18 @@ for (ss in 1:nsim) {
                      W=data.frame(Ystar,Astar),
                      default_learners= c('SL.glm.interaction'),
                      po_learners = 'SL.gam',
-                     eem_ind=TRUE,k=1) ; drcmd_res_evm
+                     eem_ind=TRUE,k=1,Rprobs=Rprobs) ; drcmd_res_evm
 
   # Estimate without eem
   drcmd_res_mid <- drcmd(Y,A,X,
                       W=data.frame(Ystar,Astar),
                       default_learners= c('SL.glm.interaction'),
                       po_learners = 'SL.gam',
-                      eem_ind=FALSE,k=1)
+                      eem_ind=FALSE,k=1,Rprobs=Rprobs)
 
   # evm results
   drcmd_evm_ests[ss] <- drcmd_res_evm$results$estimates$psi_hat_ate
-  drcmd_beast_ests[ss] <- drcmd_res_evm$results$estimates$psi_hat_ate_beast
+  drcmd_direct_ests[ss] <- drcmd_res_evm$results$estimates$psi_hat_ate_direct
   temp_int <- compute_CI(drcmd_res_evm$results$estimates$psi_hat_ate,
                          drcmd_res_evm$results$ses$psi_hat_ate)
   drcmd_evm_cov[ss] <- (temp_int[1] < 2.5) & (temp_int[2] > 2.5)
@@ -210,15 +201,5 @@ for (ss in 1:nsim) {
   drcmd_mid_cov[ss] <- (temp_int[1] < 2.5) & (temp_int[2] > 2.5)
 }
 
-mean(drcmd_evm_ests)
-mean(drcmd_mid_ests)
-mean(drcmd_beast_ests)
-mean(oracle_ests)
 
-sd(drcmd_evm_ests)
-sd(drcmd_mid_ests)
-sd(drcmd_beast_ests)
-
-mean(drcmd_evm_cov)
-mean(drcmd_mid_cov)
 

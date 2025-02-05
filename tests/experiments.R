@@ -1,8 +1,10 @@
 # Compare performance of drcmd to tmle, drtmle, and AIPW when outcome is MAR
+# (All 4 packages can handle this setting)
 #-------------------------------------------------------------------------------
 # set up main params
 rm(list=ls())
-n_grid <- c(500,1000,2500,5000)
+n_grid <- c(500,1000,2500,5000) # sample sizes
+nsim <- 100 # sims per grid point
 #-------------------------------------------------------------------------------
 # Load in relevant stuff from drcmd
 
@@ -10,12 +12,11 @@ source('../R/utils.R')
 source('../R/drcmd.R')
 source('../R/nuis.R')
 source('../R/methods.R')
-library(tictoc)
+library(tictoc) # for timing packages
 #-------------------------------------------------------------------------------
 # Params for drcmd
 
-hal_ind <- FALSE
-eem_ind <- TRUE
+eem_ind <- TRUE # estimate with empirical efficiency maximization
 sl_learners <- c('SL.glm','SL.glm.interaction','SL.earth','SL.gam')
 k <- 1
 #-------------------------------------------------------------------------------
@@ -27,7 +28,7 @@ drtmleests <- rep(NA,100) ; drtmletimes <- rep(NA,100)
 
 res_df <- data.frame()
 for (n in n_grid) {
-for (ss in 1:10) {
+for (ss in 1:nsim) {
   print(ss)
   # Simulate data
   X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
