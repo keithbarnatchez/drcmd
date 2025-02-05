@@ -217,8 +217,6 @@ est_varphi <- function(idx, R, Z,
                        phi_1_hat, phi_0_hat,
                        po_learners) {
 
-  print('it mid')
-
   if (all(po_learners=='hal')) { # estimate via HAL
     varphi_1_hat <- hal9001::fit_hal(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
     varphi_0_hat <- hal9001::fit_hal(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],weights=R[idx])
@@ -268,8 +266,6 @@ est_varphi_eem <- function(idx, R, Z,
                            phi_1_hat, phi_0_hat,
                            kappa_hat,
                            po_learners) {
-
-  print('it evm')
 
   # Make pseudo outcomes
   ytilde1 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_1_hat

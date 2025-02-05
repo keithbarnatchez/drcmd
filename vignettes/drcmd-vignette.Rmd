@@ -41,7 +41,7 @@ source('../R/methods.R')
 ## Installation
 
 
-```{r install, eval=FALSE} 
+```{r install} 
 devtools::install_github('keithbarnatchez/drcmd')
 ```
 
@@ -56,7 +56,7 @@ We will assume a cheap proxy variable for $Y$, denoted $Y^*$, is available for a
 n <- 1e3
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
 Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
-Y[R==0] <- NA # Make Y NA is R==0
+Y[R==0] <- NA # Make Y NA if R==0
 
 df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
 head(df)
@@ -72,12 +72,12 @@ $$
 \begin{aligned}
 &1. \  m_a(X) = \mathbb{E}(Y|A=a,X) \\
 &2. \ g_a(X) = \mathbb{P}(A=a|X) \\
-&3. \ r(X)  = \mathbb{P}(R=1|Z) \\
+&3. \ r(Z)  = \mathbb{P}(R=1|Z) \\
 &4. \ \varphi_a(Z) = \mathbb{E}(\chi_a(X,A,Y) | Z, R=1),
 \end{aligned}
 $$
 
-where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the pseudo-outcome formed by the efficient influence function for estimating the counterfactul mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$. Users can estimate nuisance functions through Super Learner via the `SuperLearner` package or the Highly-Adaptive LASSO (HAL) via the `hal9001` package. 
+where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactul mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$. Users can estimate nuisance functions through Super Learner via the `SuperLearner` package or the Highly-Adaptive LASSO (HAL) via the `hal9001` package. 
 
 Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To estimate
 
@@ -99,7 +99,7 @@ Users can specify specific learners through nuisance-specific arguments, which w
 
 
 ```{r drcmd-specific}
-res <- drcmd(Y=Y, A=A, X=X,
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners=c('SL.glm','SL.earth'),
              po_learners = 'hal')
 ```
@@ -140,7 +140,7 @@ plot(res)
 ### Cross-fitting
 
 ```{r drcmd_simple, eval=FALSE}
-res <- drcmd(Y=Y, A=A, X=X,
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners='SL.glm',
              k=3)
 ```
@@ -153,7 +153,7 @@ In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to 
 put formula here
 
 ```{r drcmd_eem, eval=FALSE}
-res <- drcmd(Y=Y, A=A, X=X,
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners='SL.glm',
              k=1,
              eem_ind=TRUE)
