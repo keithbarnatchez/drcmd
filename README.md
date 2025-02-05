@@ -42,7 +42,7 @@ eem_ind=eem_ind,k=k)
 ------------------------------------------------------------------------
 ## Citation
 
-Kennedy, E. H. (2016). *Semiparametric theory and empirical processes in causal inference* .Statistical causal inferences and their applications in public health research, 141-167.
+Kennedy, E. H. (2016). *Semiparametric theory and empirical processes in causal inference*. Statistical causal inferences and their applications in public health research, 141-167.
 
 Tsiatis, A. A. (2006). *Semiparametric theory and missing data* (Vol. 4). New York: Springer.
 
