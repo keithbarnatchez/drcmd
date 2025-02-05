@@ -47,4 +47,5 @@ Kennedy, E. H. (2016). *Semiparametric theory and empirical processes in causal 
 Tsiatis, A. A. (2006). *Semiparametric theory and missing data* (Vol. 4). New York: Springer.
 
 Laan, M. J., & Robins, J. M. (2003). *Unified methods for censored longitudinal data and causality*. Springer New York.
+
 ------------------------------------------------------------------------
