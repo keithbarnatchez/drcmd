@@ -34,7 +34,7 @@ Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
 # Make Y NA if R==0
 Y[R==0] <- NA
 
-drcmd_res <- drcmd(Y,A,X, 
+drcmd_res <- drcmd::drcmd(Y,A,X, 
 default_learners=default_learners,
 eem_ind=eem_ind,k=k)
 ```
