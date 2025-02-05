@@ -24,10 +24,10 @@ vignette: >
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE)
-source('../R/utils.R')
-source('../R/drcmd.R')
-source('../R/nuis.R')
-source('../R/methods.R')
+# source('../R/utils.R')
+# source('../R/drcmd.R')
+# source('../R/nuis.R')
+# source('../R/methods.R')
 ```
 
 # Introduction \label{intro}
@@ -41,7 +41,7 @@ source('../R/methods.R')
 ## Installation
 
 
-```{r install} 
+```{r install, eval=FALSE} 
 devtools::install_github('keithbarnatchez/drcmd')
 ```
 
@@ -49,8 +49,16 @@ Note: Eventually we'll have a CRAN option as well
 
 ## Estimation of causal effects
 
-To illustrate the use of the `drcmd` package, we will consider a simple missing data problem where the outcome of interest $Y$ is missing at random conditional on measured covariates $\mathbf X$: $Y \perp R | X$.
-We will assume a cheap proxy variable for $Y$, denoted $Y^*$, is available for all subjects but not predictive of missingness (so that it is not necessary to satisfy the MAR assumption).
+To illustrate the use of the `drcmd` package, we will consider a missing data problem where the outcome of interest $Y$ is missing at random conditional on measured covariates $\mathbf X$: $Y \perp R | X$. We will assume a cheap, noisy proxy measurement for $Y$, denoted $Y^*$, is available for all subjects but not predictive of missingness (so that it is not necessary to satisfy the MAR assumption), resulting in the following simple data generating process:
+
+$$
+\begin{aligned}
+X & \sim N(0,1) \ \ \ \ \ \  &\text{(Covariates)} \\
+A|X & \sim \text{Bernoulli}(p = \text{logit}^{-1}(X)) \ \ \ \ \ \  &\text{(Treatment)} \\
+Y|A,X & \sim N(\mu=1 + A + X, \sigma^2=1) \ \ \ \ \ \  &\text{(Outcome)} \\
+Y^* & = Y + \varepsilon, \ \varepsilon \sim N(\mu=0,\sigma^2 = 1/4) \ \ \ \ \ \  &\text{(Outcome Proxy)} \\
+\end{aligned}
+$$
 
 ```{r simdata}
 n <- 1e3
@@ -91,17 +99,17 @@ res <- drcmd(Y=Y, A=A, X=X,
 To estimate all nuisance functions with the highly-adaptive LASSO, users can specify the `default_learners` argument as `hal`.
 
 ```{r drcmd-hal, eval=FALSE}
-res <- drcmd(Y=Y, A=A, X=X,
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners='hal')
 ```
 
-Users can specify specific learners through nuisance-specific arguments, which will overwrite the learners specified in `default_learners` for that particular nuisance function if `default_learners` is specified. For example, to estimate the pseudo-outcome regression through HAL, and all other nuisance functions with a Super Learner ensemble of GLMs and splines, we can make the following call to `drcmd()`:
+Users can specify specific learners through nuisance-specific arguments, which will overwrite the learners specified in `default_learners` for that particular nuisance function if `default_learners` is specified. For example, to estimate the pseudo-outcome regression through generalized additive models (GAMs), and all other nuisance functions with a Super Learner ensemble of GLMs and splines, we can make the following call to `drcmd()`:
 
 
 ```{r drcmd-specific}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners=c('SL.glm','SL.earth'),
-             po_learners = 'hal')
+             po_learners = 'SL.gam')
 ```
 
 Users can view a summary of the estimation procedure by calling the `summary()` function, which provides point estimates, standard errors and 95\% CIs for main causal estimands. By default, `drcmd` obtains estimates of $\mathbb{E}[Y(1)$, $\mathbb{E}[Y(0)]$, and the average treatment effect (ATE) $\mathbb{E}[Y(1)-Y(0)]$. 
@@ -119,6 +127,12 @@ After running `drcmd()`, numerous objects are stored within the resulting output
 - `R`: Binary complete case indicator, where 1 denotes a complete case
 - `U`: Names of variables with partially missing values
 - `Z`: Names of variables with no missing values
+
+Users can obtain a detailed summary by specifying `detail=TRUE` in the `summary` function:
+
+```{r drcmd_summary_detail}
+summary(res,detail=TRUE)
+```
 
 ## Additional features
 
