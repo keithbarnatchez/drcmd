@@ -19,12 +19,21 @@ find_missing_pattern <- function(Y,A,X,W) {
 
   # find variables that are never missing
   never_missing <- colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)]
+  if(length(never_missing) == 0) {
+    stop("Error: drcmd requires data to have at least one variable that is never missing")
+  }
 
   # find variables that are sometimes missing
   sometimes_missing <- colnames(data)[apply(data,2,function(x) sum(is.na(x))>0)]
 
   # make variable that indicates complete cases and df of all complete data
   R <- as.numeric(apply(data,1,function(x) sum(is.na(x))==0))
+  if (all(R == 0)) {
+    stop("Error: drcmd requires data to have at least one complete case")
+  }
+  if (mean(R) < 0.01) {
+    warning('Small number of complete cases. Results may be unstable')
+  }
   Z <- data[,colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)],drop=FALSE]
 
   # If any values of Y, X or Z equal NA, set them to 0
@@ -290,3 +299,4 @@ create_folds <- function(n, k) {
 clean_crossfit_nuis <- function(results) {
   1
 }
+

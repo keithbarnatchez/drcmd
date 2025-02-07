@@ -25,7 +25,7 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 
   # browser()
   kappa_hat <- Rprobs
-  if (is.na(Rprobs)) {
+  if (is.na(Rprobs) ) {
     kappa_hat <- est_kappa(idx,Z,R,r_learners)
   }
 
@@ -164,7 +164,6 @@ est_kappa <- function (idx,Z, R,
 
 }
 
-
 #' @title Perform pseudo-outcome regression
 #'
 #' @description Function for obtaining estimate of E[phi_a|Z] through pseudo-outcome
@@ -187,6 +186,11 @@ est_varphi_main <- function(idx, R,Z,
                             eem_ind,
                             po_learners){
 
+  if (all(R)==1) { # when no missing data at all, no need for pseudo-outcome reg
+    return(list(varphi_1_hat=0,
+                varphi_0_hat=0,
+                varphi_diff_hat=0))
+  }
 
   if (eem_ind==TRUE) { # estimate via EEM
     return(est_varphi_eem(idx, R, Z,
@@ -301,4 +305,27 @@ est_varphi_eem <- function(idx, R, Z,
   }
   return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat,
               varphi_diff_hat=varphi_diff_hat))
+}
+
+#' @title SuperLearner wrapper for the highly-adaptive lasso
+#'
+#' @description Wrapper for the highly-adaptive lasso (HAL) algorithm
+#'implemented in the hal9001 package
+SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
+  # Fit HAL model
+  fit <- hal9001::fit_hal(X = X, Y = Y, family = family$family,
+                          weights = obsWeights, ...)
+
+  # Predict on new data
+  pred <- predict(fit, new_data = newX)
+
+  # Return in required format
+  fit_obj <- list(object = fit)
+  class(fit_obj) <- "SL.hal9001"
+  return(list(pred = pred, fit = fit_obj))
+}
+
+# Prediction function for SuperLearner compatibility
+predict.SL.hal9001 <- function(object, newdata, ...) {
+  predict(object$object, new_data = newdata)
 }

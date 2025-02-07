@@ -10,7 +10,7 @@ source('../R/methods.R')
 # Optional params for drcmd
 
 eem_ind <- FALSE
-default_learners <- 'SL.glm'
+default_learners <- 'hal'
 #-------------------------------------------------------------------------------
 # Make a couple functions for simming simple data structure
 
@@ -24,8 +24,10 @@ Y[R==0] <- NA
 
 df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
 
-drcmd_res <- drcmd(Y,A,X, default_learners= c('SL.glm','SL.glm.interaction','SL.earth','SL.gam'),
-                   eem_ind=TRUE,k=1,Rprobs=plogis(X$X))
+drcmd_res <- drcmd(Y,A,X, default_learners= c('SL.glm'),
+                   po_learners='SL.hal9001',
+                   eem_ind=TRUE,k=1, Rprobs=plogis(X$X))
+
 summary(drcmd_res)
 plot(drcmd_res)
 #-------------------------------------------------------------------------------
