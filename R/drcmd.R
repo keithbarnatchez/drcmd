@@ -195,11 +195,11 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
                            eem_ind,Rprobs,c) {
 
-  # Get the training and test data
+  # Get training and test data indices
   train <- splits$train
   test <- splits$test
 
-  # Get the nuisance estimates
+  # Get nuisance estimates
   nuisance_ests <- get_nuisance_ests(train,Y,A,X,Z,R,
                                      m_learners,g_learners,r_learners,
                                      Rprobs,c)
@@ -209,10 +209,9 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                       nuisance_ests$g_hat,nuisance_ests$m_a_hat,
                       nuisance_ests$kappa_hat)
 
-  # Get varphi
+  # Estimate varphi via pseudo-outcome regression
   phi_1_hat <- phi_hat$phi_1_hat
   phi_0_hat <- phi_hat$phi_0_hat
-  # browser()
   varphi_hat <- est_varphi_main(test,R,Z,phi_1_hat,phi_0_hat,
                                 nuisance_ests$kappa_hat,
                                 eem_ind,

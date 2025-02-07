@@ -287,6 +287,18 @@ create_folds <- function(n, k) {
   return(splits)
 }
 
+#' @title List SuperLearner libraries
+#'
+#' @description List all available SuperLearner libraries
+#' @return A character vector of all available SuperLearner libraries
+#' @export
+get_sl_libraries <- function() {
+  sink(tempfile())  # Redirect console output
+  all_wrappers <- suppressMessages(SuperLearner::listWrappers())
+  sink()  # Restore console output
+  SL_wrappers <- c(all_wrappers[grep("^SL\\.", all_wrappers)], "SL.hal9001")
+  return(SL_wrappers)
+}
 
 #' @title Clean nuisance function output from crossfit procedure
 #'
@@ -299,4 +311,6 @@ create_folds <- function(n, k) {
 clean_crossfit_nuis <- function(results) {
   1
 }
+
+
 
