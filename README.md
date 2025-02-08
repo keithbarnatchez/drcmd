@@ -6,9 +6,11 @@
 
 `drcmd` is an R package for implementing doubly-robust estimators of counterfactual means in the presence of general missing data patterns. `drcmd` leverages links between influence curves for counterfactual means under no missingngess, and the influence curve corresponding to the missingness pattern in the user-supplied data. Detailed discussion of the theoretical details behind the methods used in `drcmd` can be found in Kennedy (2016), Tisatis (2006), and van der Laan and Robins (2003).
 
-Users can fit nuisance functions through either SuperLearner or the highly-adaptive LASSO. 
+Users can fit nuisance functions through Super Learner (a stacking algorithm). 
 
 Please see the package vignette and documentation for further details.
+
+**Note:** Package is still in development. Please frequently check for package updates.
 
 ------------------------------------------------------------------------
 ## Installation
