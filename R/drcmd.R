@@ -63,7 +63,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   require(SuperLearner)
 
   # Proxy variables may be empty
-  if (is.na(W)) {
+  if (any(is.na(W))) {
     W <- X[,0]
   }
 
