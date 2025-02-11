@@ -25,7 +25,7 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 
   # browser()
   kappa_hat <- Rprobs
-  if (is.na(Rprobs) ) {
+  if (any(is.na(Rprobs) )) {
     kappa_hat <- est_kappa(idx,Z,R,r_learners)
   }
 
