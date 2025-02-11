@@ -141,7 +141,7 @@ check_entry_errors <- function(Y,A,X,W,R,
   }
 
   # check that Rprobs is a vector of values between 0 and 1 inclusive
-  if (!is.na(Rprobs)) {
+  if (!any(is.na(Rprobs))) {
     if (!is.numeric(Rprobs) | any(Rprobs < 0) | any(Rprobs > 1)  | length(Rprobs)!=length(A) ) {
       stop('When specicified, Rprobs must be a vector of sampling probabilities between 0 and 1 inclusive')
     }
