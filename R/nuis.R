@@ -21,21 +21,22 @@
 #' @export
 get_nuisance_ests <- function(idx,Y,A,X,Z,R,
                               m_learners,g_learners,r_learners,
-                              Rprobs,c) {
+                              Rprobs,cutoff) {
 
-  # browser()
   kappa_hat <- Rprobs
   if (any(is.na(Rprobs) )) {
     kappa_hat <- est_kappa(idx,Z,R,r_learners)
+  }
+  if (!is.null(cutoff)) {
+    kappa_hat <- truncate_r(kappa_hat,cutoff)
   }
 
   m_a_hat <- est_m_a(idx,Y,A,X,R,kappa_hat,m_learners)
   g_hat <- est_g(idx,A,X,R,kappa_hat,g_learners)
 
   # Trimming
-  if (!is.null(c)) {
-    kappa_hat <- truncate_r(kappa_hat,c)
-    g_hat <- truncate_g(g_hat,c)
+  if (!is.null(cutoff)) {
+    g_hat <- truncate_g(g_hat,cutoff)
   }
 
   return(list(kappa_hat=kappa_hat,m_a_hat=m_a_hat,g_hat=g_hat))
@@ -60,7 +61,11 @@ est_m_a <- function(idx, Y, A, X, R,
                     m_learners) {
 
   # note: need to make family checking automatic
-  yfam <- check_binary(Y)
+
+  yfam <- gaussian()
+  if (check_binary(Y)) {
+    yfam <- binomial()
+  }
 
   data <- cbind(X,A)
   if (all(m_learners=='hal')) { # estimate via HAL
@@ -74,6 +79,7 @@ est_m_a <- function(idx, Y, A, X, R,
   } else { # estimate via SL *** need dynamic family ***
     m_a_hat <- SuperLearner::SuperLearner(Y=Y[idx],X=data[idx,],
                                           SL.library=m_learners,
+                                          family=yfam,
                                           obsWeights=R[idx]/kappa_hat[idx])
     # get fitted values under A=1
     data[,ncol(data)] <- 1
@@ -146,7 +152,6 @@ est_g <- function(idx,A, X, R, kappa_hat,
 #' }
 est_kappa <- function (idx,Z, R,
                        r_learners) {
-
 
   # if estimating via highly adaptive lasso
   if (all(r_learners=='hal')) { # estimate via HAL

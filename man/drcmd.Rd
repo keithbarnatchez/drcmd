@@ -18,7 +18,7 @@ drcmd(
   eem_ind = FALSE,
   Rprobs = NA,
   k = 1,
-  c = 0.01,
+  cutoff = 0.01,
   nboot = 0
 )
 }
@@ -58,15 +58,15 @@ missingness probabilities are estimated.}
 
 \item{k}{A numeric indicating the number of folds for cross-fitting}
 
-\item{c}{Cutoff for treatment and complete case propensity scores. Estimates outside
-of \link{c, 1-c} are set to c or 1-c, respectively}
-
 \item{nboot}{A numeric indicating the number of desired bootstrap samples.
 If >0, uses bootstrap to obtain SEs. If =0, uses asymptotic analytical SEs.}
 
 \item{deafult_learners}{A character vector containing SuperLearner libraries to use
 for estimating all nuisance functions. User can alternatively specify libraries
 for each nuisance function for added flexibility}
+
+\item{c}{Cutoff for treatment and complete case propensity scores. Estimates outside
+of \link{c, 1-c} are set to c or 1-c, respectively}
 }
 \value{
 An S3 object of class drcmd containing estimation results, information

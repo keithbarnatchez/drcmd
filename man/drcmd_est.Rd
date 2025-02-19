@@ -17,7 +17,7 @@ drcmd_est(
   eem_ind,
   Rprobs,
   k,
-  c
+  cutoff
 )
 }
 \arguments{

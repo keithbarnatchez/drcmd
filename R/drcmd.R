@@ -57,7 +57,7 @@
 drcmd <- function(Y, A, X, W=NA, R=NA,
                   default_learners=NULL,
                   m_learners=NULL,g_learners=NULL,r_learners=NULL,po_learners=NULL,
-                  eem_ind=FALSE, Rprobs=NA, k=1, c=0.01,
+                  eem_ind=FALSE, Rprobs=NA, k=1, cutoff=0.01,
                   nboot=0) {
 
   require(SuperLearner)
@@ -66,7 +66,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   if (any(is.na(W))) {
     W <- X[,0]
   }
-
+  # browser()
   # Clean up learners
   learners <- clean_learners(default_learners,m_learners,g_learners,r_learners,
                              po_learners)
@@ -83,7 +83,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   res$results <- drcmd_est(Y,A,X,Z,R,
                            learners$m_learners,learners$g_learners,
                            learners$r_learners,learners$po_learners,
-                           eem_ind,Rprobs,k,c)
+                           eem_ind,Rprobs,k,cutoff)
 
 
   # Additional packaging of params used in estimation
@@ -97,6 +97,9 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   params$Rprobs <- Rprobs
   params$k <- k
   res$Z <- colnames(Z)
+  if('y' %in% colnames(res$Z)) {
+    colnames(res$Z)[colnames(res$Z) == 'y'] <- 'Y'
+  }
   res$U <- V$U
   res$R <- R
   res$params <- params
@@ -134,7 +137,11 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 #' @export
 drcmd_est <- function(Y,A,X,Z,R,
                       m_learners,g_learners,r_learners,po_learners,
-                      eem_ind,Rprobs,k,c) {
+                      eem_ind,Rprobs,k,cutoff) {
+
+  # if (tml_ind) { # If estimating via TML
+  #   1
+  # }
 
   # Divide the data into k random "train-test" splits
   if (k>1) { # if doing cross-fitting
@@ -143,7 +150,7 @@ drcmd_est <- function(Y,A,X,Z,R,
     # Use lapply to get results for each fold
     res <- lapply(1:k, function(i) drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
                                                   m_learners,g_learners,r_learners,po_learners,
-                                                  eem_ind,Rprobs,c))
+                                                  eem_ind,Rprobs,cutoff))
 
     # Extract ests and SEs from each fold
     ests_df <- do.call(rbind, lapply(res, function(x) x$ests))
@@ -161,7 +168,7 @@ drcmd_est <- function(Y,A,X,Z,R,
     splits <- create_folds(length(Y),k)
     res <- drcmd_est_fold(splits,Y,A,X,Z,R,
                           m_learners,g_learners,r_learners,po_learners,
-                          eem_ind,Rprobs,c)
+                          eem_ind,Rprobs,cutoff)
     res <- list(estimates=res$ests,ses=sqrt(res$vars),nuis=res$nuis)
     return(res)
   }
@@ -193,7 +200,7 @@ drcmd_est <- function(Y,A,X,Z,R,
 #' @export
 drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
-                           eem_ind,Rprobs,c) {
+                           eem_ind,Rprobs,cutoff) {
 
   # Get training and test data indices
   train <- splits$train
@@ -202,7 +209,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   # Get nuisance estimates
   nuisance_ests <- get_nuisance_ests(train,Y,A,X,Z,R,
                                      m_learners,g_learners,r_learners,
-                                     Rprobs,c)
+                                     Rprobs,cutoff)
 
   # Form full data EIF, phi
   phi_hat <- get_phi_hat(Y,A,X,R,
@@ -233,6 +240,36 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
 
   # Return results
   return(ests)
+
+}
+
+#' @title Estimate causal effects through targeted maximum likelihood
+#'
+#' @description Function for obtaining estimates of causal estimands through
+#' targeted maximum likelihood. To be called within drcmd_est_fold(). Updates
+#' estimate of P(R=1|Z) and the plug-in estimator in a manner which removes the
+#' plug-in bias incurred by an initial plug-in estimator
+#'
+#'
+#'
+#'
+est_psi_tml <- function(idx, Y,A,X,
+                        R, Z,
+                        m_1_hat, m_0_hat, g_hat,
+                        kappa_hat,varphi_hat) {
+
+  # Set up necessary objects
+  phi_1_hat <- phi_hat$phi_1_hat # full-data eif under A=1
+  phi_0_hat <- phi_hat$phi_0_hat # full-data eif under A=0
+  varphi_1_hat <- varphi_hat$varphi_1_hat # E[full-data eif under A=1|Z,R=1]
+  varphi_0_hat <- varphi_hat$varphi_0_hat # E[full-data eif under A=0|Z,R=1]
+  varphi_diff_hat <- varphi_hat$varphi_diff_hat
+
+  # Update estimate of P(R=1|Z)
+
+
+
+
 
 }
 
@@ -287,10 +324,10 @@ est_psi <- function(idx, R, Z,
   n <- length(idx)
 
   # Set up necessary objects
-  phi_1_hat <- phi_hat$phi_1_hat
-  phi_0_hat <- phi_hat$phi_0_hat
-  varphi_1_hat <- varphi_hat$varphi_1_hat
-  varphi_0_hat <- varphi_hat$varphi_0_hat
+  phi_1_hat <- phi_hat$phi_1_hat # full-data eif under A=1
+  phi_0_hat <- phi_hat$phi_0_hat # full-data eif under A=0
+  varphi_1_hat <- varphi_hat$varphi_1_hat # E[full-data eif under A=1|Z,R=1]
+  varphi_0_hat <- varphi_hat$varphi_0_hat # E[full-data eif under A=0|Z,R=1]
   varphi_diff_hat <- varphi_hat$varphi_diff_hat
 
   # Form estimates of psi1 and psi0 via EICs

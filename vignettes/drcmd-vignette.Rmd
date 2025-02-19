@@ -24,17 +24,17 @@ vignette: >
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE)
-# source('../R/utils.R')
-# source('../R/drcmd.R')
-# source('../R/nuis.R')
-# source('../R/methods.R')
+source('../R/utils.R')
+source('../R/drcmd.R')
+source('../R/nuis.R')
+source('../R/methods.R')
 ```
 
 # Introduction \label{intro}
 
 **Note**: Package is still in development. Vignette here will be very generic until package is ready for CRAN submission, but all necessary details on how to use the package will be outlined below.
 
-## Full data problem
+# Technical Details
 
 # Using `drcmd` \label{using}
 
@@ -42,7 +42,7 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 
 
 ```{r install, eval=FALSE} 
-devtools::install_github('keithbarnatchez/drcmd')
+# devtools::install_github('keithbarnatchez/drcmd')
 ```
 
 Note: Eventually we'll have a CRAN option as well
@@ -70,11 +70,11 @@ df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
 head(df)
 ```
 
-The main function from the `drcmd` package is `drcmd()`. The core arguments are `Y`, `A` and `X`, representing the outcome, binary treatment and covariates. Users can optionally specify proxy variables `W` that are (i) predictive of the missing variables, (ii) possibly influence the missingness mechanism, and (iii) wouldn't be involved in a causal analysis under the presence of complete data. Such variables commonly arise in semi-supervised inference, where cheap proxies are often available for expensive-to-measure variables. In our running example, we have that $Y^*=W$. In practice, $W$ can be multi-dimensional when multiple proxies are available.  `W` defaults to `NULL` when not specified by the user, consistent with settings in proxies are not available.
+The main function from the `drcmd` package is `drcmd()`. The core arguments are `Y`, `A` and `X`, representing the outcome, binary treatment and covariates. Users can optionally specify proxy variables `W` that are (i) predictive of the missing variables, (ii) possibly influence the missingness mechanism, and (iii) wouldn't be involved in a causal analysis under the presence of complete data. Such variables commonly arise in semi-supervised inference, where cheap proxies are often available for expensive-to-measure variables. In our running example, we have that $Y^*=W$. In practice, $W$ can be multi-dimensional when multiple proxies are available.  `W` defaults to `NULL` when not specified by the user, consistent with settings where proxies are not available.
 
-Missing data are allowed in the outcome, treatment, and covariates (including any subset of covariates), as well as any combination of the three. The only requirement for running `drcmd` is that there exists at *least* one variable that is never missing, either in `Y`, `A`, `X`, `W`. Note that this does **not** guarantee identifiability of the causal estimands $\mathbb{E}[Y(1)]$ or $\mathbb{E}[Y(0)]$. The validity of the resulting estimates hinges on the MAR assumption holding, a crucial determination that should be made through subject matter expertise.
+Missing data are allowed in the outcome, treatment, and covariates (including any subset of covariates), as well as any combination of the three. The only requirement for running `drcmd` is that there exists at *least* one variable that is never missing, either in `Y`, `A`, `X`, `W`. Note that this does **not** guarantee identifiability of the causal estimands $\mathbb{E}[Y(1)]$ or $\mathbb{E}[Y(0)]$. The validity of the resulting estimates hinges on the MAR assumption holding, a crucial problem-specific determination that should be made through subject matter expertise.
 
-Along with specifying variables, users can additionally specify means by which to estimate all nuisance functions. All nuisance functions can be estimated through either the highly-adaptive LASSO (HAL) or a Super Learner. There are 4 nuisance functions that are fit by `drcmd`, for $a = 0,1$:
+Along with specifying variables, users can additionally specify means by which to estimate all nuisance functions. All nuisance functions can be estimated through either Super Learner (a stacking algorithm). There are 4 nuisance functions that are fit by `drcmd`, for $a = 0,1$:
 
 $$
 \begin{aligned}
@@ -87,7 +87,11 @@ $$
 
 where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactul mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$. Users can estimate nuisance functions through Super Learner via the `SuperLearner` package or the Highly-Adaptive LASSO (HAL) via the `hal9001` package. 
 
-Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To estimate
+Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the SuperLearner libraries available, users can rub `get_sl_libraries()`:
+
+```{r sl-libs}
+get_sl_libraries()
+```
 
 Below we demonstrate an example call of `drcmd()` which specifies to estimate all nuisance functions with generalized linear models.
 
@@ -96,7 +100,7 @@ res <- drcmd(Y=Y, A=A, X=X,
              default_learners=c('SL.glm','SL.earth'))
 ```
 
-To estimate all nuisance functions with the highly-adaptive LASSO, users can specify the `default_learners` argument as `hal`.
+To estimate all nuisance functions with the highly-adaptive LASSO, users can specify the `default_learners` argument as `SL.hal9001`.
 
 ```{r drcmd-hal, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
@@ -163,8 +167,6 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 ### Empirical efficiency maximixation
 
 In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to be an inherently difficult nuisance function to estimate. While `drcmd` estimates this regression through conventional regression methods by default, users can optionally fit $\varphi_a$ through empirical efficiency maximixation (EEM) by setting the argument `eem_ind` to `TRUE`. Given an implicitly-defined function class determined through choice of nuisance learner for $\varphi_a$, rather than attempt minimize the  MSE $\hat \varphi_a - \varphi_a||$, EEM minimizes the asymptotic variance of the estimator of the causal estimand:
-
-put formula here
 
 ```{r drcmd_eem, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,

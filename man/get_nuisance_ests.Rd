@@ -15,7 +15,7 @@ get_nuisance_ests(
   g_learners,
   r_learners,
   Rprobs,
-  c
+  cutoff
 )
 }
 \arguments{

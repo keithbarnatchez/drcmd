@@ -34,7 +34,13 @@ find_missing_pattern <- function(Y,A,X,W) {
   if (mean(R) < 0.01) {
     warning('Small number of complete cases. Results may be unstable')
   }
+
   Z <- data[,colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)],drop=FALSE]
+
+  # If 'Y' is in Z rename to 'y' (superlearner doesn't allow covariates named Y)
+  if('Y' %in% colnames(Z)) {
+    colnames(Z)[colnames(Z) == 'Y'] <- 'y'
+  }
 
   # If any values of Y, X or Z equal NA, set them to 0
   # Some learners don't support NAs
@@ -128,6 +134,16 @@ check_entry_errors <- function(Y,A,X,W,R,
   # Make sure W is a data frame
   if (!is.data.frame(W)  ) {
     stop('W must be a data frame')
+  }
+
+  # Make sure no vars in X are named 'Y' or 'A'
+  if (any(colnames(X) %in% c('Y','A','y'))) {
+    stop('No variables in X can be named "Y" "y" or "A", which are reserved for outcome and treatment')
+  }
+
+  # Make sure no vars in W are named 'Y' or 'A'
+  if (any(colnames(W) %in% c('Y','A','y'))) {
+    stop('No variables in W can be named "Y" "y" or "A", which are reserved for outcome and treatment')
   }
 
   # Make sure Y A X and W have same # of observations

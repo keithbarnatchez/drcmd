@@ -10,23 +10,26 @@ source('../R/methods.R')
 # Optional params for drcmd
 
 eem_ind <- FALSE
-default_learners <- 'hal'
+default_learners <- 'SL.glm'
 #-------------------------------------------------------------------------------
-# Make a couple functions for simming simple data structure
+# Make a couple functions for simulating simple missing outcome data structure
 
 n <- 1e3
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-Y <- rnorm(n) + A + X + X^2 + A*X + sin(X)
-Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
+Y <- rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
+Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
 
-# Make Y NA if R==0
-Y[R==0] <- NA
+# Make A NA if R==0
+A[R==0] <- NA
+X <- as.data.frame(X)
 
-df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
-
-drcmd_res <- drcmd(Y,A,X, default_learners= c('SL.glm'),
-                   po_learners='SL.hal9001',
-                   eem_ind=TRUE,k=1, Rprobs=plogis(X$X))
+# Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
+# GAMs (save for the pseudo-outcome regression, which is done with XGboost)
+drcmd_res <- drcmd(Y,A,X,
+                   default_learners= c('SL.gam','SL.earth'),
+                   po_learners = 'SL.xgboost',
+                   k=1,
+                   eem_ind=F)
 
 summary(drcmd_res)
 plot(drcmd_res)
@@ -202,6 +205,3 @@ for (ss in 1:nsim) {
                          drcmd_res_mid$results$ses$psi_hat_ate)
   drcmd_mid_cov[ss] <- (temp_int[1] < 2.5) & (temp_int[2] > 2.5)
 }
-
-
-
