@@ -40,9 +40,8 @@ source('../R/methods.R')
 
 ## Installation
 
-
 ```{r install, eval=FALSE} 
-# devtools::install_github('keithbarnatchez/drcmd')
+devtools::install_github('keithbarnatchez/drcmd')
 ```
 
 Note: Eventually we'll have a CRAN option as well
@@ -87,33 +86,43 @@ $$
 
 where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactul mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$. Users can estimate nuisance functions through Super Learner via the `SuperLearner` package or the Highly-Adaptive LASSO (HAL) via the `hal9001` package. 
 
-Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the SuperLearner libraries available, users can rub `get_sl_libraries()`:
+Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the SuperLearner libraries available, users can run `get_sl_libraries()`:
 
 ```{r sl-libs}
 get_sl_libraries()
 ```
 
-Below we demonstrate an example call of `drcmd()` which specifies to estimate all nuisance functions with generalized linear models.
+Below we demonstrate an example call of `drcmd()` which specifies to estimate all nuisance functions with an ensemble of generalized linear models and splines.
 
-```{r drcmd-simple, eval=FALSE}
+```{r drcmd-simple}
 res <- drcmd(Y=Y, A=A, X=X,
              default_learners=c('SL.glm','SL.earth'))
 ```
 
-To estimate all nuisance functions with the highly-adaptive LASSO, users can specify the `default_learners` argument as `SL.hal9001`.
+To make use of the additional proxy variables, we can simply specify the `W` argument in the call to `drcmd()`. In our running example, we have that $Y^*=W$.
 
-```{r drcmd-hal, eval=FALSE}
-res <- drcmd::drcmd(Y=Y, A=A, X=X,
-             default_learners='hal')
+```{r drcmd-proxy, eval=FALSE}
+res <- drcmd(Y=Y, A=A, X=X, W=data.frame(Ystar),
+             default_learners=c('SL.glm','SL.earth'))
 ```
 
 Users can specify specific learners through nuisance-specific arguments, which will overwrite the learners specified in `default_learners` for that particular nuisance function if `default_learners` is specified. For example, to estimate the pseudo-outcome regression through generalized additive models (GAMs), and all other nuisance functions with a Super Learner ensemble of GLMs and splines, we can make the following call to `drcmd()`:
 
-
-```{r drcmd-specific}
+```{r drcmd-specific, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners=c('SL.glm','SL.earth'),
              po_learners = 'SL.gam')
+```
+
+Alternatively, one can omit specification of `default_learners` entirely, provided learners are specified for each nuisance function:
+
+```{r drcmd-nuis-no-def, eval=FALSE}
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
+             m_learners = c('SL.glm','SL.earth'),
+             g_learners = 'SL.mean',
+             r_learners = 'SL.glm.interaction',
+             po_learners = c('SL.gam','SL.hal9001'))
+
 ```
 
 Users can view a summary of the estimation procedure by calling the `summary()` function, which provides point estimates, standard errors and 95\% CIs for main causal estimands. By default, `drcmd` obtains estimates of $\mathbb{E}[Y(1)$, $\mathbb{E}[Y(0)]$, and the average treatment effect (ATE) $\mathbb{E}[Y(1)-Y(0)]$. 
@@ -149,7 +158,7 @@ Users can specify their desired plot with the `type` argument: (i) `PO`: residua
 plot(res,type='PO')
 ```
 
-Alternative, users can cycle through all diagnostic plots by leaving the type argument unspecified or setting it to `'All'`
+Alternatively, users can cycle through all diagnostic plots by leaving the type argument unspecified or setting it to `'All'`
 
 ```{r diagplotPOAll, eval=FALSE}
 plot(res)
@@ -157,16 +166,17 @@ plot(res)
 
 ### Cross-fitting
 
+While not enabled by default, users can estimate parameters through cross-fitting by setting the `k` argument to the desired number of folds. By default, `drcmd` uses a single fold. Cross-fitting is encouraged when the users specifies nuisance learners that cover complex function classes, such as random forests. See the technical details section for more information on the rationale behind and implementation of cross-fitting.
+
 ```{r drcmd_simple, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners='SL.glm',
              k=3)
 ```
 
-
 ### Empirical efficiency maximixation
 
-In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to be an inherently difficult nuisance function to estimate. While `drcmd` estimates this regression through conventional regression methods by default, users can optionally fit $\varphi_a$ through empirical efficiency maximixation (EEM) by setting the argument `eem_ind` to `TRUE`. Given an implicitly-defined function class determined through choice of nuisance learner for $\varphi_a$, rather than attempt minimize the  MSE $\hat \varphi_a - \varphi_a||$, EEM minimizes the asymptotic variance of the estimator of the causal estimand:
+In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to be an inherently difficult nuisance function to estimate. While `drcmd` estimates this regression through conventional regression methods by default, users can optionally fit $\varphi_a$ through empirical efficiency maximization (EEM) by setting the argument `eem_ind` to `TRUE`. Given an implicitly-defined function class determined through choice of nuisance learner for $\varphi_a$, rather than attempt minimize the  MSE $\hat \varphi_a - \varphi_a||$, EEM aims to minimize the asymptotic variance of the causal estimand itself. An example function call is provided below:
 
 ```{r drcmd_eem, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
@@ -175,11 +185,27 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
              eem_ind=TRUE)
 ```
 
-### Bootstrap SEs
+### Bootstrap standard errors
+
+By default, `drcmd` obtains standard errors through estimation of the asymptotic variance of the estimator. Particularly for small samples, users may wish to obtain standard errors through bootstrapping. Users can specify the number of bootstrap samples through the `nboot` argument. Below we demonstrate a call to `drcmd()` with 1000 bootstrap samples:
+
+```{r drcmd_bootstrap, eval=FALSE}
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
+             default_learners='SL.glm',
+             k=1,
+             nboot=1000)
+```
 
 # Technical Details
 
 `drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution 
+
+
+### Cross-fitting estimation
+
+ 
+
+
 
 
 
