@@ -253,9 +253,7 @@ clean_learners <- function(default_learners,
       stop('Missing learner specifications. Make sure all learners are specified, either through specifying default values through default_learners or specifying learners for each nuisance function')
     }
   }
-
   return(out_list)
-
 }
 
 #' @title check_binary

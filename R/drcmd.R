@@ -46,13 +46,24 @@
 #' on the missing data structure, and parameters used in the estimation
 #'
 #' @examples
-#' n <- 1e3
-#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
-#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
-#' Y[R==0] <- NA
+#' \dontrun{
+#' n <- 2500
+#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+#' Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
+#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
 #'
-#' results <- drcmd(Y,A,X,R=R)
+#' # Make A NA if R==0
+#' A[R==0] <- NA
+#' covariates <- data.frame(X1=X,X2=X2)
 #'
+#' # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
+#' # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
+#' drcmd_res <- drcmd(Y,A,covariates,
+#'                    default_learners= c('SL.gam','SL.earth'),
+#'                    po_learners = 'SL.gam',
+#'                    k=1,
+#'                    eem_ind=F)
+#' }
 #' @export
 drcmd <- function(Y, A, X, W=NA, R=NA,
                   default_learners=NULL,
@@ -78,13 +89,20 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   V <- find_missing_pattern(Y,A,X,W)
   Z <- V$Z ; R <- V$R ; X <- V$X ; Y <- V$Y ; A <- V$A
 
+  # Check if Y is binary (all NAs set to 0 by this point)
+  y_bin <- check_binary(Y)
+
   # Obtain estimates
   res <- list()
   res$results <- drcmd_est(Y,A,X,Z,R,
                            learners$m_learners,learners$g_learners,
                            learners$r_learners,learners$po_learners,
-                           eem_ind,Rprobs,k,cutoff)
+                           eem_ind,Rprobs,k,cutoff,y_bin)
 
+
+  if('y' %in% colnames(Z)) {
+    colnames(Z)[colnames(Z) == 'y'] <- 'Y'
+  }
 
   # Additional packaging of params used in estimation
   params <- list()
@@ -97,9 +115,6 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   params$Rprobs <- Rprobs
   params$k <- k
   res$Z <- colnames(Z)
-  if('y' %in% colnames(res$Z)) {
-    colnames(res$Z)[colnames(res$Z) == 'y'] <- 'Y'
-  }
   res$U <- V$U
   res$R <- R
   res$params <- params
@@ -137,7 +152,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 #' @export
 drcmd_est <- function(Y,A,X,Z,R,
                       m_learners,g_learners,r_learners,po_learners,
-                      eem_ind,Rprobs,k,cutoff) {
+                      eem_ind,Rprobs,k,cutoff,y_bin) {
 
   # if (tml_ind) { # If estimating via TML
   #   1
@@ -150,7 +165,7 @@ drcmd_est <- function(Y,A,X,Z,R,
     # Use lapply to get results for each fold
     res <- lapply(1:k, function(i) drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
                                                   m_learners,g_learners,r_learners,po_learners,
-                                                  eem_ind,Rprobs,cutoff))
+                                                  eem_ind,Rprobs,cutoff,y_bin))
 
     # Extract ests and SEs from each fold
     ests_df <- do.call(rbind, lapply(res, function(x) x$ests))
@@ -168,7 +183,7 @@ drcmd_est <- function(Y,A,X,Z,R,
     splits <- create_folds(length(Y),k)
     res <- drcmd_est_fold(splits,Y,A,X,Z,R,
                           m_learners,g_learners,r_learners,po_learners,
-                          eem_ind,Rprobs,cutoff)
+                          eem_ind,Rprobs,cutoff,y_bin)
     res <- list(estimates=res$ests,ses=sqrt(res$vars),nuis=res$nuis)
     return(res)
   }
@@ -200,7 +215,7 @@ drcmd_est <- function(Y,A,X,Z,R,
 #' @export
 drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
-                           eem_ind,Rprobs,cutoff) {
+                           eem_ind,Rprobs,cutoff,y_bin) {
 
   # Get training and test data indices
   train <- splits$train
@@ -225,7 +240,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                                 po_learners)
 
   # Form final estimate for this fold
-  ests <- est_psi(test, R, Z, nuisance_ests$kappa_hat, phi_hat,varphi_hat)
+  ests <- est_psi(test, R, Z, nuisance_ests$kappa_hat, phi_hat,varphi_hat,y_bin)
 
   # Additionally return nuisance est values
   nuis <- data.frame(kappa_hat=nuisance_ests$kappa_hat,
@@ -318,7 +333,7 @@ get_phi_hat <- function(Y, A, X, R, g_hat, m_a_hat, kappa_hat) {
 #' and various counterfactual contrasts
 #' @export
 est_psi <- function(idx, R, Z,
-                    kappa_hat, phi_hat,varphi_hat) {
+                    kappa_hat, phi_hat,varphi_hat,y_bin) {
 
   # browser()
   n <- length(idx)
@@ -342,26 +357,35 @@ est_psi <- function(idx, R, Z,
   # Get estimates of contrasts
   psi_hat_ate <- psi_1_hat - psi_0_hat
   psi_hat_ate_direct <- mean(psi_ate_ic)
-  psi_hat_rr <- psi_1_hat/psi_0_hat # risk ratio (only useful if binary)
-  psi_hat_or <- (psi_1_hat/(1-psi_1_hat)) / (psi_0_hat/(1-psi_0_hat)) # odds ratio (only useful if binary)
 
-  # SE estimates for RR and OR
-  # First, RR (can derive via mv delta method)
+  # Point estimates + SEs relevant for binary outcomes
   Sig <- cov(cbind(psi_1_ic,psi_0_ic))
+  psi_hat_rr <- psi_hat_or <- psi_hat_rr_se <- psi_hat_or_se <- NA
+
+  if (y_bin) { # if outcome is binary
+    psi_hat_rr <- psi_1_hat/psi_0_hat # risk ratio (only useful if binary)
+    psi_hat_or <- (psi_1_hat/(1-psi_1_hat)) / (psi_0_hat/(1-psi_0_hat)) # odds ratio (only useful if binary)
+
+    # standard errors
+    psi_hat_rr_se <- (Sig[1,1]/psi_0_hat^2 - 2*Sig[1,2]*psi_1_hat/(psi_0_hat^3) + Sig[2,2]*psi_1_hat^2/psi_0_hat^4)/n
+    psi_hat_or_se <- psi_hat_or^2*(Sig[1,1]/(psi_1_hat^2*(1-psi_1_hat)^2) +
+                                     Sig[2,2]/(psi_0_hat^2*(1-psi_0_hat)^2) -
+                                     2*Sig[1,2]/(psi_1_hat*(1-psi_1_hat)*psi_0_hat*(1-psi_0_hat)))/n
+  }
 
   return(list(ests = data.frame(psi_1_hat=mean(psi_1_ic),
                                 psi_0_hat=mean(psi_0_ic),
                                 psi_hat_ate=mean(psi_1_ic - psi_0_ic),
                                 psi_hat_ate_direct=mean(psi_ate_ic),
-                                psi_hat_rr=mean(psi_1_ic)/mean(psi_0_ic),
-                                psi_hat_or=(mean(psi_1_ic)/(1-mean(psi_1_ic))) / (mean(psi_0_ic)/(1-mean(psi_0_ic)))
+                                psi_hat_rr=psi_hat_rr,
+                                psi_hat_or=psi_hat_or
               ),
               vars = data.frame(psi_1_hat=var(psi_1_ic)/n,
                                 psi_0_hat=var(psi_0_ic)/n,
                                 psi_hat_ate=var(psi_1_ic - psi_0_ic)/n,
                                 psi_hat_ate_direct=var(psi_ate_ic)/n,
-                                psi_hat_rr=(Sig[1,1]/psi_0_hat^2 - 2*Sig[1,2]*psi_1_hat/(psi_0_hat^3) + Sig[2,2]*psi_1_hat^2/psi_0_hat^4)/n,
-                                psi_hat_or=((var(psi_1_ic)/(1-var(psi_1_ic))) / (var(psi_0_ic)/(1-var(psi_0_ic))))/n
+                                psi_hat_rr=psi_hat_rr_se,
+                                psi_hat_or=psi_hat_or_se
               )
          )
   )

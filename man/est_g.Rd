@@ -23,7 +23,7 @@ est_g(idx, A, X, R, kappa_hat, g_learners)
 A list containing the estimate of E\link{Y|A=a,X,W}
 }
 \description{
-Function for obtaining propensity score estimates
+Function for obtaining propensity score estimates P(A=a|X)
 }
 \examples{
 \dontrun{

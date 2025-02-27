@@ -2,7 +2,7 @@
 % Please edit documentation in R/nuis.R
 \name{est_m_a}
 \alias{est_m_a}
-\title{Function for estimating outcome regression}
+\title{Estimating outcome regression}
 \usage{
 est_m_a(idx, Y, A, X, R, kappa_hat, m_learners)
 }
@@ -25,5 +25,6 @@ est_m_a(idx, Y, A, X, R, kappa_hat, m_learners)
 A list containing the estimate of E\link{Y|A=a,X}
 }
 \description{
-Function for obtaining estimate of E\link{Y|A=a,X}
+Function for obtaining estimate of E\link{Y|A=a,X}. Estimation is
+carried out with SuperLearer, using learners specified in m_learners
 }

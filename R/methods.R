@@ -57,9 +57,16 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
   cat(sprintf("%-15s %12.3f %12.3f %26s\n",
               "E[Y(0)]:", x$results$estimates$psi_0_hat, x$results$ses$psi_0_hat,
               compute_CI(x$results$estimates$psi_0_hat, x$results$ses$psi_0_hat)))
+  if (!is.na(x$results$estimates$psi_hat_rr)) {
   cat(sprintf("%-15s %12.3f %12.3f %26s\n",
-              "Of g:", x$results$estimates$psi_hat_ate_beast, x$results$ses$psi_hat_ate_beast,
-              compute_CI(x$results$estimates$psi_hat_ate_beast, x$results$ses$psi_hat_ate_beast)))
+              "Risk ratio:", x$results$estimates$psi_hat_rr, x$results$ses$psi_hat_rr,
+              compute_CI(x$results$estimates$psi_hat_rr, x$results$ses$psi_hat_rr)))
+  }
+  if (!is.na(x$results$estimates$psi_hat_or)) {
+  cat(sprintf("%-15s %12.3f %12.3f %26s\n",
+              "Odds ratio:", x$results$estimates$psi_hat_or, x$results$ses$psi_hat_or,
+              compute_CI(x$results$estimates$psi_hat_or, x$results$ses$psi_hat_or)))
+  }
 
   cat("----------------------------------------------------------------------\n")
   cat(sprintf("%-30s %s\n", "Variables with missingness (U):", paste(x$U, collapse = ", ")))
@@ -190,10 +197,3 @@ plot.drcmd <- function(x, type = "All") {
   }
 
 }
-
-
-
-
-
-
-

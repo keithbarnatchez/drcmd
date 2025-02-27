@@ -17,7 +17,8 @@ drcmd_est_fold(
   po_learners,
   eem_ind,
   Rprobs,
-  cutoff
+  cutoff,
+  y_bin
 )
 }
 \arguments{

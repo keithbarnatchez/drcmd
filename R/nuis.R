@@ -44,9 +44,10 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 }
 
 
-#' @title Function for estimating outcome regression
+#' @title Estimating outcome regression
 #'
-#' @description Function for obtaining estimate of E[Y|A=a,X]
+#' @description Function for obtaining estimate of E[Y|A=a,X]. Estimation is
+#' carried out with SuperLearer, using learners specified in m_learners
 #' @param idx Indices to carry out estimation over
 #' @param Y Outcome variable. Can be continuous or binary
 #' @param A A binary treatment variable (1=treated, 0=control)
@@ -56,6 +57,16 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 #' @param m_learners A character vector containing the names of the superlearner algorithms
 #' @return A list containing the estimate of E[Y|A=a,X]
 #' @export
+#' \dontrun{
+#' n <- 1000
+#' X <- rnorm(n)
+#' A <- rbinom(n,1,plogis(X))
+#' R <- rbinom(n,1,plogis(X))
+#' X <- data.frame(X)
+#' Y <- A + X rnorm(n)
+#' m_learners <- c('SL.glm','SL.gam')
+#' est_m_a(idx=1:n, A=A, X=X, R=R, kappa_hat=kappa_hat, g_learners=g_learners)
+#' }
 est_m_a <- function(idx, Y, A, X, R,
                     kappa_hat,
                     m_learners) {
@@ -94,7 +105,7 @@ est_m_a <- function(idx, Y, A, X, R,
 
 #' @title Estimate the propensity score
 #'
-#' @description Function for obtaining propensity score estimates
+#' @description Function for obtaining propensity score estimates P(A=a|X)
 #' @param idx Indices to carry out estimation over
 #' @param Y Outcome variable. Can be continuous or binary
 #' @param A A binary treatment variable (1=treated, 0=control)
