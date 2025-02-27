@@ -18,16 +18,17 @@ n <- 1e3
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
 Y <- rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
 Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+X2=X+rnorm(n)
 
 # Make A NA if R==0
-A[R==0] <- NA
-X <- as.data.frame(X)
+A[R==0] <- NA ; X2[R==0] <- NA
+covariates <- data.frame(X1=X,X2=X2)
 
 # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
 # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-drcmd_res <- drcmd(Y,A,X,
+drcmd_res <- drcmd(Y,A,covariates,
                    default_learners= c('SL.gam','SL.earth'),
-                   po_learners = 'SL.xgboost',
+                   po_learners = 'SL.gam',
                    k=1,
                    eem_ind=F)
 

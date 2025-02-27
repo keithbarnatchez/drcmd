@@ -1,51 +1,54 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
 library(shiny)
+library(AIPW)
+library(readr)
 
-# Define UI for application that draws a histogram
 ui <- fluidPage(
-
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
-        )
+  titlePanel("AIPW Estimation of ATE"),
+  sidebarLayout(
+    sidebarPanel(
+      fileInput("file", "Upload CSV File", accept = ".csv"),
+      uiOutput("var_select"),
+      actionButton("run", "Estimate ATE")
+    ),
+    mainPanel(
+      verbatimTextOutput("ate_output")
     )
+  )
 )
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output, session) {
+  data <- reactive({
+    req(input$file)
+    read_csv(input$file$datapath)
+  })
 
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
+  output$var_select <- renderUI({
+    req(data())
+    selectInput("outcome", "Select Outcome Variable", choices = names(data()))
+    selectInput("treatment", "Select Treatment Variable", choices = names(data()))
+  })
 
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white',
-             xlab = 'Waiting time to next eruption (in mins)',
-             main = 'Histogram of waiting times')
-    })
+  estimate_ate <- eventReactive(input$run, {
+    req(input$outcome, input$treatment)
+    df <- data()
+    covariates <- setdiff(names(df), c(input$outcome, input$treatment))
+
+    aipw_result <- AIPW$new(
+      Y = df[[input$outcome]],
+      A = df[[input$treatment]],
+      X = df[covariates],
+      Q.SL.library = c("SL.glm"),
+      g.SL.library = c("SL.glm"),
+      k_split = 2
+    )
+    aipw_result$fit()
+    aipw_result$summary()$est
+  })
+
+  output$ate_output <- renderPrint({
+    req(estimate_ate())
+    cat("Estimated ATE:", estimate_ate())
+  })
 }
 
-# Run the application
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)

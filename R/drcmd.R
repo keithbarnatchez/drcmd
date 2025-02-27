@@ -345,6 +345,10 @@ est_psi <- function(idx, R, Z,
   psi_hat_rr <- psi_1_hat/psi_0_hat # risk ratio (only useful if binary)
   psi_hat_or <- (psi_1_hat/(1-psi_1_hat)) / (psi_0_hat/(1-psi_0_hat)) # odds ratio (only useful if binary)
 
+  # SE estimates for RR and OR
+  # First, RR (can derive via mv delta method)
+  Sigma <- cov(cbind(psi_1_ic,psi_0_ic))
+
   return(list(ests = data.frame(psi_1_hat=mean(psi_1_ic),
                                 psi_0_hat=mean(psi_0_ic),
                                 psi_hat_ate=mean(psi_1_ic - psi_0_ic),
