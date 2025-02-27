@@ -347,7 +347,7 @@ est_psi <- function(idx, R, Z,
 
   # SE estimates for RR and OR
   # First, RR (can derive via mv delta method)
-  Sigma <- cov(cbind(psi_1_ic,psi_0_ic))
+  Sig <- cov(cbind(psi_1_ic,psi_0_ic))
 
   return(list(ests = data.frame(psi_1_hat=mean(psi_1_ic),
                                 psi_0_hat=mean(psi_0_ic),
@@ -360,7 +360,7 @@ est_psi <- function(idx, R, Z,
                                 psi_0_hat=var(psi_0_ic)/n,
                                 psi_hat_ate=var(psi_1_ic - psi_0_ic)/n,
                                 psi_hat_ate_direct=var(psi_ate_ic)/n,
-                                psi_hat_rr=var(psi_1_ic)/var(psi_0_ic)/n,
+                                psi_hat_rr=(Sig[1,1]/psi_0_hat^2 - 2*Sig[1,2]*psi_1_hat/(psi_0_hat^3) + Sig[2,2]*psi_1_hat^2/psi_0_hat^4)/n,
                                 psi_hat_or=((var(psi_1_ic)/(1-var(psi_1_ic))) / (var(psi_0_ic)/(1-var(psi_0_ic))))/n
               )
          )
