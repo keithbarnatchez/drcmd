@@ -13,6 +13,7 @@ source('../R/drcmd.R')
 source('../R/nuis.R')
 source('../R/methods.R')
 library(tictoc) # for timing packages
+library(SuperLearner)
 #-------------------------------------------------------------------------------
 # Params for drcmd
 
@@ -40,7 +41,7 @@ for (ss in 1:nsim) {
   tempaipw <- AIPW::AIPW$new(Y=Y,A=A,W=X,
                                  Q.SL.library = sl_learners,
                                  g.SL.library = sl_learners,
-                            k_split = k)$fit()$summary()
+                            k_split = 1)$fit()$summary()
   aipwests <- tempaipw$estimates$RD[1]
   temp <- toc()
   aipwtimes <- temp$toc - temp$tic
@@ -49,7 +50,8 @@ for (ss in 1:nsim) {
   tic()
   drcmdests <- drcmd(Y,A,X,
                         default_learners = sl_learners,
-                        eem_ind=eem_ind)$results$estimates$psi_hat_ate
+                        eem_ind=eem_ind, k=8) # $results$estimates$psi_hat_ate
+  summary(drcmdests)
   temp <- toc()
   drcmdtimes <- temp$toc - temp$tic
 
