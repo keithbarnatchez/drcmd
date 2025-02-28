@@ -2,10 +2,11 @@
 # space for testing functions in the drcmd package
 #-------------------------------------------------------------------------------
 rm(list=ls())
-source('../R/utils.R')
-source('../R/drcmd.R')
-source('../R/nuis.R')
-source('../R/methods.R')
+# source('../R/utils.R')
+# source('../R/drcmd.R')
+# source('../R/nuis.R')
+# source('../R/methods.R')
+devtools::intall_github('keithbarnatchez/drcmd')
 #-------------------------------------------------------------------------------
 # Optional params for drcmd
 
@@ -16,7 +17,7 @@ default_learners <- 'SL.glm'
 
 n <- 2500
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
+Y <-   rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1 rbinom(n,1,plogis(X-A)) #
 Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
 X2=X+rnorm(n)
 
@@ -29,7 +30,7 @@ covariates <- data.frame(X1=X,X2=X2)
 drcmd_res <- drcmd(Y,A,covariates,
                    default_learners= c('SL.gam','SL.earth'),
                    po_learners = 'SL.gam',
-                   k=1,
+                   k=5,
                    eem_ind=F)
 
 summary(drcmd_res)

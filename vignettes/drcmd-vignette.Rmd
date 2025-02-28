@@ -198,6 +198,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 # Technical Details
 
+
 ## Observed and full data influence functions
 
 `drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution. In full generality, suppose there exists missingness free distribution one would ideally sample from, denoted $\mathbb{P}_F$, containing i.i.d. observations
@@ -212,7 +213,7 @@ O_i = (W_i, \ V_i, \ R_i U_i, \ R_i)\sim \mathbb{P}_O.
 $$
 Above, $U_i$ is only observed when $R_i=1$, and $W_i$ is observed for all $i$ and contains variables that are (i) possibly predictive of missingness, and (ii) but not a component of $F$. Letting $\chi(O, \mathbb{P}_\text{F})$ denote the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$, the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$ induced by the observed data distribution can be written
 $$
-\chi(O,\mathbb{P}_O) = \frac{R}{\mathbb{P}(R=1|Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\mathbb{P}(R=1|Z)} - \varphi(O)\ \right)
+\chi(O,\mathbb{P}_O) = \frac{R}{\mathbb{P}(R=1|Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\mathbb{P}(R=1|Z)} - 1 \right) \varphi(O) 
 $$
 where $\varphi(O) = \mathbb{E}[\chi(O,\mathbb{P}_\text{F}) | Z]$, where the above representation holds so long as the missing at random assumption $U \perp R | Z$ holds, where $Z = (W, V)$ collects all variables which are always observed.
 
@@ -221,6 +222,16 @@ $$
 O_i = (R_i Y_i, A_i, X_i, Y_i^*) \sim \mathbb{P}_O
 $$
 In this setting, the idea distribution is given by $F = (Y, A, X)$, and notice $W=Y^*$, $Z = (Y^*, A, X)$ and $U = Y$. In turn,
+
+### One-step estimation
+
+### Targeted maximum likelihood estimation
+
+Recalling the form of the influence curve,
+$$
+\frac{R}{\mathbb{P}(R=1|Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\mathbb{P}(R=1|Z)} - 1 \right) \varphi(O) 
+$$
+the targeted maximum likelihood approach aims
 
 ### Standard error estimation
 
