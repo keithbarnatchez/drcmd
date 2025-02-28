@@ -179,8 +179,9 @@ drcmd_est <- function(Y,A,X,Z,R,
       vars <- as.data.frame(t(colMeans( sweep(vars_df,2,e_ests_sq,'+') )))
     }
     else {
-      vars <- est_ses_crossfit(res$ics)
+      vars <- est_ses_crossfit(res, y_bin)
     }
+
     # Get variances via fold-wise contributions to overall IC
     res <- list(estimates=as.data.frame(t(ests)),ses=sqrt(vars),nuis=average_nuis)
 
@@ -204,10 +205,10 @@ drcmd_est <- function(Y,A,X,Z,R,
 #'
 #' @return A list of cross-fit SEs
 #' @export
-est_ses_crossfit <- function(ics) {
+est_ses_crossfit <- function(res, y_bin) {
 
   # ics is a list of dataframes. rbind all the dataframes together
-  ics_df <- do.call(rbind, ics)
+  ics_df <- do.call(rbind, lapply(res, function(x) x$ics))
 
   psi_1_ic <- ics_df$psi_1_ic
   psi_0_ic <- ics_df$psi_0_ic
@@ -218,6 +219,7 @@ est_ses_crossfit <- function(ics) {
     # Get estimates of E[Y(1)] and E[Y(0)] (needed for delta method SEs)
     psi_1_hat <- mean(psi_1_ic)
     psi_0_hat <- mean(psi_0_ic)
+    Sig <- cov(cbind(psi_1_ic,psi_0_ic))
 
     psi_hat_rr <- psi_1_hat/psi_0_hat # risk ratio (only useful if binary)
     psi_hat_or <- (psi_1_hat/(1-psi_1_hat)) / (psi_0_hat/(1-psi_0_hat)) # odds ratio (only useful if binary)
