@@ -174,8 +174,14 @@ drcmd_est <- function(Y,A,X,Z,R,
 
     # Combine estimates across folds
     ests <- colMeans(ests_df)
-    e_ests_sq <- colMeans( (sweep(ests_df,2,ests,'-'))^2 )
-    vars <- as.data.frame(t(colMeans( sweep(vars_df,2,e_ests_sq,'+') )))
+    if (FALSE) {
+      e_ests_sq <- colMeans( (sweep(ests_df,2,ests,'-'))^2 )
+      vars <- as.data.frame(t(colMeans( sweep(vars_df,2,e_ests_sq,'+') )))
+    }
+    else {
+      vars <- est_ses_crossfit(res$ics)
+    }
+    # Get variances via fold-wise contributions to overall IC
     res <- list(estimates=as.data.frame(t(ests)),ses=sqrt(vars),nuis=average_nuis)
 
     return(res)
@@ -187,6 +193,53 @@ drcmd_est <- function(Y,A,X,Z,R,
     res <- list(estimates=res$ests,ses=sqrt(res$vars),nuis=res$nuis)
     return(res)
   }
+}
+
+#' @title Cross-fit SE estimation via influence curve contributions
+#'
+#' @description Estimates cross-fit SEs by taking contributions to influence curve
+#' of each fold
+#'
+#' @param ics A list of influence curves for each fold, obtained within drcmd_est
+#'
+#' @return A list of cross-fit SEs
+#' @export
+est_ses_crossfit <- function(ics) {
+
+  # ics is a list of dataframes. rbind all the dataframes together
+  ics_df <- do.call(rbind, ics)
+
+  psi_1_ic <- ics_df$psi_1_ic
+  psi_0_ic <- ics_df$psi_0_ic
+  psi_ate_ic <- ics_df$psi_ate_ic
+
+  psi_hat_rr_se <- psi_hat_or_se <- NA
+  if (y_bin) { # if outcome is binary
+    # Get estimates of E[Y(1)] and E[Y(0)] (needed for delta method SEs)
+    psi_1_hat <- mean(psi_1_ic)
+    psi_0_hat <- mean(psi_0_ic)
+
+    psi_hat_rr <- psi_1_hat/psi_0_hat # risk ratio (only useful if binary)
+    psi_hat_or <- (psi_1_hat/(1-psi_1_hat)) / (psi_0_hat/(1-psi_0_hat)) # odds ratio (only useful if binary)
+
+    # standard errors (closed form via delta method)
+    psi_hat_rr_se <- (Sig[1,1]/psi_0_hat^2 - 2*Sig[1,2]*psi_1_hat/(psi_0_hat^3) + Sig[2,2]*psi_1_hat^2/psi_0_hat^4)/n
+    psi_hat_or_se <- psi_hat_or^2*(Sig[1,1]/(psi_1_hat^2*(1-psi_1_hat)^2) +
+                                     Sig[2,2]/(psi_0_hat^2*(1-psi_0_hat)^2) -
+                                     2*Sig[1,2]/(psi_1_hat*(1-psi_1_hat)*psi_0_hat*(1-psi_0_hat)))/n
+  }
+
+
+  return(
+    data.frame(psi_1_hat=var(psi_1_ic)/n,
+                    psi_0_hat=var(psi_0_ic)/n,
+                    psi_hat_ate=var(psi_1_ic - psi_0_ic)/n,
+                    psi_hat_ate_direct=var(psi_ate_ic)/n,
+                    psi_hat_rr=psi_hat_rr_se,
+                    psi_hat_or=psi_hat_or_se
+  )
+  )
+
 }
 
 #' @title Calculate point estimates within a single cross-fitting fold
@@ -386,6 +439,10 @@ est_psi <- function(idx, R, Z,
                                 psi_hat_ate_direct=var(psi_ate_ic)/n,
                                 psi_hat_rr=psi_hat_rr_se,
                                 psi_hat_or=psi_hat_or_se
+              ),
+              ics = data.frame(psi_1_ic=psi_1_ic,
+                               psi_0_ic=psi_0_ic,
+                               psi_ate_ic=psi_ate_ic
               )
          )
   )
