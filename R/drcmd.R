@@ -366,7 +366,7 @@ est_psi <- function(idx, R, Z,
     psi_hat_rr <- psi_1_hat/psi_0_hat # risk ratio (only useful if binary)
     psi_hat_or <- (psi_1_hat/(1-psi_1_hat)) / (psi_0_hat/(1-psi_0_hat)) # odds ratio (only useful if binary)
 
-    # standard errors
+    # standard errors (closed form via delta method)
     psi_hat_rr_se <- (Sig[1,1]/psi_0_hat^2 - 2*Sig[1,2]*psi_1_hat/(psi_0_hat^3) + Sig[2,2]*psi_1_hat^2/psi_0_hat^4)/n
     psi_hat_or_se <- psi_hat_or^2*(Sig[1,1]/(psi_1_hat^2*(1-psi_1_hat)^2) +
                                      Sig[2,2]/(psi_0_hat^2*(1-psi_0_hat)^2) -

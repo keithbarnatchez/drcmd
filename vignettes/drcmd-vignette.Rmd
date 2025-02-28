@@ -198,7 +198,70 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 # Technical Details
 
-`drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution 
+## Observed and full data influence functions
+
+`drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution. In full generality, suppose there exists missingness free distribution one would ideally sample from, denoted $\mathbb{P}_F$, containing i.i.d. observations
+$$
+F_i \sim \mathbb{P}_\text{F}
+$$
+where interest lies in some pathwise differentiable statistical functional $\Psi(\mathbb{P}_\text{F}$ and $F_i$ can be decomposed into $F_i = (V_i, U_i)$.
+
+Rather than observe data from $\mathbb{P}_F$, we instead observe data from the *observed-data* distribution $\mathbb{P}_O$ containing i.i.d. observations
+$$
+O_i = (W_i, \ V_i, \ R_i U_i, \ R_i)\sim \mathbb{P}_O.
+$$
+Above, $U_i$ is only observed when $R_i=1$, and $W_i$ is observed for all $i$ and contains variables that are (i) possibly predictive of missingness, and (ii) but not a component of $F$. Letting $\chi(O, \mathbb{P}_\text{F})$ denote the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$, the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$ induced by the observed data distribution can be written
+$$
+\chi(O,\mathbb{P}_O) = \frac{R}{\mathbb{P}(R=1|Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\mathbb{P}(R=1|Z)} - \varphi(O)\ \right)
+$$
+where $\varphi(O) = \mathbb{E}[\chi(O,\mathbb{P}_\text{F}) | Z]$, where the above representation holds so long as the missing at random assumption $U \perp R | Z$ holds, where $Z = (W, V)$ collects all variables which are always observed.
+
+To build intuition, return to the earlier outcome proxy example where we observe
+$$
+O_i = (R_i Y_i, A_i, X_i, Y_i^*) \sim \mathbb{P}_O
+$$
+In this setting, the idea distribution is given by $F = (Y, A, X)$, and notice $W=Y^*$, $Z = (Y^*, A, X)$ and $U = Y$. In turn,
+
+### Standard error estimation
+
+For all estimands in `drcmd`, standard error estimation is based asymptotic variance formulae by default. Users can alternatively obtain standard errors through bootstrapping by setting the `nboot` argument to the desired number of bootstrap samples. 
+
+**Counterfactual means**: Let $\hat \psi_a$ be an estimator of $\psi_a = \mathbb{E}[Y(a)]$, based on the observed data influence curve $\chi_a(O,\eta)$, where $\eta$ collects all nuisance functions and $\mathbb{E}[\chi_a(O,\eta)]=0$. It can be shown under modest regularity conditions on the estimation rates of all nuisance functions that
+$$
+\hat \psi_a - \psi_a = \frac{1}{n} \sum_{i=1}^n \chi_a(O_i, \eta) + o_p(n^{-1/2})
+$$
+In turn, the asymptotic variance of $\hat \psi_a$ is given by $\mathbb{E}[ \chi_a(O,\eta)^2]$. Standard error estimates are obtained by plugging in the empirical influence curve $\hat \chi_a(O,\hat \eta)$ for $\chi_a(O,\eta)$:
+$$
+\sqrt{\frac{1}{n^2} \sum_{i=1}^n \chi_a(O_i, \hat \eta)^2}
+$$
+
+**Risk ratio**: Let $\hat \psi_1$ and $\hat \psi_0$ be asymptotically linear estimators of $\psi_1$ and $\psi_0$, respectively, and let 
+$$
+\Sigma = \begin{pmatrix}
+\sigma_1^2 & \nu \\
+\nu & \sigma_0^2
+\end{pmatrix}
+$$
+be the asymptotic covariance of $\hat \psi_1$ and $\hat \psi_0$. A straightforward application of the multivariate delta method implies the asymptotic variance of the risk ratio estimator $\hat \psi_1/\hat \psi_0$ is given by  
+$$
+\begin{aligned}
+\nabla g^\top \Sigma \nabla  g
+\end{aligned}
+$$
+where $\nabla g = (1/\psi_1, -\psi_1/\psi_0^2)$ is the gradient of $g(\psi_1,\psi_0) = \psi_1/\psi_0$. Evaluating the above expression yields
+$$
+\begin{aligned}
+\frac{\sigma_1^2}{\psi_0^2} + \frac{\sigma_0^2 \psi_1^2}{\psi_0^4} - \frac{2\nu \psi_1}{\psi_0^3}.
+\end{aligned}
+$$
+`drcmd` estimates the above asymptotic variance by substituting estimates for each component. 
+
+**Odds ratio**: Continue to let $\hat \psi_1$ and $\hat \psi_0$ be asymptotically linear estimators of $\psi_1$ and $\psi_0$, respectively. One can (i) find the asymptotic variance of the *log* odds ratio estimator $\log(\hat \psi_1/\hat \psi_0)$, and (ii) apply the delta method an additional time to obtain the asymptotic variance of the odds ratio estimator $\hat \psi_\text{OR} = \hat \psi_1/(1-\hat\psi_1) \big/\hat \psi_0 /(1-\hat \psi_0)$:
+$$
+\begin{aligned}
+\psi_\text{OR}^2 \left( \frac{\sigma_1^2}{\psi_1^2(1-\psi_1)^2} + \frac{\sigma_0^2}{\psi_0^2(1-\psi_0)^2} - \frac{2\nu}{\psi_1(1-\psi_1)\psi_0(1-\psi_0)} \right).
+\end{aligned}
+$$
 
 
 ### Cross-fitting estimation
