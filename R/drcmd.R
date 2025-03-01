@@ -42,9 +42,17 @@
 #' of [c, 1-c] are set to c or 1-c, respectively
 #' @param nboot A numeric indicating the number of desired bootstrap samples.
 #' If >0, uses bootstrap to obtain SEs. If =0, uses asymptotic analytical SEs.
-#' @return An S3 object of class drcmd containing estimation results, information
+#' @return An S3 object of class \code{"drcmd"} containing estimation results, information
 #' on the missing data structure, and parameters used in the estimation
-#'
+#' \describe{
+#'  \item{\code{params}}{A list containing parameters used in the estimation}
+#'  \item{\code{Z}}{A character vector containing always-available variables}
+#'  \item{\code{R}}{A character vector containing the complete case indicator values}
+#'  \item{\code{U}}{A character vector containing partially-missing variables}
+#'  \item{\code{results}}{A list of dataframes storing (i) point estimates, (ii)
+#'  standard errors, and (iii) nuisance function estimates}
+#' }
+#' @importFrom SuperLearner SuperLearner All trimLogit
 #' @examples
 #' \dontrun{
 #' n <- 2500
@@ -71,7 +79,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                   eem_ind=FALSE, Rprobs=NA, k=1, cutoff=0.01,
                   nboot=0) {
 
-  require(SuperLearner)
+  # require(SuperLearner)
 
   # Proxy variables may be empty
   if (any(is.na(W))) {

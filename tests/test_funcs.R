@@ -6,7 +6,7 @@ rm(list=ls())
 # source('../R/drcmd.R')
 # source('../R/nuis.R')
 # source('../R/methods.R')
-devtools::intall_github('keithbarnatchez/drcmd')
+devtools::install_github('keithbarnatchez/drcmd')
 #-------------------------------------------------------------------------------
 # Optional params for drcmd
 
@@ -17,7 +17,7 @@ default_learners <- 'SL.glm'
 
 n <- 2500
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-Y <-   rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1 rbinom(n,1,plogis(X-A)) #
+Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
 Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
 X2=X+rnorm(n)
 
@@ -27,10 +27,10 @@ covariates <- data.frame(X1=X,X2=X2)
 
 # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
 # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-drcmd_res <- drcmd(Y,A,covariates,
+drcmd_res <- drcmd::drcmd(Y,A,covariates,
                    default_learners= c('SL.gam','SL.earth'),
                    po_learners = 'SL.gam',
-                   k=5,
+                   k=10,
                    eem_ind=F)
 
 summary(drcmd_res)

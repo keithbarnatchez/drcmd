@@ -69,8 +69,16 @@ for each nuisance function for added flexibility}
 of \link{c, 1-c} are set to c or 1-c, respectively}
 }
 \value{
-An S3 object of class drcmd containing estimation results, information
+An S3 object of class \code{"drcmd"} containing estimation results, information
 on the missing data structure, and parameters used in the estimation
+\describe{
+\item{\code{params}}{A list containing parameters used in the estimation}
+\item{\code{Z}}{A character vector containing always-available variables}
+\item{\code{R}}{A character vector containing the complete case indicator values}
+\item{\code{U}}{A character vector containing partially-missing variables}
+\item{\code{results}}{A list of dataframes storing (i) point estimates, (ii)
+standard errors, and (iii) nuisance function estimates}
+}
 }
 \description{
 Doubly-robust estimation of counterfactual means in the presence of missing

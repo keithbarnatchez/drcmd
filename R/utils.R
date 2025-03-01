@@ -106,7 +106,7 @@ check_r_ind <- function(data,
 #' @param W A data frame containing proxy variable values
 #' @param R A vector containing missingness indicator variable
 #'
-#'
+#' @export
 check_entry_errors <- function(Y,A,X,W,R,
                                eem_ind,Rprobs,
                                k,nboot) {
@@ -223,7 +223,7 @@ truncate_r <- function(x, c=0.01) {
 #' argument are used to fill in missing libraries for any nuisance function with
 #' libraries left unspecified
 #'
-#' @param sl_learners Either null, or a character vector containing SuperLearner
+#' @param default_learners Either null, or a character vector containing SuperLearner
 #'  libraries to use for estimating all nuisance functions. User can alternatively
 #'  specify libraries for each nuisance function for added flexibility
 #' @param m_sl_learners Either null, or a character vector containing SuperLearner
@@ -261,7 +261,6 @@ clean_learners <- function(default_learners,
 #' if false
 #' @param x A numeric vector
 #' @return A logical value
-#' @export
 check_binary <- function(x) {
   # check if x is binary
   if(all(x %in% c(0,1))) {
@@ -280,7 +279,6 @@ check_binary <- function(x) {
 #' @param k Number of desired folds
 #'
 #' @return A list of train-test pairs
-#' @export
 create_folds <- function(n, k) {
 
   if (k==1) {

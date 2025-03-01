@@ -13,7 +13,7 @@ clean_learners(
 )
 }
 \arguments{
-\item{sl_learners}{Either null, or a character vector containing SuperLearner
+\item{default_learners}{Either null, or a character vector containing SuperLearner
 libraries to use for estimating all nuisance functions. User can alternatively
 specify libraries for each nuisance function for added flexibility}
 
