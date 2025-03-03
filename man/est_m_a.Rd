@@ -28,3 +28,15 @@ A list containing the estimate of E\link{Y|A=a,X}
 Function for obtaining estimate of E\link{Y|A=a,X}. Estimation is
 carried out with SuperLearer, using learners specified in m_learners
 }
+\examples{
+\dontrun{
+n <- 1000
+X <- rnorm(n)
+A <- rbinom(n,1,plogis(X))
+R <- rbinom(n,1,plogis(X))
+X <- data.frame(X)
+Y <- A + X rnorm(n)
+m_learners <- c('SL.glm','SL.gam')
+est_m_a(idx=1:n, A=A, X=X, R=R, kappa_hat=kappa_hat, g_learners=g_learners)
+}
+}

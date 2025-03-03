@@ -57,6 +57,7 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 #' @param m_learners A character vector containing the names of the superlearner algorithms
 #' @return A list containing the estimate of E[Y|A=a,X]
 #' @export
+#' @examples
 #' \dontrun{
 #' n <- 1000
 #' X <- rnorm(n)

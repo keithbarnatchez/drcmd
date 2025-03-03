@@ -2,11 +2,11 @@
 # space for testing functions in the drcmd package
 #-------------------------------------------------------------------------------
 rm(list=ls())
-# source('../R/utils.R')
-# source('../R/drcmd.R')
-# source('../R/nuis.R')
-# source('../R/methods.R')
-devtools::install_github('keithbarnatchez/drcmd')
+source('../R/utils.R')
+source('../R/drcmd.R')
+source('../R/nuis.R')
+source('../R/methods.R')
+# devtools::install_github('keithbarnatchez/drcmd')
 #-------------------------------------------------------------------------------
 # Optional params for drcmd
 
