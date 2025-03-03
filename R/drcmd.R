@@ -52,7 +52,7 @@
 #'  \item{\code{results}}{A list of dataframes storing (i) point estimates, (ii)
 #'  standard errors, and (iii) nuisance function estimates}
 #' }
-#' @importFrom SuperLearner SuperLearner All trimLogit
+#' @import SuperLearner
 #' @examples
 #' \dontrun{
 #' n <- 2500
@@ -79,7 +79,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                   eem_ind=FALSE, Rprobs=NA, k=1, cutoff=0.01,
                   nboot=0) {
 
-  # require(SuperLearner)
+  # require(SuperLearner)  importFrom SuperLearner SuperLearner All trimLogit
   loadNamespace("SuperLearner")
 
   # Proxy variables may be empty
