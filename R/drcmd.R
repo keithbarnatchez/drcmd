@@ -80,6 +80,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                   nboot=0) {
 
   # require(SuperLearner)
+  loadNamespace("SuperLearner")
 
   # Proxy variables may be empty
   if (any(is.na(W))) {
