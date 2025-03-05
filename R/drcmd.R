@@ -291,7 +291,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                                      Rprobs,cutoff)
 
   # Form full data EIF, phi
-  phi_hat <- get_phi_hat(Y,A,X,R,
+  phi_hat <- get_phi_hat(Y,A,X,R,Z,
                       nuisance_ests$g_hat,nuisance_ests$m_a_hat,
                       nuisance_ests$kappa_hat)
 
@@ -367,20 +367,31 @@ est_psi_tml <- function(idx, Y,A,X,
 #'
 #' @export
 #'
-get_phi_hat <- function(Y, A, X, R, g_hat, m_a_hat, kappa_hat) {
+get_phi_hat <- function(Y, A, X, R, Z,
+                        g_hat, m_a_hat, kappa_hat) {
 
   m_1_hat <- m_a_hat$m_1_hat
   m_0_hat <- m_a_hat$m_0_hat
 
+  # If all the colnames of X are contained in Z
+  if(all(colnames(X) %in% colnames(Z))) {
+    plugin1 <- mean(m_1_hat)
+    plugin0 <- mean(m_0_hat)
+  } else { # if some covariates are partially missing
+    plugin1 <- mean(R/kappa_hat * m_1_hat)
+    plugin0 <- mean(R/kappa_hat * m_0_hat)
+  }
+
   # get fitted values under A=1 and A=0
-  phi_1_hat <- m_1_hat + A*(Y - m_1_hat)/g_hat
-  phi_0_hat <- m_0_hat + (1-A)*(Y - m_0_hat)/(1-g_hat)
+  phi_1_hat <- m_1_hat + A*(Y - m_1_hat)/g_hat - plugin1
+  phi_0_hat <- m_0_hat + (1-A)*(Y - m_0_hat)/(1-g_hat) - plugin0
 
   # Set values where R==0 to 0
   phi_1_hat[R==0] <- 0
   phi_0_hat[R==0] <- 0
 
-  return(list(phi_1_hat=phi_1_hat,phi_0_hat=phi_0_hat))
+  return(list(phi_1_hat=phi_1_hat,phi_0_hat=phi_0_hat,
+              plugin1=plugin1,plugin0=plugin0))
 }
 
 #' @title Obtain estimates for current cross fitting fold
@@ -405,6 +416,10 @@ est_psi <- function(idx, R, Z,
   # Set up necessary objects
   phi_1_hat <- phi_hat$phi_1_hat # full-data eif under A=1
   phi_0_hat <- phi_hat$phi_0_hat # full-data eif under A=0
+  plugin1 <- phi_hat$plugin1 # plugin est of E[Y(1)]
+  plugin0 <- phi_hat$plugin0 # plugin est of E[Y(0)]
+
+  # projections of EIFs
   varphi_1_hat <- varphi_hat$varphi_1_hat # E[full-data eif under A=1|Z,R=1]
   varphi_0_hat <- varphi_hat$varphi_0_hat # E[full-data eif under A=0|Z,R=1]
   varphi_diff_hat <- varphi_hat$varphi_diff_hat
@@ -415,12 +430,12 @@ est_psi <- function(idx, R, Z,
   psi_ate_ic <- (R[idx]/kappa_hat[idx])*(phi_1_hat[idx] - phi_0_hat[idx]) - (R[idx]/kappa_hat[idx] - 1)*varphi_diff_hat[idx]
 
   # Get estimates of E[Y(1)] and E[Y(0)]
-  psi_1_hat <- mean(psi_1_ic)
-  psi_0_hat <- mean(psi_0_ic)
+  psi_1_hat <- plugin1 + mean(psi_1_ic)
+  psi_0_hat <- plugin0 + mean(psi_0_ic)
 
   # Get estimates of contrasts
   psi_hat_ate <- psi_1_hat - psi_0_hat
-  psi_hat_ate_direct <- mean(psi_ate_ic)
+  psi_hat_ate_direct <- plugin1 - plugin0 + mean(psi_ate_ic)
 
   # Point estimates + SEs relevant for binary outcomes
   Sig <- cov(cbind(psi_1_ic,psi_0_ic))
@@ -437,10 +452,10 @@ est_psi <- function(idx, R, Z,
                                      2*Sig[1,2]/(psi_1_hat*(1-psi_1_hat)*psi_0_hat*(1-psi_0_hat)))/n
   }
 
-  return(list(ests = data.frame(psi_1_hat=mean(psi_1_ic),
-                                psi_0_hat=mean(psi_0_ic),
-                                psi_hat_ate=mean(psi_1_ic - psi_0_ic),
-                                psi_hat_ate_direct=mean(psi_ate_ic),
+  return(list(ests = data.frame(psi_1_hat=psi_1_hat,
+                                psi_0_hat=psi_0_hat,
+                                psi_hat_ate=psi_hat_ate,
+                                psi_hat_ate_direct=psi_hat_ate_direct,
                                 psi_hat_rr=psi_hat_rr,
                                 psi_hat_or=psi_hat_or
               ),

@@ -15,9 +15,9 @@ default_learners <- 'SL.glm'
 #-------------------------------------------------------------------------------
 # Make a couple functions for simulating simple missing outcome data structure
 
-n <- 2500
+n <- 5000
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
+Y <-  rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
 Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
 X2=X+rnorm(n)
 
@@ -27,10 +27,8 @@ covariates <- data.frame(X1=X,X2=X2)
 
 # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
 # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-drcmd_res <- drcmd::drcmd(Y,A,covariates,
-                   default_learners= c('SL.gam','SL.earth'),
-                   po_learners = 'SL.gam',
-                   k=10,
+drcmd_res <- drcmd(Y,A,covariates,
+                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
                    eem_ind=F)
 
 summary(drcmd_res)
@@ -163,7 +161,7 @@ for (ss in 1:nsim) {
   # outcome
   Y <- X%*%beta + tau*A + A*(X%*%gamma) + rnorm(nrow(X),mean=0,sd=1) # exp(rowSums(X)))
 
-  Y <- rbinom(n,1,0.5)
+  # Y <- rbinom(n,1,0.5)
   # measurements
   Ystar <- Y + X%*%nu + rnorm(nrow(X),mean=0,sd=1)
   Astar <- ifelse(runif(length(A)) < 0.8, A, 1 - A)
