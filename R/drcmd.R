@@ -1,6 +1,5 @@
 #' @title Doubly-robust causal inference with missing data
 #'
-#'
 #' @description Doubly-robust estimation of counterfactual means in the presence of missing
 #  'data. The drcmd() function estimates counterfactual means for binary point treatments
 #'  and reports average treatment effects, as well as causal risk ratios and odds ratios

@@ -4,7 +4,7 @@
 \alias{get_phi_hat}
 \title{Contruct full data EIF estimate}
 \usage{
-get_phi_hat(Y, A, X, R, g_hat, m_a_hat, kappa_hat)
+get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat)
 }
 \arguments{
 \item{Y}{Outcome variable. Can be continuous or binary}
@@ -15,13 +15,13 @@ get_phi_hat(Y, A, X, R, g_hat, m_a_hat, kappa_hat)
 
 \item{R}{Binary missingness indicator}
 
+\item{Z}{Dataframe containing all variables that are never subject to missingness}
+
 \item{g_hat}{Propensity score predictions}
 
 \item{m_a_hat}{List of outcome predictions under A=0/1}
 
 \item{kappa_hat}{Missingness probabilities}
-
-\item{Z}{Dataframe containing all variables that are never subject to missingness}
 }
 \description{
 Function for constructing estimate of the full data EIF, given
