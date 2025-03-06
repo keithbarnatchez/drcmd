@@ -191,11 +191,11 @@ check_entry_errors <- function(Y,A,X,W,R,
 #' @return A vector of treatment propensity scores truncated to interval [c, 1-c]
 #' @export
 #'
-truncate_g <- function(x, c=0.01) {
-  if (any( (x > 1 - c) | (x < c))) {
-    warning(cat("Propensity scores outside of ",c," and ",1-c,". Truncating to cutoffs"))
+truncate_g <- function(x, cutoff=0.025) {
+  if (any( (x > 1 - cutoff) | (x < cutoff))) {
+    warning(cat("Propensity scores outside of ",cutoff," and ",1-cutoff,". Truncating to cutoffs"))
   }
-  x <- ifelse(x > 1 - c, 1 - c, ifelse(x < c, c, x))
+  x <- ifelse(x > 1 - cutoff, 1 - cutoff, ifelse(x < cutoff, cutoff, x))
   return(x)
 }
 
@@ -207,11 +207,11 @@ truncate_g <- function(x, c=0.01) {
 #' @return A vector of complete propensity scores truncated to interval [c, 1-c]
 #' @export
 #'
-truncate_r <- function(x, c=0.01) {
-  if (any( (x > 1 - c) | (x < c))) {
-    warning(cat("Complete case probabilities outside of ",c," and ",1-c,". Truncating to cutoffs"))
+truncate_r <- function(x, cutoff=0.01) {
+  if (any( (x > 1 - cutoff) | (x < cutoff))) {
+    warning(cat("Complete case probabilities outside of ",cutoff," and ",1-cutoff,". Truncating to cutoffs"))
   }
-  x <- ifelse(x > 1 - c, 1 - c, ifelse(x < c, c, x))
+  x <- ifelse(x > 1 - cutoff, 1 - cutoff, ifelse(x < cutoff, cutoff, x))
   return(x)
 }
 

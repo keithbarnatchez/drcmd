@@ -4,7 +4,7 @@
 \alias{truncate_g}
 \title{Truncate treatment propensity scores}
 \usage{
-truncate_g(x, c = 0.01)
+truncate_g(x, cutoff = 0.025)
 }
 \arguments{
 \item{x}{A vector of treatment propensity scores}

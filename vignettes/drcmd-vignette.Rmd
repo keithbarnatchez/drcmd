@@ -95,21 +95,21 @@ get_sl_libraries()
 Below we demonstrate an example call of `drcmd()` which specifies to estimate all nuisance functions with an ensemble of generalized linear models and splines.
 
 ```{r drcmd-simple}
-res <- drcmd(Y=Y, A=A, X=X,
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners=c('SL.glm','SL.earth'))
 ```
 
 To make use of the additional proxy variables, we can simply specify the `W` argument in the call to `drcmd()`. In our running example, we have that $Y^*=W$.
 
 ```{r drcmd-proxy, eval=FALSE}
-res <- drcmd(Y=Y, A=A, X=X, W=data.frame(Ystar),
+res <- drcmd::drcmd(Y=Y, A=A, X=X, W=data.frame(Ystar),
              default_learners=c('SL.glm','SL.earth'))
 ```
 
 Users can specify specific learners through nuisance-specific arguments, which will overwrite the learners specified in `default_learners` for that particular nuisance function if `default_learners` is specified. For example, to estimate the pseudo-outcome regression through generalized additive models (GAMs), and all other nuisance functions with a Super Learner ensemble of GLMs and splines, we can make the following call to `drcmd()`:
 
 ```{r drcmd-specific, eval=FALSE}
-res <- drcmd::drcmd(Y=Y, A=A, X=X,
+res <- drcmd::drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners=c('SL.glm','SL.earth'),
              po_learners = 'SL.gam')
 ```

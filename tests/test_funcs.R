@@ -2,11 +2,11 @@
 # space for testing functions in the drcmd package
 #-------------------------------------------------------------------------------
 rm(list=ls())
-source('../R/utils.R')
-source('../R/drcmd.R')
-source('../R/nuis.R')
-source('../R/methods.R')
-# devtools::install_github('keithbarnatchez/drcmd')
+# source('../R/utils.R')
+# source('../R/drcmd.R')
+# source('../R/nuis.R')
+# source('../R/methods.R')
+devtools::install_github('keithbarnatchez/drcmd')
 #-------------------------------------------------------------------------------
 # Optional params for drcmd
 
@@ -27,7 +27,7 @@ covariates <- data.frame(X1=X,X2=X2)
 
 # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
 # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-drcmd_res <- drcmd(Y,A,covariates,
+drcmd_res <- drcmd::drcmd(Y,A,covariates,
                    default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
                    eem_ind=F)
 
@@ -101,7 +101,6 @@ est_psi(idx, R, Z, kappa_hat, phi_hat,varphi_hat)
 drcmd_res <- drcmd(Y,A,X)
 #-------------------------------------------------------------------------------
 # Test coverage of drcmd
-
 
 
 compute_CI <- function(est, se) {

@@ -4,7 +4,7 @@
 \alias{truncate_r}
 \title{Truncate complete case propensity scores}
 \usage{
-truncate_r(x, c = 0.01)
+truncate_r(x, cutoff = 0.01)
 }
 \arguments{
 \item{x}{A vector of complete case propensity scores}
