@@ -37,8 +37,8 @@
 #' are missing (e.g. two-phase sample designs). Defaults to NA, in which case
 #' missingness probabilities are estimated.
 #' @param k A numeric indicating the number of folds for cross-fitting
-#' @param c Cutoff for treatment and complete case propensity scores. Estimates outside
-#' of [c, 1-c] are set to c or 1-c, respectively
+#' @param cutoff Cutoff for treatment and complete case propensity scores. Estimates outside
+#' of [cutoff, 1-cutoff] are set to cutoff or 1-cutoff, respectively
 #' @param nboot A numeric indicating the number of desired bootstrap samples.
 #' If >0, uses bootstrap to obtain SEs. If =0, uses asymptotic analytical SEs.
 #' @return An S3 object of class \code{"drcmd"} containing estimation results, information
@@ -75,7 +75,7 @@
 drcmd <- function(Y, A, X, W=NA, R=NA,
                   default_learners=NULL,
                   m_learners=NULL,g_learners=NULL,r_learners=NULL,po_learners=NULL,
-                  eem_ind=FALSE, Rprobs=NA, k=1, cutoff=0.01,
+                  eem_ind=FALSE, Rprobs=NA, k=1, cutoff=0.025,
                   nboot=0) {
 
   # require(SuperLearner)  importFrom SuperLearner SuperLearner All trimLogit
@@ -321,35 +321,6 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
 
 }
 
-#' @title Estimate causal effects through targeted maximum likelihood
-#'
-#' @description Function for obtaining estimates of causal estimands through
-#' targeted maximum likelihood. To be called within drcmd_est_fold(). Updates
-#' estimate of P(R=1|Z) and the plug-in estimator in a manner which removes the
-#' plug-in bias incurred by an initial plug-in estimator
-#'
-#'
-#'
-#'
-est_psi_tml <- function(idx, Y,A,X,
-                        R, Z,
-                        m_1_hat, m_0_hat, g_hat,
-                        kappa_hat,varphi_hat) {
-
-  # Set up necessary objects
-  phi_1_hat <- phi_hat$phi_1_hat # full-data eif under A=1
-  phi_0_hat <- phi_hat$phi_0_hat # full-data eif under A=0
-  varphi_1_hat <- varphi_hat$varphi_1_hat # E[full-data eif under A=1|Z,R=1]
-  varphi_0_hat <- varphi_hat$varphi_0_hat # E[full-data eif under A=0|Z,R=1]
-  varphi_diff_hat <- varphi_hat$varphi_diff_hat
-
-  # Update estimate of P(R=1|Z)
-
-
-
-
-
-}
 
 #' @title Contruct full data EIF estimate
 #'
@@ -471,4 +442,47 @@ est_psi <- function(idx, R, Z,
               )
          )
   )
+}
+
+#' @title Estimate causal effects through targeted maximum likelihood
+#'
+#' @description Function for obtaining estimates of causal estimands through
+#' targeted maximum likelihood. To be called within drcmd_est_fold(). Updates
+#' estimate of P(R=1|Z) and the plug-in estimator in a manner which removes the
+#' plug-in bias incurred by an initial plug-in estimator
+#'
+#'
+#'
+#'
+est_psi_tml <- function(idx, Y,A,X,
+                        R, Z,
+                        m_1_hat, m_0_hat, g_hat,
+                        kappa_hat,varphi_hat,
+                        maxits=10) {
+
+  # # Set up necessary objects
+  # phi_1_hat <- phi_hat$phi_1_hat # full-data eif under A=1
+  # phi_0_hat <- phi_hat$phi_0_hat # full-data eif under A=0
+  # varphi_1_hat <- varphi_hat$varphi_1_hat # E[full-data eif under A=1|Z,R=1]
+  # varphi_0_hat <- varphi_hat$varphi_0_hat # E[full-data eif under A=0|Z,R=1]
+  # varphi_diff_hat <- varphi_hat$varphi_diff_hat
+  #
+  # # Update estimate of P(R=1|Z)
+  # eps1 <- eps21 <- eps22 <- 1
+  # its <- 0
+  # while ((its <= maxits) & (eps1 > 1e-4) & (eps21 > 1e4) & (eps22 > 1e4)) {
+  #
+  #   # Update sampling probabilities
+  #
+  #   # Update plug-in
+  #
+  #
+  #
+  #
+  # }
+
+
+
+
+
 }

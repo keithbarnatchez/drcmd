@@ -110,21 +110,6 @@ compute_CI <- function(est, se) {
   return(c(lower,upper))
 }
 
-
-#-------------------------------------------------------------------------------
-n <- 1000
-p <- 3 # number of covariates
-delta <- c(-0.1,-0.6,-0.9)
-nu <- c(0.1,-0.1,0.1)
-beta <- c(1,2,-2) # outcome model main effects
-tau <- 1 # constant treatment effect
-
-gamma <- rep(1,p) # interaction effects with tmt c(0.5,2.1,-1.2)
-eta <- c(0.6,-0.2,0.8,0.1,-0.3)
-rho=0.2
-#-------------------------------------------------------------------------------
-# Brief sim emulating paper 2 params
-
 trim <- function(p,cutoff=0.05) {
 
   # trim lower piece
@@ -139,8 +124,24 @@ trim <- function(p,cutoff=0.05) {
 expit <- function(o) {
   return(exp(o)/(1+exp(o)))
 }
+#-------------------------------------------------------------------------------
+n <- 1000
+p <- 3 # number of covariates
+delta <- c(-0.1,-0.6,-0.9)
+nu <- c(0.1,-0.1,0.1)
+beta <- c(1,2,-2) # outcome model main effects
+tau <- 1 # constant treatment effect
 
-nsim <- 70
+gamma <- rep(1,p) # interaction effects with tmt c(0.5,2.1,-1.2)
+eta <- c(0.6,-0.2,0.8,0.1,-0.3)
+rho=0.1
+sl_lib <- c('SL.glm','SL.glm.interaction','SL.earth')
+#-------------------------------------------------------------------------------
+# Brief sim emulating paper 2 params
+
+
+
+nsim <- 50
 drcmd_evm_ests <- rep(NA,nsim)
 drcmd_mid_ests <- rep(NA,nsim)
 drcmd_direct_ests <- rep(NA,nsim)
@@ -170,7 +171,6 @@ for (ss in 1:nsim) {
   R <- rbinom(nrow(X),size=1,prob = Rprobs)
   X <- as.data.frame(X)
 
-
   oracle_aipw <- AIPW::AIPW$new(Y = Y, A=A, W = X,Q.SL.library = 'SL.glm.interaction',
                                 g.SL.library = 'SL.glm.interaction')$fit()$summary()
   oracle_ests[ss] <- oracle_aipw$estimates$RD
@@ -182,15 +182,15 @@ for (ss in 1:nsim) {
   # Estimate with eem
   drcmd_res_evm <- drcmd(Y,A,X,
                      W=data.frame(Ystar,Astar),
-                     default_learners= c('SL.glm.interaction'),
-                     po_learners = 'SL.gam',
-                     eem_ind=TRUE,k=1,Rprobs=Rprobs) ; drcmd_res_evm
+                     default_learners= sl_lib,
+                     r_learners = 'SL.glm',
+                     eem_ind=TRUE,k=1) ; drcmd_res_evm
 
   # Estimate without eem
   drcmd_res_mid <- drcmd(Y,A,X,
                       W=data.frame(Ystar,Astar),
-                      default_learners= c('SL.glm.interaction'),
-                      po_learners = 'SL.gam',
+                      default_learners= sl_lib,
+                      r_learners = 'SL.glm',
                       eem_ind=FALSE,k=1,Rprobs=Rprobs)
 
   # evm results
@@ -206,3 +206,8 @@ for (ss in 1:nsim) {
                          drcmd_res_mid$results$ses$psi_hat_ate)
   drcmd_mid_cov[ss] <- (temp_int[1] < 2.5) & (temp_int[2] > 2.5)
 }
+
+mean(oracle_ests) ; sd(oracle_ests)
+mean(drcmd_evm_ests) ; sd(drcmd_evm_ests)
+mean(drcmd_mid_ests) ; sd(drcmd_mid_ests)
+mean(drcmd_direct_ests) ; sd(drcmd_direct_ests)

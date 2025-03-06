@@ -299,8 +299,10 @@ est_varphi_eem <- function(idx, R, Z,
                                    weights=(R[idx]/kappa_hat[idx] - 1)^2)
     varphi_0_hat <- hal9001::fit_hal(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
                                    weights=(R[idx]/kappa_hat[idx] - 1)^2)
+
     varphi_diff_hat <- hal9001::fit_hal(Y=ytilde1[idx]-ytilde0[idx],X=Z[idx,,drop=FALSE],
                                      weights=(R[idx]/kappa_hat[idx] - 1)^2)
+
     varphi_1_hat <- predict(varphi_1_hat, new_data=Z)
     varphi_0_hat <- predict(varphi_0_hat, new_data=Z)
     varphi_diff_hat <- predict(varphi_diff_hat, new_data=Z)

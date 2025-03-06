@@ -4,7 +4,20 @@
 \alias{est_psi_tml}
 \title{Estimate causal effects through targeted maximum likelihood}
 \usage{
-est_psi_tml(idx, Y, A, X, R, Z, m_1_hat, m_0_hat, g_hat, kappa_hat, varphi_hat)
+est_psi_tml(
+  idx,
+  Y,
+  A,
+  X,
+  R,
+  Z,
+  m_1_hat,
+  m_0_hat,
+  g_hat,
+  kappa_hat,
+  varphi_hat,
+  maxits = 10
+)
 }
 \description{
 Function for obtaining estimates of causal estimands through
