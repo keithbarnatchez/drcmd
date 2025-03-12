@@ -32,6 +32,9 @@
 #' @param po_learners A character vector containing learners to be used for the
 #' pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries
 #' @param eem_ind A logical indicating whether to use empirical efficiency maximization
+#' @param tml A logicial indicating whether to obtain estimates through targeted
+#' maximum likelihood estimation (TML). If TRUE, estimates obtained by TML. If
+#' FALSE (default setting), estimates are obtained through a one-step estimator
 #' @param Rprobs A vector of probabilities for the missingness indicator. Only
 #' suitable for study designs where researcher controls mechanism by which variables
 #' are missing (e.g. two-phase sample designs). Defaults to NA, in which case
@@ -75,7 +78,8 @@
 drcmd <- function(Y, A, X, W=NA, R=NA,
                   default_learners=NULL,
                   m_learners=NULL,g_learners=NULL,r_learners=NULL,po_learners=NULL,
-                  eem_ind=FALSE, Rprobs=NA, k=1, cutoff=0.025,
+                  eem_ind=FALSE, tml=FALSE,
+                  Rprobs=NA, k=1, cutoff=0.025,
                   nboot=0) {
 
   # require(SuperLearner)  importFrom SuperLearner SuperLearner All trimLogit
@@ -85,7 +89,19 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   if (any(is.na(W))) {
     W <- X[,0]
   }
-  # browser()
+
+  # If estimating via TML, and outcome is continuous, scale Y to unit interval
+  yscaled <- FALSE
+  y_bin <- all(Y[!is.na(Y)] %in% c(0,1))
+  if (tml & !y_bin) {
+    # center and scale Y to be [0,1]
+    minY <- min(Y,na.rm=T)
+    maxY <- max(Y,na.rm=T)
+    Y <- (Y - minY) / (maxY - minY)
+    y_bin <- TRUE # want nuisance learners to treat Y as binary so predictions stay in [0,1]
+    yscaled <- TRUE
+  }
+
   # Clean up learners
   learners <- clean_learners(default_learners,m_learners,g_learners,r_learners,
                              po_learners)
@@ -97,16 +113,21 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   V <- find_missing_pattern(Y,A,X,W)
   Z <- V$Z ; R <- V$R ; X <- V$X ; Y <- V$Y ; A <- V$A
 
-  # Check if Y is binary (all NAs set to 0 by this point)
-  y_bin <- check_binary(Y)
-
   # Obtain estimates
   res <- list()
   res$results <- drcmd_est(Y,A,X,Z,R,
                            learners$m_learners,learners$g_learners,
                            learners$r_learners,learners$po_learners,
-                           eem_ind,Rprobs,k,cutoff,y_bin)
+                           eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled)
 
+  if (yscaled) { # rescale estimates to original y scale if necessary
+    res$results$estimates <- res$results$estimates * (maxY - minY)
+    res$results$ses <- res$results$ses * (maxY - minY)
+
+    # also need to deal eith E[Y(1)] and E[Y(0)]
+    res$results$estimates$psi_1_hat <- res$results$estimates$psi_1_hat + minY
+    res$results$estimates$psi_0_hat <- res$results$estimates$psi_0_hat + minY
+  }
 
   if('y' %in% colnames(Z)) {
     colnames(Z)[colnames(Z) == 'y'] <- 'Y'
@@ -160,11 +181,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 #' @export
 drcmd_est <- function(Y,A,X,Z,R,
                       m_learners,g_learners,r_learners,po_learners,
-                      eem_ind,Rprobs,k,cutoff,y_bin) {
-
-  # if (tml_ind) { # If estimating via TML
-  #   1
-  # }
+                      eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled) {
 
   # Divide the data into k random "train-test" splits
   if (k>1) { # if doing cross-fitting
@@ -173,7 +190,7 @@ drcmd_est <- function(Y,A,X,Z,R,
     # Use lapply to get results for each fold
     res <- lapply(1:k, function(i) drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
                                                   m_learners,g_learners,r_learners,po_learners,
-                                                  eem_ind,Rprobs,cutoff,y_bin))
+                                                  eem_ind,tml,Rprobs,cutoff,y_bin))
 
     # Extract ests and SEs from each fold
     ests_df <- do.call(rbind, lapply(res, function(x) x$ests))
@@ -192,16 +209,18 @@ drcmd_est <- function(Y,A,X,Z,R,
 
     # Get variances via fold-wise contributions to overall IC
     res <- list(estimates=as.data.frame(t(ests)),ses=sqrt(vars),nuis=average_nuis)
-
-    return(res)
   } else { # if not doing cross-fitting
     splits <- create_folds(length(Y),k)
     res <- drcmd_est_fold(splits,Y,A,X,Z,R,
                           m_learners,g_learners,r_learners,po_learners,
-                          eem_ind,Rprobs,cutoff,y_bin)
+                          eem_ind,tml,Rprobs,cutoff,y_bin)
     res <- list(estimates=res$ests,ses=sqrt(res$vars),nuis=res$nuis)
-    return(res)
   }
+  # if (yscaled) { # rescale estimates to original y scale if necessary
+  #   res$estimates <- res$estimates * (maxY - minY)
+  #   res$ses <- res$ses * (maxY - minY)
+  # }
+  return(res)
 }
 
 #' @title Cross-fit SE estimation via influence curve contributions
@@ -238,7 +257,6 @@ est_ses_crossfit <- function(res, y_bin) {
                                      Sig[2,2]/(psi_0_hat^2*(1-psi_0_hat)^2) -
                                      2*Sig[1,2]/(psi_1_hat*(1-psi_1_hat)*psi_0_hat*(1-psi_0_hat)))/n
   }
-
 
   return(
     data.frame(psi_1_hat=var(psi_1_ic)/n,
@@ -278,7 +296,7 @@ est_ses_crossfit <- function(res, y_bin) {
 #' @export
 drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
-                           eem_ind,Rprobs,cutoff,y_bin) {
+                           eem_ind,tml,Rprobs,cutoff,y_bin) {
 
   # Get training and test data indices
   train <- splits$train
@@ -289,7 +307,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                                      m_learners,g_learners,r_learners,
                                      Rprobs,cutoff)
 
-  # Form full data EIF, phi
+  # Form full data EIF, phi, based on nuisance estimates
   phi_hat <- get_phi_hat(Y,A,X,R,Z,
                       nuisance_ests$g_hat,nuisance_ests$m_a_hat,
                       nuisance_ests$kappa_hat)
@@ -303,9 +321,21 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                                 po_learners)
 
   # Form final estimate for this fold
-  ests <- est_psi(test, R, Z, nuisance_ests$kappa_hat, phi_hat,varphi_hat,y_bin)
+  if (tml) { # est via tml if specified
+    ests <- est_psi_tml(test, Y,A,X,
+                        R, Z,
+                        nuisance_ests$m_a_hat$m_1_hat,
+                        nuisance_ests$m_a_hat$m_0_hat,
+                        nuisance_ests$g_hat,
+                        nuisance_ests$kappa_hat,
+                        phi_1_hat, phi_0_hat,
+                        varphi_hat)
+  } else { # otherwise est via one-step (default)
+    ests <- est_psi(test, R, Z, nuisance_ests$kappa_hat,
+                    phi_hat,varphi_hat,y_bin)
+  }
 
-  # Additionally return nuisance est values
+  # Additionally return nuisance estimate values
   nuis <- data.frame(kappa_hat=nuisance_ests$kappa_hat,
                      m_1_hat=nuisance_ests$m_a_hat$m_1_hat,
                      m_0_hat=nuisance_ests$m_a_hat$m_0_hat,
@@ -320,7 +350,6 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   return(ests)
 
 }
-
 
 #' @title Contruct full data EIF estimate
 #'
@@ -451,38 +480,200 @@ est_psi <- function(idx, R, Z,
 #' estimate of P(R=1|Z) and the plug-in estimator in a manner which removes the
 #' plug-in bias incurred by an initial plug-in estimator
 #'
+#' @param idx Indices of the training set
+#' @param Y Outcome vector
+#' @param A Treatment vector
+#' @param X Dataframe of covariates
+#' @param R Complete case indicator vector
+#' @param Z Dataframe containing all variables that are never subject to missingness
+#' @param m_1_hat A numeric vector containing the fitted outcome predictions under A=1
+#' @param m_0_hat A numeric vector containing the fitted outcome predictions under A=0
+#' @param g_hat A numeric vector containing the fitted treatment propensity scores
+#' @param kappa_hat A numeric vector containing the fitted values of kappa
+#' @param phi_1_hat  Estimates of EIC for E[Y(1)]
+#' @param phi_0_hat  Estimates of E[Y(0)]
+#' @param varphi_hat A list containing estimate of E[phi_a|Z]
 #'
-#'
-#'
+#' @return A list containing updated estimates of the nuisance parameters
+#' @export
 est_psi_tml <- function(idx, Y,A,X,
                         R, Z,
-                        m_1_hat, m_0_hat, g_hat,
-                        kappa_hat,varphi_hat,
+                        m_1_hat, m_0_hat, g_hat,kappa_hat,
+                        phi_1_hat, phi_0_hat,
+                        varphi_hat,
                         maxits=10) {
 
-  # # Set up necessary objects
-  # phi_1_hat <- phi_hat$phi_1_hat # full-data eif under A=1
-  # phi_0_hat <- phi_hat$phi_0_hat # full-data eif under A=0
-  # varphi_1_hat <- varphi_hat$varphi_1_hat # E[full-data eif under A=1|Z,R=1]
-  # varphi_0_hat <- varphi_hat$varphi_0_hat # E[full-data eif under A=0|Z,R=1]
-  # varphi_diff_hat <- varphi_hat$varphi_diff_hat
-  #
-  # # Update estimate of P(R=1|Z)
-  # eps1 <- eps21 <- eps22 <- 1
-  # its <- 0
-  # while ((its <= maxits) & (eps1 > 1e-4) & (eps21 > 1e4) & (eps22 > 1e4)) {
-  #
-  #   # Update sampling probabilities
-  #
-  #   # Update plug-in
-  #
-  #
-  #
-  #
-  # }
 
+  # Note: form of the plugin will depend on availability of X. If X is always
+  # available, can use m_hat directly. Otherwise, need to rescale the plugin
+  # Will work on this eventually
 
+  # Update step
+  updated_ests <- tml_updates(idx, Y,A,X,
+                              R, Z,
+                              m_1_hat, m_0_hat, g_hat,kappa_hat,
+                              phi_1_hat, phi_0_hat,
+                              varphi_hat,
+                              maxits=maxits)
 
+  # Extract updated nuisance estimates
+  m_a_hat_star <- list(m_1_hat=updated_ests$m_1_hat_star,
+                       m_0_hat=updated_ests$m_0_hat_star)
 
+  # Form estimates
+  psi_1_hat <- mean(updated_ests$m_1_hat_star)
+  psi_0_hat <- mean(updated_ests$m_0_hat_star)
+  psi_hat_ate <- psi_1_hat - psi_0_hat
+  psi_hat_ate_direct <- mean(updated_ests$plugin_ate_star)
 
+  # Update EICs with updated nuisance ests
+  phi_hat_star <- get_phi_hat(Y, A, X, R, Z,
+                          g_hat,
+                          m_a_hat_star,
+                          updated_ests$kappa_hat_star)
+
+  # Also get updated EIC for full data diff directly
+  # phi_ate_ate <- updates_ests$plugin_ate_star
+
+  # Form EICs under A=1 and A=0
+  varphi_1_hat <- varphi_hat$varphi_1_hat
+  varphi_0_hat <- varphi_hat$varphi_0_hat
+  phi_1_hat_star <- phi_hat_star$phi_1_hat
+  phi_0_hat_star <- phi_hat_star$phi_0_hat
+  psi_1_ic <- (R/updated_ests$kappa_hat_ate_star)*phi_1_hat_star - (R/updated_ests$kappa_hat_ate_star - 1)*varphi_1_hat
+  psi_0_ic <- (R/updated_ests$kappa_hat_ate_star)*phi_0_hat_star - (R/updated_ests$kappa_hat_ate_star - 1)*varphi_0_hat
+
+  if ( all(Y %in% c(0,1)) ) { # if binary outcome, get RR and OR ests as well
+    Sig <- cov(cbind(psi_1_ic,psi_0_ic))
+
+    # point estimates
+    psi_hat_rr <- psi_1_hat/psi_0_hat
+    psi_hat_or <- (psi_1_hat/(1-psi_1_hat))/(psi_0_hat/(1-psi_0_hat))
+
+    # standard errors (closed form via delta method)
+    psi_hat_rr_se <- (Sig[1,1]/psi_0_hat^2 - 2*Sig[1,2]*psi_1_hat/(psi_0_hat^3) + Sig[2,2]*psi_1_hat^2/psi_0_hat^4)/n
+    psi_hat_or_se <- psi_hat_or^2*(Sig[1,1]/(psi_1_hat^2*(1-psi_1_hat)^2) +
+                                     Sig[2,2]/(psi_0_hat^2*(1-psi_0_hat)^2) -
+                                     2*Sig[1,2]/(psi_1_hat*(1-psi_1_hat)*psi_0_hat*(1-psi_0_hat)))/n
+  } else { # if outcome is continuous
+    psi_hat_rr <- psi_hat_or <- psi_hat_rr_se <- psi_hat_or_se <- NA
+  }
+
+  return(list(ests = data.frame(psi_1_hat=psi_1_hat,
+                                psi_0_hat=psi_0_hat,
+                                psi_hat_ate=mean(updated_ests$plugin_ate_star),
+                                psi_hat_ate_direct=psi_hat_ate,
+                                psi_hat_rr=psi_hat_rr,
+                                psi_hat_or=psi_hat_or
+  ),
+  vars = data.frame(psi_1_hat=var(psi_1_ic)/n,
+                    psi_0_hat=var(psi_0_ic)/n,
+                    psi_hat_ate=var(psi_1_ic - psi_0_ic)/n,
+                    psi_hat_ate_direct=var(psi_1_ic - psi_0_ic)/n,
+                    psi_hat_rr=psi_hat_rr_se,
+                    psi_hat_or=psi_hat_or_se
+  ),
+  ics = data.frame(psi_1_ic=psi_1_ic,
+                   psi_0_ic=psi_0_ic,
+                   psi_ate_ic=psi_1_ic-psi_0_ic
+  )
+  )
+  )
+
+}
+
+#' @title Update nuisance functions with TML
+#'
+#' @description Function for updating the nuisance functions m_a and kappa through
+#' TML
+#'
+#' @param idx Indices of the training set
+#' @param Y Outcome vector
+#' @param A Treatment vector
+#' @param X Dataframe of covariates
+#' @param R Complete case indicator vector
+#' @param Z Dataframe containing all variables that are never subject to missingness
+#' @param m_1_hat A numeric vector containing the fitted outcome predictions under A=1
+#' @param m_0_hat A numeric vector containing the fitted outcome predictions under A=0
+#' @param g_hat A numeric vector containing the fitted treatment propensity scores
+#' @param kappa_hat A numeric vector containing the fitted values of kappa
+#' @param phi_1_hat  Estimates of EIC for E[Y(1)]
+#' @param phi_0_hat  Estimates of E[Y(0)]
+#' @param varphi_hat A list containing estimate of E[phi_a|Z]
+#'
+#' @return A list containing updated estimates of the nuisance parameters
+#' @export
+tml_updates <- function(idx, Y,A,X,
+                    R, Z,
+                    m_1_hat, m_0_hat, g_hat,kappa_hat,
+                    phi_1_hat, phi_0_hat,
+                    varphi_hat,
+                    maxits=10) {
+
+  # Form clever covariates
+  H_A <- A/g_hat - (1-A)/(1-g_hat)
+  H_1 <- 1/g_hat
+  H_0 <- -(1-g_hat)
+  plugin_ate <- m_1_hat - m_0_hat
+
+  m_a_hat <- m_1_hat*A + m_0_hat*(1-A)
+
+  # Update complete case propensity scores
+  kappa_hat_ate_update <- glm(
+    R ~ -1 + I(varphi_hat$varphi_diff_hat/kappa_hat),
+    offset=qlogis(kappa_hat),
+    family=binomial
+  )
+  kappa_hat_ate_star <- as.double(predict(kappa_hat_ate_update, type="response"))
+
+  # Update outcome model
+  m_a_update <- glm(
+    Y ~ -1 + H_A,
+    family=binomial(),
+    weights=R/kappa_hat_ate_star,
+    offset=qlogis(m_a_hat)
+  )
+  m_a_hat_star <- predict(m_a_update, type="response")
+  m_1_hat_star <- plogis(qlogis(m_1_hat) + coef(m_a_update)*H_1)
+  m_0_hat_star <- plogis(qlogis(m_0_hat) + coef(m_a_update)*H_0)
+
+  # TML for E[Y(1)]
+  # kappa_hat_1_update <- glm(
+  #   R ~ -1 + I(varphi_hat$varphi_1_hat/kappa_hat),
+  #   offset=plogis(kappa_hat),
+  #   family=binomial
+  # )
+  # kappa_hat_1_star <- predict(kappa_hat_1_update, type="response")
+  #
+  # m_1_hat_update <- glm(
+  #   Y ~ -1 + H_1,
+  #   family=binomial(),
+  #   weights=R/kappa_hat_1_star,
+  #   offset=plogis(m_1_hat)
+  # )
+  # m_1_hat_star <- predict(m_1_hat_update, type="response")
+  #
+  # # TML for E[Y(0)]
+  # kappa_hat_0_update <- glm(
+  #   R ~ -1 + I(varphi_hat$varphi_0_hat/kappa_hat),
+  #   offset=plogis(kappa_hat),
+  #   family=binomial
+  # )
+  # kappa_hat_0_star <- predict(kappa_hat_0_update, type="response")
+  #
+  # m_0_hat_update <- glm(
+  #   Y ~ -1 + H_0,
+  #   family=binomial(),
+  #   weights=R/kappa_hat_0_star,
+  #   offset=plogis(m_0_hat)
+  # )
+  # m_0_hat_star <- predict(m_0_hat_update, type="response")
+
+  return(list(
+    m_1_hat_star = m_1_hat_star,
+    m_0_hat_star = m_0_hat_star,
+    plugin_ate_star = m_1_hat_star - m_0_hat_star,
+    kappa_hat_ate_star = kappa_hat_ate_star
+  )
+  )
 }

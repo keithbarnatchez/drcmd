@@ -266,6 +266,9 @@ check_binary <- function(x) {
   if(all(x %in% c(0,1))) {
     return(TRUE)
   } else {
+    if (min(x) == 0 & max(x) == 1) { # if y normed to unit interval, treat as binary
+      return(TRUE)
+    }
     return(FALSE)
   }
 }

@@ -72,8 +72,6 @@ est_m_a <- function(idx, Y, A, X, R,
                     kappa_hat,
                     m_learners) {
 
-  # note: need to make family checking automatic
-
   yfam <- gaussian()
   if (check_binary(Y)) {
     yfam <- binomial()
@@ -88,7 +86,7 @@ est_m_a <- function(idx, Y, A, X, R,
     m_1_hat <- predict(m_a_hat, new_data=data)
     data[,ncol(data)] <- 0
     m_0_hat <- predict(m_a_hat, new_data=data)
-  } else { # estimate via SL *** need dynamic family ***
+  } else {
     m_a_hat <- SuperLearner::SuperLearner(Y=Y[idx],X=data[idx,],
                                           SL.library=m_learners,
                                           family=yfam,
