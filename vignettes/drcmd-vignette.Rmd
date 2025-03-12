@@ -34,8 +34,6 @@ source('../R/methods.R')
 
 **Note**: Package is still in development. Vignette here will be very generic until package is ready for CRAN submission, but all necessary details on how to use the package will be outlined below.
 
-# Technical Details
-
 # Using `drcmd` \label{using}
 
 ## Installation
@@ -48,7 +46,7 @@ Note: Eventually we'll have a CRAN option as well
 
 ## Estimation of causal effects
 
-To illustrate the use of the `drcmd` package, we will consider a missing data problem where the outcome of interest $Y$ is missing at random conditional on measured covariates $\mathbf X$: $Y \perp R | X$. We will assume a cheap, noisy proxy measurement for $Y$, denoted $Y^*$, is available for all subjects but not predictive of missingness (so that it is not necessary to satisfy the MAR assumption), resulting in the following simple data generating process:
+To illustrate the use of the `drcmd` package, we will consider a missing data problem where the outcome of interest $Y$ is missing at random conditional on measured covariates. We will assume a cheap, noisy proxy measurement for $Y$, denoted $Y^*$, is available for all subjects but not predictive of missingness (so that it is not necessary to satisfy the MAR assumption), resulting in the following simple data generating process:
 
 $$
 \begin{aligned}
@@ -56,8 +54,10 @@ X & \sim N(0,1) \ \ \ \ \ \  &\text{(Covariates)} \\
 A|X & \sim \text{Bernoulli}(p = \text{logit}^{-1}(X)) \ \ \ \ \ \  &\text{(Treatment)} \\
 Y|A,X & \sim N(\mu=1 + A + X, \sigma^2=1) \ \ \ \ \ \  &\text{(Outcome)} \\
 Y^* & = Y + \varepsilon, \ \varepsilon \sim N(\mu=0,\sigma^2 = 1/4) \ \ \ \ \ \  &\text{(Outcome Proxy)} \\
+R &\sim \text{Bernoulli}(X) \ \ \ \ \ \  &\text{(Complete case Indicator)} \\
 \end{aligned}
 $$
+$Y$ is only available when the complete case indicator $R=1$, and the missing at random assumption implies $Y \perp R | X$. We simulate data from this model below:
 
 ```{r simdata}
 n <- 1e3
@@ -73,7 +73,7 @@ The main function from the `drcmd` package is `drcmd()`. The core arguments are 
 
 Missing data are allowed in the outcome, treatment, and covariates (including any subset of covariates), as well as any combination of the three. The only requirement for running `drcmd` is that there exists at *least* one variable that is never missing, either in `Y`, `A`, `X`, `W`. Note that this does **not** guarantee identifiability of the causal estimands $\mathbb{E}[Y(1)]$ or $\mathbb{E}[Y(0)]$. The validity of the resulting estimates hinges on the MAR assumption holding, a crucial problem-specific determination that should be made through subject matter expertise.
 
-Along with specifying variables, users can additionally specify means by which to estimate all nuisance functions. All nuisance functions can be estimated through either Super Learner (a stacking algorithm). There are 4 nuisance functions that are fit by `drcmd`, for $a = 0,1$:
+Along with specifying variables, users must specify means by which to estimate all nuisance functions. All nuisance functions are estimated through a Super Learner (a stacking algorithm) using the `SuperLearner` package. There are 4 nuisance functions that are fit by `drcmd`, for $a = 0,1$:
 
 $$
 \begin{aligned}
@@ -84,22 +84,22 @@ $$
 \end{aligned}
 $$
 
-where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactul mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$. Users can estimate nuisance functions through Super Learner via the `SuperLearner` package or the Highly-Adaptive LASSO (HAL) via the `hal9001` package. 
+where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactul mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$. 
 
-Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the SuperLearner libraries available, users can run `get_sl_libraries()`:
+Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the SuperLearner libraries available, users can run `get_sl_libraries()`, and are encouraged to consult the `SuperLearner` package documentation for futher details.
 
 ```{r sl-libs}
 get_sl_libraries()
 ```
 
-Below we demonstrate an example call of `drcmd()` which specifies to estimate all nuisance functions with an ensemble of generalized linear models and splines.
+The most straightforward way to specify Super Learner libraries is through the `default_learners` argument. Below we demonstrate an example call of `drcmd()` which instructs `drcmd` to estimate all nuisance functions with an ensemble of generalized linear models and splines.
 
 ```{r drcmd-simple}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners=c('SL.glm','SL.earth'))
 ```
 
-To make use of the additional proxy variables, we can simply specify the `W` argument in the call to `drcmd()`. In our running example, we have that $Y^*=W$.
+To make use of the additional proxy variable, we can simply specify the `W` argument in the call to `drcmd()`. In general, `W` can be multidimensional. In our running example, we have that $Y^*=W$.
 
 ```{r drcmd-proxy, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X, W=data.frame(Ystar),
@@ -135,7 +135,7 @@ summary(res)
 
 After running `drcmd()`, numerous objects are stored within the resulting output, including
 
-- `results`: A list containing (i) parameter estimates stored in a dataframe named `estimates`, (ii) standard errors stored in a dataframe named `ses`, and (iii) nuisance function estimates stored in a dtaframe named `nuis`
+- `results`: A list containing (i) parameter estimates stored in a dataframe named `estimates`, (ii) standard errors stored in a dataframe named `ses`, and (iii) nuisance function estimates stored in a dataframe named `nuis`
 - `params`: A list containing all parameter values used by `drcmd()`
 - `R`: Binary complete case indicator, where 1 denotes a complete case
 - `U`: Names of variables with partially missing values
@@ -213,9 +213,9 @@ O_i = (W_i, \ V_i, \ R_i U_i, \ R_i)\sim \mathbb{P}_O.
 $$
 Above, $U_i$ is only observed when $R_i=1$, and $W_i$ is observed for all $i$ and contains variables that are (i) possibly predictive of missingness, and (ii) but not a component of $F$. Letting $\chi(O, \mathbb{P}_\text{F})$ denote the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$, the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$ induced by the observed data distribution can be written
 $$
-\chi(O,\mathbb{P}_O) = \frac{R}{\mathbb{P}(R=1|Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\mathbb{P}(R=1|Z)} - 1 \right) \varphi(O) 
+\chi(O,\mathbb{P}_O) = \frac{R}{\kappa(Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\kappa(Z)} - 1 \right) \varphi(O) 
 $$
-where $\varphi(O) = \mathbb{E}[\chi(O,\mathbb{P}_\text{F}) | Z]$, where the above representation holds so long as the missing at random assumption $U \perp R | Z$ holds, where $Z = (W, V)$ collects all variables which are always observed.
+where $\varphi(O) = \mathbb{E}[\chi(O,\mathbb{P}_\text{F}) | Z]$ and $\kappa(Z) = \mathbb{P}(R=1|Z)$. The above representation holds so long as the missing at random assumption $U \perp R | Z$ holds, where $Z = (W, V)$ collects all variables which are always observed.
 
 To build intuition, return to the earlier outcome proxy example where we observe
 $$
@@ -223,15 +223,76 @@ O_i = (R_i Y_i, A_i, X_i, Y_i^*) \sim \mathbb{P}_O
 $$
 In this setting, the idea distribution is given by $F = (Y, A, X)$, and notice $W=Y^*$, $Z = (Y^*, A, X)$ and $U = Y$. In turn,
 
+## Estimation of counterfactual means
+
+Throughout, we will consider the scenario of estimating the counterfactual mean $\mathbb{E}[Y(a)]$. Under the core causal inference assumptions of consistency, positivity, and exchangeability, the counterfactual mean can be expressed as
+$$
+\mathbb{E}[Y(a)] = \psi_a := \mathbb{E}[m_a(X)]
+$$
+where $m_a(X) = \mathbb{E}[Y|A=a,X]$ and $\psi_a$ is idenfitied under the complete-data distribution. 
+
+### Plug-in estimator
+
+Recalling $m_a(X) = \mathbb{E}[Y|A=a,X]$, one can construct a plug-in estimator of $\psi_a$ of the form
+
+$$
+\hat \psi_a = \frac{1}{n} \sum_{i=1}^n \hat m_a(X_i)
+$$
+above, $\hat m_a(X)$ can be estimated through a regression of $Y$ on $A$ and $X$ which weights the underlying loss function by $R/\hat \kappa(Z)$, where $\hat \kappa(Z)$ are estimated complete case probabilities. In the event that covariates are partially missing, one can instead implement the plug-in estimator 
+
+$$
+\hat \psi_a = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)} \right) \hat m_a(X_i)
+$$
+
+While the above estimator is straightforward to implement, its asymptotic distribution is intractible when the above nuisance functions are estimated with machine learning methods. Specifically, it can be shown that under modest regularity conditions,
+
+$$
+\hat \psi_a - \psi_a = \frac{1}{n} \sum_{i=1}^n \chi_a(O_i; {\mathbb{P}}_O) - \mathbb{E}\left[  \chi_a(O_i; \hat{\mathbb{P}}_O) \right]+ o_p(n^{-1/2})
+$$
+where $\chi_a(O_i; \hat{\mathbb{P}}_O)$ is the efficient influence curve for $\psi_a$ under the *observed* data distribution.
+
 ### One-step estimation
+
+The default estimation method used by `drcmd` is based on the method of one-step bias correction. The one-step estimator simply removes the above plug-in bias by adding its estimate back on to the plug-in:
+
+$$
+\hat \psi_a^\text{OS} = \hat \psi_a + \frac{1}{n} \sum_{i=1}^n   \chi_a(O_i; \hat{\mathbb{P}}_O)
+$$
+implying the form
+
+$$
+\hat \psi_a^\text{OS} = \frac{1}{n}
+$$
 
 ### Targeted maximum likelihood estimation
 
 Recalling the form of the influence curve,
 $$
-\frac{R}{\mathbb{P}(R=1|Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\mathbb{P}(R=1|Z)} - 1 \right) \varphi(O) 
+\chi(O; \mathbb{P}_O) = \frac{R}{\kappa(Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\kappa(Z)} - 1 \right) \varphi(O),
 $$
-the targeted maximum likelihood approach aims
+the targeted maximum likelihood approach aims to remove the above plug-in bias by updating the initial estimates $\hat \kappa(Z)$ and $\hat m_a(X)$ in a manner where
+
+1. The updated estimate $\hat \kappa^*(Z)$ is set so that 
+$$
+ \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)^*} - 1 \right) \hat \varphi(O_i) = 0
+$$
+2. Using the updated $\hat \kappa^*(Z)$, the updated plug-in estimate $\hat m_a^*(X)$ is set so that
+$$
+ \frac{1}{n} \sum_{i=1}^n \left\{\frac{R_i}{\hat \kappa(Z_i)^*} \right\}\left(\frac{I(A_i=a)}{\hat g_a(X_i)} (Y_i - \hat m_a^*(X_i) )\right) =0
+$$
+
+The final $\hat m_a^*(X_i)$ is used to construct the final plug-in estimator
+
+$$
+\hat \psi_a^\text{TMLE} = \frac{1}{n} \sum_{i=1}^n \hat m_a^*(X_i)
+$$
+
+and in the case where the covariatea are partially missing, the final plug-in estimator is given by
+
+$$
+\hat \psi_a^\text{TMLE} = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)^*} \right) \hat m_a^*(X_i)
+$$
+Critically, 1. and 2. above imply that the plug-in bias of $\hat \psi_a^\text{TMLE}$ is zero, allowing for the same asymptotic analysis enjoyed by $\hat \psi_a^\text{OS}$.
 
 ### Standard error estimation
 

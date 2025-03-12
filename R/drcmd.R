@@ -141,6 +141,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   params$r_learners <- learners$r_learners
   params$po_learners <- learners$po_learners
   params$eem_ind <- eem_ind
+  params$tml <- tml
   params$Rprobs <- Rprobs
   params$k <- k
   res$Z <- colnames(Z)

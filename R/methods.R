@@ -83,6 +83,15 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
     cat('Propensity score nuisance learners:', x$params$g_learners, '\n')
     cat('Missingness nuisance learners:', x$params$r_learners, '\n')
     cat('Pseudo-outcome nuisance learners:', x$params$po_learners, '\n')
+
+    if (x$params$tml) {
+      cat('Estimation method: targeted maximum likelihood\n')
+    }
+    if (!x$params$tml & !x$params$eem_ind) {
+      cat('Estimation method: augmented complete case one-step \n')
+    }
+    if (!x$params$tml & x$params$eem_ind)
+      cat('Estimation method: augmented complete case one-step with empirical efficiency maximixation \n')
   }
 }
 
