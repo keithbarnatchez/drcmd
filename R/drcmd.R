@@ -623,8 +623,6 @@ tml_updates <- function(idx, Y,A,X,
 
   m_a_hat <- m_1_hat*A + m_0_hat*(1-A)
 
-  browser()
-
   # Update complete case propensity scores
   kappa_hat_ate_update <- glm(
     R ~ -1 + I(varphi_hat$varphi_diff_hat/kappa_hat),
