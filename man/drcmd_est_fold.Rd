@@ -16,6 +16,7 @@ drcmd_est_fold(
   r_learners,
   po_learners,
   eem_ind,
+  tml,
   Rprobs,
   cutoff,
   y_bin

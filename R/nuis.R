@@ -312,6 +312,14 @@ est_varphi_eem <- function(idx, R, Z,
 #'
 #' @description Wrapper for the highly-adaptive lasso (HAL) algorithm
 #'implemented in the hal9001 package
+#' @param Y Outcome variable
+#' @param X Matrix of covariates
+#' @param newX Matrix of covariates for prediction
+#' @param family Family of the outcome variable
+#' @param obsWeights Observation weights
+#' @param ... Additional arguments to pass to the HAL function
+#' @return A list containing the prediction and the fitted model
+#' @export
 SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
   # Fit HAL model
   fit <- hal9001::fit_hal(X = X, Y = Y, family = family$family,
@@ -326,7 +334,17 @@ SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
   return(list(pred = pred, fit = fit_obj))
 }
 
-# Prediction function for SuperLearner compatibility
+#' @title Prediction wrapper for the highly-adaptive lasso
+#' @description Prediction wrapper for the highly-adaptive lasso (HAL) algorithm
+#' implemented in the hal9001 package
+#' @param Y Outcome variable
+#' @param X Matrix of covariates
+#' @param newX Matrix of covariates for prediction
+#' @param family Family of the outcome variable
+#' @param obsWeights Observation weights
+#' @param ... Additional arguments to pass to the HAL function
+#' @return Predicted values on new data
+#' @export
 predict.SL.hal9001 <- function(object, newdata, ...) {
   predict(object$object, new_data = newdata)
 }

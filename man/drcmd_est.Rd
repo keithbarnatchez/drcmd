@@ -15,10 +15,12 @@ drcmd_est(
   r_learners,
   po_learners,
   eem_ind,
+  tml,
   Rprobs,
   k,
   cutoff,
-  y_bin
+  y_bin,
+  yscaled
 )
 }
 \arguments{

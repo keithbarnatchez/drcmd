@@ -16,6 +16,7 @@ drcmd(
   r_learners = NULL,
   po_learners = NULL,
   eem_ind = FALSE,
+  tml = FALSE,
   Rprobs = NA,
   k = 1,
   cutoff = 0.025,
@@ -50,6 +51,10 @@ SuperLearner libraries}
 pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
 
 \item{eem_ind}{A logical indicating whether to use empirical efficiency maximization}
+
+\item{tml}{A logicial indicating whether to obtain estimates through targeted
+maximum likelihood estimation (TML). If TRUE, estimates obtained by TML. If
+FALSE (default setting), estimates are obtained through a one-step estimator}
 
 \item{Rprobs}{A vector of probabilities for the missingness indicator. Only
 suitable for study designs where researcher controls mechanism by which variables

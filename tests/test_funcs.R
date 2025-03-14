@@ -189,7 +189,7 @@ tau <- 1 # constant treatment effect
 gamma <- rep(1,p) # interaction effects with tmt c(0.5,2.1,-1.2)
 eta <- c(0.6,-0.2,0.8,0.1,-0.3)
 rho=0.2
-sl_lib <- c('SL.glm','SL.glm.interaction','SL.earth')
+sl_lib <- c('SL.glm','SL.glm.interaction','SL.gam')
 #-------------------------------------------------------------------------------
 # Brief sim emulating paper 2 params
 
