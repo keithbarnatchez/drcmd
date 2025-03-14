@@ -18,12 +18,49 @@ eem_ind <- FALSE
 default_learners <- 'SL.glm'
 options(error=traceback)
 #-------------------------------------------------------------------------------
+
+n <- 3000
+X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+Y <- A + X + rnorm(n)
+Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,0.5*plogis(X)) # error-prone outcome measurements
+
+# Make A NA if R==0
+Y[R==0] <- NA
+covariates <- data.frame(X1=X)
+
+drcmd_tml <- drcmd(Y,A,covariates,
+                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
+                   eem_ind=F,tml=T,cutoff=0)
+drcmd_tml$results$estimates
+
+registerDoParallel(cores=8)
+reslist <- foreach(1:100, .combine='rbind') %dopar% {
+
+  n <- 5000
+  X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+  Y <- rbinom(n,1,prob = 0.2 + 0.3*A) # A + X + rnorm(n)
+  Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,0.5*plogis(X)) # error-prone outcome measurements
+
+  # Make A NA if R==0
+  Y[R==0] <- NA
+  covariates <- data.frame(X1=X)
+
+drcmd_tml <- drcmd(Y,A,covariates,
+                   default_learners= c('SL.glm','SL.glm.interaction','SL.gam'),
+                   r_learners='SL.glm',
+                   po_learners='SL.gam',
+                   eem_ind=F,tml=T,cutoff=0)
+res <- data.frame(res=drcmd_tml$results$estimates$psi_hat_ate)
+}
+mean(reslist$res)
+sd(reslist$res)
+#-------------------------------------------------------------------------------
 # Make a couple functions for simulating simple missing outcome data structure
 
 n <- 5000
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-# Y <-  rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
-Y <- rbinom(n,1,0.5)
+Y <-  rnorm(n) + A + X  # note: true ATE is 1
+# Y <- rbinom(n,1,0.5)
 Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
 X2=X+rnorm(n)
 
@@ -35,10 +72,22 @@ covariates <- data.frame(X1=X,X2=X2)
 # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
 drcmd_res <- drcmd(Y,A,covariates,
                    default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
+                   eem_ind=F)
+
+drcmd_tml <- drcmd(Y,A,covariates,
+                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
                    eem_ind=F,tml=T)
 
-summary(drcmd_res)
+drcmd_eem <- drcmd(Y,A,covariates,
+                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
+                   eem_ind=T)
+
+
+summary(drcmd_res, detail=T)
+summary(drcmd_tml, detail=T)
+summary(drcmd_eem, detail=T)
 plot(drcmd_res)
+
 #-------------------------------------------------------------------------------
 # Try with missing outcome and treatment
 
@@ -130,7 +179,7 @@ expit <- function(o) {
   return(exp(o)/(1+exp(o)))
 }
 #-------------------------------------------------------------------------------
-n <- 5000
+n <- 2500
 p <- 3 # number of covariates
 delta <- c(-0.1,-0.6,-0.9)
 nu <- c(0.1,-0.1,0.1)
@@ -139,8 +188,8 @@ tau <- 1 # constant treatment effect
 
 gamma <- rep(1,p) # interaction effects with tmt c(0.5,2.1,-1.2)
 eta <- c(0.6,-0.2,0.8,0.1,-0.3)
-rho=0.4
-sl_lib <- c('SL.glm','SL.glm.interaction')
+rho=0.2
+sl_lib <- c('SL.glm','SL.glm.interaction','SL.earth')
 #-------------------------------------------------------------------------------
 # Brief sim emulating paper 2 params
 
@@ -160,33 +209,38 @@ results <- foreach(1:nsim,.combine=rbind) %dopar% {
 
   # Y <- rbinom(n,1,0.5)
   # measurements
-  Ystar <- Y + X%*%nu + rnorm(nrow(X),mean=0,sd=1)
-  Astar <- ifelse(runif(length(A)) < 0.8, A, 1 - A)
+  Ystar <- Y + X%*%nu + rnorm(nrow(X),mean=0,sd=0.1)
+  Astar <- ifelse(runif(length(A)) < 0.95, A, 1 - A)
 
-  Rprobs <- expit( -1 + Astar - Ystar/8 - rowSums(X)/2 ) # rho*trim(expit(as.matrix(cbind(X,Astar,Ystar))%*%eta))/mean(trim(expit(as.matrix(cbind(X,Astar,Ystar))%*%eta)))
+  Rprobs <- rho*trim(expit(as.matrix(cbind(X,Astar,Ystar))%*%eta))/mean(trim(expit(as.matrix(cbind(X,Astar,Ystar))%*%eta)))
   R <- rbinom(nrow(X),size=1,prob = Rprobs)
   X <- as.data.frame(X)
 
-  # oracle_aipw <- AIPW::AIPW$new(Y = Y, A=A, W = X,Q.SL.library = 'SL.glm.interaction',
-  #                               g.SL.library = 'SL.glm.interaction')$fit()$summary()
-  # oracle_ests <- oracle_aipw$estimates$RD['Estimate']
-  #
-  # tmle_res <- tmle::tmle(Y=Y,A=A,W=X,
-  # g.SL.library=sl_lib,
-  # Q.SL.library=sl_lib,
-  # obsWeights=as.double(R/Rprobs))
-  # tmle_ests <- tmle_res$estimates$ATE$psi
+  oracle_aipw <- AIPW::AIPW$new(Y = Y, A=A, W = X,Q.SL.library = 'SL.glm.interaction',
+                                g.SL.library = 'SL.glm.interaction',
+                                verbose=FALSE)$fit()$summary()
+  oracle_ests <- oracle_aipw$estimates$RD['Estimate']
+
+  tmle_res <- tmle::tmle(Y=Y,A=A,W=X,
+  g.SL.library=sl_lib,
+  Q.SL.library=sl_lib,
+  obsWeights=as.double(R/Rprobs))
+  tmle_ests <- tmle_res$estimates$ATE$psi
 
   # Make Y NA if R==0
   Y[R==0] <- NA
   A[R==0] <- NA
 
+  ### *************
+  ### *************
   drcmd_res_tml <- drcmd(Y,A,X,
                          W=data.frame(Ystar,Astar),
                          default_learners= sl_lib,
-                         Rprobs=Rprobs,
-                         po_learners='SL.earth',
-                         k=1,tml=T)
+                         r_learners='SL.glm',
+                         k=1,tml=T) ; drcmd_res_tml
+  ### *************
+  ### *************
+
   drcmd_res_tml$results$estimates
 
   drcmd_tml <- drcmd_res_tml$results$estimates$psi_hat_ate
@@ -198,8 +252,7 @@ results <- foreach(1:nsim,.combine=rbind) %dopar% {
   drcmd_res_evm <- drcmd(Y,A,X,
                          W=data.frame(Ystar,Astar),
                          default_learners= sl_lib,
-                         r_learners = 'SL.glm',
-                         po_learners='SL.glm',
+                         r_learners='SL.glm',
                          eem_ind=TRUE,k=1) ; drcmd_res_evm
 
   IF1 <- mean(drcmd_res_evm$results$nuis$m_1_hat) + mean(R/Rprobs*drcmd_res_evm$results$nuis$phi_1_hat)
@@ -210,8 +263,7 @@ results <- foreach(1:nsim,.combine=rbind) %dopar% {
   drcmd_res_mid <- drcmd(Y,A,X,
                          W=data.frame(Ystar,Astar),
                          default_learners= sl_lib,
-                         r_learners = 'SL.glm',
-                         po_learners = 'SL.mean',
+                         r_learners='SL.glm',
                          eem_ind=FALSE,k=1,Rprobs=Rprobs)
 
   # evm results
@@ -235,12 +287,16 @@ results <- foreach(1:nsim,.combine=rbind) %dopar% {
                     drcmd_evm_cov=drcmd_evm_cov,drcmd_mid_cov=drcmd_mid_cov))
 }
 
-mean(results$oracle_ests)
-mean(results$drcmd_evm_ests)
-mean(results$drcmd_mid_ests)
-mean(results$drcmd_direct_ests)
-mean(results$drcmd_tml)
-mean(results$drcmd_evm_cov)
-mean(results$drcmd_mid_cov)
+
+# Make a table with mean and SD of the above things
+tbl <- data.frame(method=c('oracle','drcmd evm', 'drcmd mid', 'drcmd direct', 'drcmd tml','rw tml', 'rw aipw'),
+                   mean=c(mean(results$oracle_ests),mean(results$drcmd_evm_ests),mean(results$drcmd_mid_ests),
+                         mean(results$drcmd_direct_ests),mean(results$drcmd_tml),mean(results$tmle_ests),mean(results$rw_aipws)),
+                   sd=c(sd(results$oracle_ests),sd(results$drcmd_evm_ests),sd(results$drcmd_mid_ests),
+                        sd(results$drcmd_direct_ests),sd(results$drcmd_tml),sd(results$tmle_ests),sd(results$rw_aipws)))
+tbl
+
+mean(results$drcmd_evm_cov) ; sd(results$drcmd_evm_cov)
+mean(results$drcmd_mid_cov) ; sd(results$drcmd_mid_cov)
 mean(results$tmle_ests)
-mean(results$rw_aipws)
+

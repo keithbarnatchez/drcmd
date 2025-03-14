@@ -84,7 +84,7 @@ $$
 \end{aligned}
 $$
 
-where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactul mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$. 
+where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactcual mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$. 
 
 Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the SuperLearner libraries available, users can run `get_sl_libraries()`, and are encouraged to consult the `SuperLearner` package documentation for futher details.
 
@@ -144,7 +144,7 @@ After running `drcmd()`, numerous objects are stored within the resulting output
 Users can obtain a detailed summary by specifying `detail=TRUE` in the `summary` function:
 
 ```{r drcmd_summary_detail}
-summary(res,detail=TRUE)
+# summary(res,detail=TRUE)
 ```
 
 ## Additional features
@@ -244,12 +244,12 @@ $$
 \hat \psi_a = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)} \right) \hat m_a(X_i)
 $$
 
-While the above estimator is straightforward to implement, its asymptotic distribution is intractible when the above nuisance functions are estimated with machine learning methods. Specifically, it can be shown that under modest regularity conditions,
+While the above estimator is straightforward to implement, its asymptotic distribution is intractable when the above nuisance functions are estimated with machine learning methods. Specifically, it can be shown that under modest regularity conditions,
 
 $$
 \hat \psi_a - \psi_a = \frac{1}{n} \sum_{i=1}^n \chi_a(O_i; {\mathbb{P}}_O) - \mathbb{E}\left[  \chi_a(O_i; \hat{\mathbb{P}}_O) \right]+ o_p(n^{-1/2})
 $$
-where $\chi_a(O_i; \hat{\mathbb{P}}_O)$ is the efficient influence curve for $\psi_a$ under the *observed* data distribution.
+where $\chi_a(O_i; \hat{\mathbb{P}}_O)$ is the efficient influence curve for $\psi_a$ under the *observed* data distribution. The term $\mathbb{E}\left[  \chi_a(O_i; \hat{\mathbb{P}}_O) \right]$ above is crucial, as it is typically of a slower order than $n^{-1/2}$, invalidating standard asymptotic inference and making the construction of confidence intervals an intractable task. In turn, $\mathbb{E}\left[  \chi_a(O_i; \hat{\mathbb{P}}_O) \right]$ is typically referred to as a *plug-in bias* term. `drcmd` allows for estimators based on two general frameworks that aim to remove this plug-in bias: one-step estimation and targeted maximum likelihood estimation. 
 
 ### One-step estimation
 
@@ -261,12 +261,13 @@ $$
 implying the form
 
 $$
-\hat \psi_a^\text{OS} = \frac{1}{n}
+\hat \psi_a^\text{OS} = \frac{1}{n} \sum_{i=1}^n \left( \right)
 $$
 
 ### Targeted maximum likelihood estimation
 
-Recalling the form of the influence curve,
+Recalling the form of the observed data influence curve,
+
 $$
 \chi(O; \mathbb{P}_O) = \frac{R}{\kappa(Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\kappa(Z)} - 1 \right) \varphi(O),
 $$
@@ -274,11 +275,17 @@ the targeted maximum likelihood approach aims to remove the above plug-in bias b
 
 1. The updated estimate $\hat \kappa^*(Z)$ is set so that 
 $$
- \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)^*} - 1 \right) \hat \varphi(O_i) = 0
+\begin{equation}
+\label{eq:tml-1}
+ \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)^*} - 1 \right) \hat \varphi(O_i) = 0 
+ \end{equation}
 $$
 2. Using the updated $\hat \kappa^*(Z)$, the updated plug-in estimate $\hat m_a^*(X)$ is set so that
 $$
+\begin{equation}
+\label{eq:tml-2}
  \frac{1}{n} \sum_{i=1}^n \left\{\frac{R_i}{\hat \kappa(Z_i)^*} \right\}\left(\frac{I(A_i=a)}{\hat g_a(X_i)} (Y_i - \hat m_a^*(X_i) )\right) =0
+\end{equation}
 $$
 
 The final $\hat m_a^*(X_i)$ is used to construct the final plug-in estimator
@@ -292,7 +299,9 @@ and in the case where the covariatea are partially missing, the final plug-in es
 $$
 \hat \psi_a^\text{TMLE} = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)^*} \right) \hat m_a^*(X_i)
 $$
-Critically, 1. and 2. above imply that the plug-in bias of $\hat \psi_a^\text{TMLE}$ is zero, allowing for the same asymptotic analysis enjoyed by $\hat \psi_a^\text{OS}$.
+The specific means by which one --
+
+Critically, (\ref{eq:tml-1}) and (\ref{eq:tml-2}) above imply that the plug-in bias of $\hat \psi_a^\text{TMLE}$ is zero, allowing for the same asymptotic analysis enjoyed by $\hat \psi_a^\text{OS}$. 
 
 ### Standard error estimation
 
@@ -304,7 +313,7 @@ $$
 $$
 In turn, the asymptotic variance of $\hat \psi_a$ is given by $\mathbb{E}[ \chi_a(O,\eta)^2]$. Standard error estimates are obtained by plugging in the empirical influence curve $\hat \chi_a(O,\hat \eta)$ for $\chi_a(O,\eta)$:
 $$
-\sqrt{\frac{1}{n^2} \sum_{i=1}^n \chi_a(O_i, \hat \eta)^2}
+\sqrt{\ \frac{1}{n} \sum_{i=1}^n \chi_a(O_i, \hat \eta)^2\ }
 $$
 
 **Risk ratio**: Let $\hat \psi_1$ and $\hat \psi_0$ be asymptotically linear estimators of $\psi_1$ and $\psi_0$, respectively, and let 
@@ -329,6 +338,7 @@ $$
 `drcmd` estimates the above asymptotic variance by substituting estimates for each component. 
 
 **Odds ratio**: Continue to let $\hat \psi_1$ and $\hat \psi_0$ be asymptotically linear estimators of $\psi_1$ and $\psi_0$, respectively. One can (i) find the asymptotic variance of the *log* odds ratio estimator $\log(\hat \psi_1/\hat \psi_0)$, and (ii) apply the delta method an additional time to obtain the asymptotic variance of the odds ratio estimator $\hat \psi_\text{OR} = \hat \psi_1/(1-\hat\psi_1) \big/\hat \psi_0 /(1-\hat \psi_0)$:
+
 $$
 \begin{aligned}
 \psi_\text{OR}^2 \left( \frac{\sigma_1^2}{\psi_1^2(1-\psi_1)^2} + \frac{\sigma_0^2}{\psi_0^2(1-\psi_0)^2} - \frac{2\nu}{\psi_1(1-\psi_1)\psi_0(1-\psi_0)} \right).
@@ -337,11 +347,3 @@ $$
 
 
 ### Cross-fitting estimation
-
- 
-
-
-
-
-
-

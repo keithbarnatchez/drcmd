@@ -190,8 +190,10 @@ drcmd_est <- function(Y,A,X,Z,R,
 
     # Use lapply to get results for each fold
     res <- lapply(1:k, function(i) drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
-                                                  m_learners,g_learners,r_learners,po_learners,
-                                                  eem_ind,tml,Rprobs,cutoff,y_bin))
+                                                  m_learners,g_learners,
+                                                  r_learners,po_learners,
+                                                  eem_ind,tml,Rprobs,cutoff,
+                                                  y_bin))
 
     # Extract ests and SEs from each fold
     ests_df <- do.call(rbind, lapply(res, function(x) x$ests))
@@ -233,7 +235,8 @@ drcmd_est <- function(Y,A,X,Z,R,
 #'
 #' @return A list of cross-fit SEs
 #' @export
-est_ses_crossfit <- function(res, y_bin) {
+est_ses_crossfit <- function(res,
+                             y_bin) {
 
   # ics is a list of dataframes. rbind all the dataframes together
   ics_df <- do.call(rbind, lapply(res, function(x) x$ics))
@@ -298,6 +301,7 @@ est_ses_crossfit <- function(res, y_bin) {
 drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
                            eem_ind,tml,Rprobs,cutoff,y_bin) {
+
 
   # Get training and test data indices
   train <- splits$train
@@ -387,8 +391,8 @@ get_phi_hat <- function(Y, A, X, R, Z,
   phi_0_hat <- m_0_hat + (1-A)*(Y - m_0_hat)/(1-g_hat) - plugin0
 
   # Set values where R==0 to 0
-  phi_1_hat[R==0] <- 0
-  phi_0_hat[R==0] <- 0
+  # phi_1_hat[R==0] <- 0
+  # phi_0_hat[R==0] <- 0
 
   return(list(phi_1_hat=phi_1_hat,phi_0_hat=phi_0_hat,
               plugin1=plugin1,plugin0=plugin0))
@@ -614,15 +618,17 @@ tml_updates <- function(idx, Y,A,X,
   # Form clever covariates
   H_A <- A/g_hat - (1-A)/(1-g_hat)
   H_1 <- 1/g_hat
-  H_0 <- -(1-g_hat)
+  H_0 <- -1/(1-g_hat)
   plugin_ate <- m_1_hat - m_0_hat
 
   m_a_hat <- m_1_hat*A + m_0_hat*(1-A)
 
+  browser()
+
   # Update complete case propensity scores
   kappa_hat_ate_update <- glm(
     R ~ -1 + I(varphi_hat$varphi_diff_hat/kappa_hat),
-    offset=qlogis(kappa_hat),
+    offset=qlogis(trim(kappa_hat, .Machine$double.eps) ),
     family=binomial
   )
   kappa_hat_ate_star <- as.double(predict(kappa_hat_ate_update, type="response"))
@@ -630,51 +636,51 @@ tml_updates <- function(idx, Y,A,X,
   # Update outcome model
   m_a_update <- glm(
     Y ~ -1 + H_A,
-    family=binomial(),
     weights=R/kappa_hat_ate_star,
-    offset=qlogis(m_a_hat)
+    offset=qlogis(trim(m_a_hat, .Machine$double.eps) ),
+    family=binomial
   )
   m_a_hat_star <- predict(m_a_update, type="response")
   m_1_hat_star <- plogis(qlogis(m_1_hat) + coef(m_a_update)*H_1)
   m_0_hat_star <- plogis(qlogis(m_0_hat) + coef(m_a_update)*H_0)
 
-  # TML for E[Y(1)]
-  # kappa_hat_1_update <- glm(
-  #   R ~ -1 + I(varphi_hat$varphi_1_hat/kappa_hat),
-  #   offset=plogis(kappa_hat),
-  #   family=binomial
-  # )
-  # kappa_hat_1_star <- predict(kappa_hat_1_update, type="response")
-  #
-  # m_1_hat_update <- glm(
-  #   Y ~ -1 + H_1,
-  #   family=binomial(),
-  #   weights=R/kappa_hat_1_star,
-  #   offset=plogis(m_1_hat)
-  # )
-  # m_1_hat_star <- predict(m_1_hat_update, type="response")
-  #
-  # # TML for E[Y(0)]
-  # kappa_hat_0_update <- glm(
-  #   R ~ -1 + I(varphi_hat$varphi_0_hat/kappa_hat),
-  #   offset=plogis(kappa_hat),
-  #   family=binomial
-  # )
-  # kappa_hat_0_star <- predict(kappa_hat_0_update, type="response")
-  #
-  # m_0_hat_update <- glm(
-  #   Y ~ -1 + H_0,
-  #   family=binomial(),
-  #   weights=R/kappa_hat_0_star,
-  #   offset=plogis(m_0_hat)
-  # )
-  # m_0_hat_star <- predict(m_0_hat_update, type="response")
-
   return(list(
-    m_1_hat_star = m_1_hat_star,
-    m_0_hat_star = m_0_hat_star,
-    plugin_ate_star = m_1_hat_star - m_0_hat_star,
+    m_1_hat_star = m_1_hat, #m_1_hat_star,
+    m_0_hat_star = m_0_hat,  # m_0_hat_star,
+    plugin_ate_star = m_1_hat - m_0_hat, # m_1_hat_star - m_0_hat_star,
     kappa_hat_ate_star = kappa_hat_ate_star
   )
   )
 }
+
+# TML for E[Y(1)]
+# kappa_hat_1_update <- glm(
+#   R ~ -1 + I(varphi_hat$varphi_1_hat/kappa_hat),
+#   offset=plogis(kappa_hat),
+#   family=binomial
+# )
+# kappa_hat_1_star <- predict(kappa_hat_1_update, type="response")
+#
+# m_1_hat_update <- glm(
+#   Y ~ -1 + H_1,
+#   family=binomial(),
+#   weights=R/kappa_hat_1_star,
+#   offset=plogis(m_1_hat)
+# )
+# m_1_hat_star <- predict(m_1_hat_update, type="response")
+#
+# # TML for E[Y(0)]
+# kappa_hat_0_update <- glm(
+#   R ~ -1 + I(varphi_hat$varphi_0_hat/kappa_hat),
+#   offset=plogis(kappa_hat),
+#   family=binomial
+# )
+# kappa_hat_0_star <- predict(kappa_hat_0_update, type="response")
+#
+# m_0_hat_update <- glm(
+#   Y ~ -1 + H_0,
+#   family=binomial(),
+#   weights=R/kappa_hat_0_star,
+#   offset=plogis(m_0_hat)
+# )
+# m_0_hat_star <- predict(m_0_hat_update, type="response")
