@@ -215,6 +215,19 @@ truncate_r <- function(x, cutoff=0.01) {
   return(x)
 }
 
+#' @title Trim vector (for numerical stability)
+#'
+#' @description Trims values of a vector to avoid numerical instability
+#' @param x A vector of values
+#' @param val A small value to add to 0 and subtract from 1
+#' @return A vector with values trimmed to avoid numerical instability
+#' @keywords Internal
+trim <- function(x,val=.Machine$double.neg.eps) {
+  x[x==0] <- x+val
+  x[x==1] <- x-val
+  return(x)
+}
+
 
 #' @title Clean SuperLearner libraries
 #'

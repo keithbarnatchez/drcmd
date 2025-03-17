@@ -120,16 +120,13 @@ est_m_a <- function(idx, Y, A, X, R,
 est_g <- function(idx,A, X, R, kappa_hat,
                   g_learners) {
 
-  if (all(g_learners=='hal')) { # estimate via HAL
-    g_hat<- hal9001::fit_hal(Y=A[idx],X=X[idx,,drop=FALSE],weights=R[idx]/kappa_hat[idx],
-                             family=binomial())
-    g_hat <- predict(g_hat, new_data=X)
-  } else { # estimate via SL
-    g_hat <- SuperLearner::SuperLearner(Y=A[idx],X=X[idx,,drop=FALSE],
-                                        family=binomial(),SL.library=g_learners,
-                                        obsWeights=R[idx]/kappa_hat[idx])
-    g_hat <- predict(g_hat, newdata=X)$pred
-  }
+  g_hat <- SuperLearner::SuperLearner(Y=A[idx],
+                                      X=X[idx,,drop=FALSE],
+                                      family=binomial(),
+                                      SL.library=g_learners,
+                                      obsWeights=R[idx]/kappa_hat[idx])
+  g_hat <- predict(g_hat, newdata=X)$pred
+
   return(g_hat)
 }
 

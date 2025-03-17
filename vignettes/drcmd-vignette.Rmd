@@ -24,10 +24,10 @@ vignette: >
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE)
-source('../R/utils.R')
-source('../R/drcmd.R')
-source('../R/nuis.R')
-source('../R/methods.R')
+# source('../R/utils.R')
+# source('../R/drcmd.R')
+# source('../R/nuis.R')
+# source('../R/methods.R')
 ```
 
 # Introduction \label{intro}
@@ -71,7 +71,8 @@ head(df)
 
 The main function from the `drcmd` package is `drcmd()`. The core arguments are `Y`, `A` and `X`, representing the outcome, binary treatment and covariates. Users can optionally specify proxy variables `W` that are (i) predictive of the missing variables, (ii) possibly influence the missingness mechanism, and (iii) wouldn't be involved in a causal analysis under the presence of complete data. Such variables commonly arise in semi-supervised inference, where cheap proxies are often available for expensive-to-measure variables. In our running example, we have that $Y^*=W$. In practice, $W$ can be multi-dimensional when multiple proxies are available.  `W` defaults to `NULL` when not specified by the user, consistent with settings where proxies are not available.
 
-Missing data are allowed in the outcome, treatment, and covariates (including any subset of covariates), as well as any combination of the three. The only requirement for running `drcmd` is that there exists at *least* one variable that is never missing, either in `Y`, `A`, `X`, `W`. Note that this does **not** guarantee identifiability of the causal estimands $\mathbb{E}[Y(1)]$ or $\mathbb{E}[Y(0)]$. The validity of the resulting estimates hinges on the MAR assumption holding, a crucial problem-specific determination that should be made through subject matter expertise.
+Missing data are allowed in the outcome, treatment, and covariates (including any subset of covariates), as well as any combination of the three. The only requirement for running `drcmd` is that there exists at *least* one variable that is never missing, either in `Y`, `A`, `X`, `W`. `drcmd` detects missingness patterns in the data and automatically creates a variable `R` where `R=1` if the observation is a complete-case and `R=0` if the observation is missing. 
+Note that this does **not** guarantee identifiability of the causal estimands $\mathbb{E}[Y(1)]$ or $\mathbb{E}[Y(0)]$. The validity of the resulting estimates hinges on the MAR assumption holding, a crucial problem-specific determination that should be made through subject matter expertise.
 
 Along with specifying variables, users must specify means by which to estimate all nuisance functions. All nuisance functions are estimated through a Super Learner (a stacking algorithm) using the `SuperLearner` package. There are 4 nuisance functions that are fit by `drcmd`, for $a = 0,1$:
 
@@ -84,12 +85,12 @@ $$
 \end{aligned}
 $$
 
-where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactcual mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$. 
+where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactcual mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$, and $Z$ collects all variables that are never subject to missingness (and are always available, regardless of whether $R=1$ or $R=0$. `drcmd` automatically determines the variables comprising $Z$.
 
 Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the SuperLearner libraries available, users can run `get_sl_libraries()`, and are encouraged to consult the `SuperLearner` package documentation for futher details.
 
 ```{r sl-libs}
-get_sl_libraries()
+drcmd::get_sl_libraries()
 ```
 
 The most straightforward way to specify Super Learner libraries is through the `default_learners` argument. Below we demonstrate an example call of `drcmd()` which instructs `drcmd` to estimate all nuisance functions with an ensemble of generalized linear models and splines.
@@ -144,25 +145,10 @@ After running `drcmd()`, numerous objects are stored within the resulting output
 Users can obtain a detailed summary by specifying `detail=TRUE` in the `summary` function:
 
 ```{r drcmd_summary_detail}
-# summary(res,detail=TRUE)
+summary(res,detail=TRUE)
 ```
 
-## Additional features
-
-### Diagnostic plots
-
-While users can extract output from the results structure to construct plots manually, `drcmd` comes with numerous built-in plotting functions to help users diagnose potential issues in the fitting procedure.
-Users can specify their desired plot with the `type` argument: (i) `PO`: residuals of psuedo-outcome regression vs predicted values, (ii) `IC`: density plots of the influence curves for $\mathbb{E}[Y(1)]$, $\mathbb{E}[Y(0)]$ and the ATE, (iii) `g_hat`: Density plots of fitted treatment propensity scores among complete cases, (iv) `r`_hat`: Density plots of fitted complete case propensity scores among complete cases.
-
-```{r diagplotPO, fig.width=6, fig.height=3}
-plot(res,type='PO')
-```
-
-Alternatively, users can cycle through all diagnostic plots by leaving the type argument unspecified or setting it to `'All'`
-
-```{r diagplotPOAll, eval=FALSE}
-plot(res)
-```
+## Additional parameters
 
 ### Cross-fitting
 
@@ -185,15 +171,71 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
              eem_ind=TRUE)
 ```
 
-### Bootstrap standard errors
+Further details on the EEM procedure are provided in the Technical Details section.
 
-By default, `drcmd` obtains standard errors through estimation of the asymptotic variance of the estimator. Particularly for small samples, users may wish to obtain standard errors through bootstrapping. Users can specify the number of bootstrap samples through the `nboot` argument. Below we demonstrate a call to `drcmd()` with 1000 bootstrap samples:
+### Targeted maximum likelihood estimation
 
-```{r drcmd_bootstrap, eval=FALSE}
+By default, `drcmd` constructs debiased machine learning estimators (often called one-step debiased estimators) of counterfactual means and treatment effects. A alternative, asymptotically equivalent framework based on targetted maximum likelihood (TML) to construct the final estimators can be used by setting the `tml` argument to `TRUE`:
+
+```{r drcmd_tml, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners='SL.glm',
              k=1,
-             nboot=1000)
+             tml=TRUE)
+```
+
+When `tml=FALSE` (the default), `drcmd` constructs the final estimator through a one-step debiased estimator. The two frameworks (one-step and TML) rely on the same four nuisance function estimates, and only differ in how they leverage those estimates to construct the final estimator. Further details are provided in the Technical Details section.
+
+### User-provided complete-case probabilities
+
+In most settings, the probability of an individual observation being a complete case will be unknown and estimated by `drcmd`. However, in some study designs (e.g. two-phase sampling designs), complete cases probabilities are *known* by design and controlled by the researcher. In these settings, users can provide complete-case probabilities through the argument `Rprobs`:
+
+```{r drcmd_Rprobs, eval=FALSE}
+n <- 1e3
+X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
+Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
+Y[R==0] <- NA # Make Y NA if R==0
+
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
+             default_learners='SL.glm',
+             Rprobs=plogis(X))
+```
+
+When provided, `drcmd` will use the user-supplied `Rprobs` in place of estimating $\mathbb{P}(R=1|Z)$. 
+
+### Trimming of propensity scores
+
+Extreme estimated propensity scores, used to form inverse probability weights that account for the treatment mechanism and missing data mechanism, can lead to unstable estimators. To mitigate instability, `drcmd` truncates propensity scores at the values 0.025 and 0.975 by default. Users can adjust these values through the `cutoff` argument, which will truncate propensity scores at the values `cutoff` and `1-cutoff`. For instance, to avoid truncating weights one can set `cutoff=0`:
+
+```{r drcmd_cutoff, eval=FALSE}
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
+             default_learners='SL.glm',
+             cutoff=0)
+```
+
+<!-- ### Bootstrap standard errors -->
+
+<!-- By default, `drcmd` obtains standard errors through estimation of the asymptotic variance of the estimator. Particularly for small samples, users may wish to obtain standard errors through bootstrapping. Users can specify the number of bootstrap samples through the `nboot` argument. Below we demonstrate a call to `drcmd()` with 1000 bootstrap samples: -->
+
+<!-- ```{r drcmd_bootstrap, eval=FALSE} -->
+<!-- res <- drcmd::drcmd(Y=Y, A=A, X=X, -->
+<!--              default_learners='SL.glm', -->
+<!--              nboot=1000) -->
+<!-- ``` -->
+
+## Diagnostic plots
+
+While users can extract output from the results structure to construct plots manually, `drcmd` comes with numerous built-in plotting functions to help users diagnose potential issues in the fitting procedure.
+Users can specify their desired plot with the `type` argument: (i) `PO`: residuals of psuedo-outcome regression vs predicted values, (ii) `IC`: density plots of the influence curves for $\mathbb{E}[Y(1)]$, $\mathbb{E}[Y(0)]$ and the ATE, (iii) `g_hat`: Density plots of fitted treatment propensity scores among complete cases, (iv) `r`_hat`: Density plots of fitted complete case propensity scores among complete cases.
+
+```{r diagplotPO, fig.width=6, fig.height=3}
+plot(res,type='PO')
+```
+
+Alternatively, users can cycle through all diagnostic plots by leaving the type argument unspecified or setting it to `'All'`
+
+```{r diagplotPOAll, eval=FALSE}
+plot(res)
 ```
 
 # Technical Details
@@ -201,7 +243,8 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 ## Observed and full data influence functions
 
-`drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution. In full generality, suppose there exists missingness free distribution one would ideally sample from, denoted $\mathbb{P}_F$, containing i.i.d. observations
+`drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution. In full generality, suppose there exists missingness free distribution one would ideally sample from---often valleed the  denoted $\mathbb{P}_F$, containing i.i.d. observations
+*full-data distribbution*---
 $$
 F_i \sim \mathbb{P}_\text{F}
 $$
@@ -217,12 +260,6 @@ $$
 $$
 where $\varphi(O) = \mathbb{E}[\chi(O,\mathbb{P}_\text{F}) | Z]$ and $\kappa(Z) = \mathbb{P}(R=1|Z)$. The above representation holds so long as the missing at random assumption $U \perp R | Z$ holds, where $Z = (W, V)$ collects all variables which are always observed.
 
-To build intuition, return to the earlier outcome proxy example where we observe
-$$
-O_i = (R_i Y_i, A_i, X_i, Y_i^*) \sim \mathbb{P}_O
-$$
-In this setting, the idea distribution is given by $F = (Y, A, X)$, and notice $W=Y^*$, $Z = (Y^*, A, X)$ and $U = Y$. In turn,
-
 ## Estimation of counterfactual means
 
 Throughout, we will consider the scenario of estimating the counterfactual mean $\mathbb{E}[Y(a)]$. Under the core causal inference assumptions of consistency, positivity, and exchangeability, the counterfactual mean can be expressed as
@@ -231,17 +268,38 @@ $$
 $$
 where $m_a(X) = \mathbb{E}[Y|A=a,X]$ and $\psi_a$ is idenfitied under the complete-data distribution. 
 
+
+To build intuition, return to the earlier outcome proxy example where we observe
+$$
+O_i = (R_i Y_i, A_i, X_i, Y_i^*) \sim \mathbb{P}_O
+$$
+In this setting, the ideal distribution is given by $F = (Y, A, X)$, and notice $W=Y^*$, $Z = (Y^*, A, X)$ and $U = Y$.  It's well-known that the the efficient influence curve for $\psi_a$ in the full-data given by
+$$
+\chi(F, \mathbb{P}_F) = m_a(X) + \left( \frac{I(A=a)}{\mathbb{P}(A=a|X)} \right) \left( Y - m_a(X) \right) - \psi_a
+$$
+In turn, the observed data EIC, a crucial ingredient for constructing efficient semiparametric estimators, is given by
+
+$$
+\begin{aligned}
+\chi(F, \mathbb{P}_O) &=  \frac{R}{\kappa(Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\kappa(Z)} - 1 \right) \varphi(O)  \\
+&=
+\frac{R}{\kappa(Z)}\left\{ m_a(X) + \left( \frac{I(A=a)}{\mathbb{P}(A=a|X)} \right) \left( Y - m_a(X) \right) - \psi_a \right\} - \left(\frac{R}{\kappa(Z)} - 1 \right) \varphi(O)
+\end{aligned}
+$$
+
+We now consider numerous means by which $\hat \psi_a$ can be estimated.
+
 ### Plug-in estimator
 
 Recalling $m_a(X) = \mathbb{E}[Y|A=a,X]$, one can construct a plug-in estimator of $\psi_a$ of the form
 
 $$
-\hat \psi_a = \frac{1}{n} \sum_{i=1}^n \hat m_a(X_i)
+\hat \psi_a = \frac{1}{n} \sum_{i=1}^n \hat{m}_a(X_i)
 $$
 above, $\hat m_a(X)$ can be estimated through a regression of $Y$ on $A$ and $X$ which weights the underlying loss function by $R/\hat \kappa(Z)$, where $\hat \kappa(Z)$ are estimated complete case probabilities. In the event that covariates are partially missing, one can instead implement the plug-in estimator 
 
 $$
-\hat \psi_a = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)} \right) \hat m_a(X_i)
+\hat \psi_a = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat{\kappa}(Z_i)} \right) \hat{m}_a(X_i)
 $$
 
 While the above estimator is straightforward to implement, its asymptotic distribution is intractable when the above nuisance functions are estimated with machine learning methods. Specifically, it can be shown that under modest regularity conditions,
@@ -256,12 +314,13 @@ where $\chi_a(O_i; \hat{\mathbb{P}}_O)$ is the efficient influence curve for $\p
 The default estimation method used by `drcmd` is based on the method of one-step bias correction. The one-step estimator simply removes the above plug-in bias by adding its estimate back on to the plug-in:
 
 $$
-\hat \psi_a^\text{OS} = \hat \psi_a + \frac{1}{n} \sum_{i=1}^n   \chi_a(O_i; \hat{\mathbb{P}}_O)
+\hat \psi_a^\text{OS} = \hat{\psi}_a + \frac{1}{n} \sum_{i=1}^n   \chi_a(O_i; \hat{\mathbb{P}}_O)
 $$
 implying the form
 
 $$
-\hat \psi_a^\text{OS} = \frac{1}{n} \sum_{i=1}^n \left( \right)
+\hat \psi_a^\text{OS} = 
+\frac{1}{n} \sum_{i=1}^n \left[\frac{R_i}{\hat \kappa(Z_i)}\left\{ \hat m_a(X_i) + \left( \frac{I(A_i=a)}{\hat{\mathbb{P}}(A_i=a|X)} \right) \left( Y_i - \hat m_a(X_i) \right) - \hat{\psi}_a^\text{PI} \right\} - \left(\frac{R_i}{\hat \kappa(Z_i)} - 1 \right) \hat\varphi(O_i)\right]
 $$
 
 ### Targeted maximum likelihood estimation
@@ -277,10 +336,10 @@ the targeted maximum likelihood approach aims to remove the above plug-in bias b
 $$
 \begin{equation}
 \label{eq:tml-1}
- \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)^*} - 1 \right) \hat \varphi(O_i) = 0 
+ \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)^*} - 1 \right) \hat{\varphi}(O_i) = 0 
  \end{equation}
 $$
-2. Using the updated $\hat \kappa^*(Z)$, the updated plug-in estimate $\hat m_a^*(X)$ is set so that
+2. Using the updated $\hat{\kappa}^*(Z)$, the updated plug-in estimate $\hat{m}_a^*(X)$ is set so that
 $$
 \begin{equation}
 \label{eq:tml-2}
@@ -288,20 +347,20 @@ $$
 \end{equation}
 $$
 
-The final $\hat m_a^*(X_i)$ is used to construct the final plug-in estimator
+The final $\hat{m}_a^*(X_i)$ is used to construct the final plug-in estimator
 
 $$
-\hat \psi_a^\text{TMLE} = \frac{1}{n} \sum_{i=1}^n \hat m_a^*(X_i)
+\hat{\psi}_a^\text{TMLE} = \frac{1}{n} \sum_{i=1}^n \hat m_a^*(X_i)
 $$
 
 and in the case where the covariatea are partially missing, the final plug-in estimator is given by
 
 $$
-\hat \psi_a^\text{TMLE} = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)^*} \right) \hat m_a^*(X_i)
+\hat{\psi}_a^\text{TMLE} = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat \kappa(Z_i)^*} \right) \hat{m}_a^*(X_i)
 $$
-The specific means by which one --
 
-Critically, (\ref{eq:tml-1}) and (\ref{eq:tml-2}) above imply that the plug-in bias of $\hat \psi_a^\text{TMLE}$ is zero, allowing for the same asymptotic analysis enjoyed by $\hat \psi_a^\text{OS}$. 
+
+Critically, (\ref{eq:tml-1}) and (\ref{eq:tml-2}) above imply that the plug-in bias of $\hat \psi_a^\text{TMLE}$ is zero, allowing for the same asymptotic analysis enjoyed by $\hat \psi_a^\text{OS}$. TML additionally guarantees its resulting parameter estimates will respect the bounds of the parameter space.
 
 ### Standard error estimation
 
@@ -346,4 +405,3 @@ $$
 $$
 
 
-### Cross-fitting estimation
