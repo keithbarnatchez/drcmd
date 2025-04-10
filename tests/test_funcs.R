@@ -49,7 +49,7 @@ drcmd_tml <- drcmd(Y,A,covariates,
                    default_learners= c('SL.glm','SL.glm.interaction','SL.gam'),
                    r_learners='SL.glm',
                    po_learners='SL.gam',
-                   eem_ind=F,tml=T,cutoff=0)
+                   eem_ind=F,cutoff=0)
 res <- data.frame(res=drcmd_tml$results$estimates$psi_hat_ate)
 }
 mean(reslist$res)
@@ -179,7 +179,7 @@ expit <- function(o) {
   return(exp(o)/(1+exp(o)))
 }
 #-------------------------------------------------------------------------------
-n <- 2500
+n <- 1000
 p <- 3 # number of covariates
 delta <- c(-0.1,-0.6,-0.9)
 nu <- c(0.1,-0.1,0.1)
@@ -188,12 +188,15 @@ tau <- 1 # constant treatment effect
 
 gamma <- rep(1,p) # interaction effects with tmt c(0.5,2.1,-1.2)
 eta <- c(0.6,-0.2,0.8,0.1,-0.3)
-rho=0.2
+rho=0.1
 sl_lib <- c('SL.glm','SL.glm.interaction','SL.gam')
+SL.rf = function(...) {
+  SL.ranger(..., num.trees = 50)
+}
 #-------------------------------------------------------------------------------
 # Brief sim emulating paper 2 params
 
-nsim <- 50
+nsim <- 250
 
 registerDoParallel(cores=8)
 results <- foreach(1:nsim,.combine=rbind) %dopar% {
@@ -205,12 +208,12 @@ results <- foreach(1:nsim,.combine=rbind) %dopar% {
   A <- rbinom(nrow(X),size=1,prob = probs)
 
   # outcome
-  Y <- X%*%beta + tau*A + A*(X%*%gamma) + rnorm(nrow(X),mean=0,sd=1) # exp(rowSums(X)))
+  Y <- X%*%beta + tau*A + A*(X%*%gamma) + rnorm(nrow(X),mean=0,sd= rowSums(X)) # exp(rowSums(X)))
 
   # Y <- rbinom(n,1,0.5)
   # measurements
   Ystar <- Y + X%*%nu + rnorm(nrow(X),mean=0,sd=0.1)
-  Astar <- ifelse(runif(length(A)) < 0.95, A, 1 - A)
+  Astar <- ifelse(runif(length(A)) < 0.85, A, 1 - A)
 
   Rprobs <- rho*trim(expit(as.matrix(cbind(X,Astar,Ystar))%*%eta))/mean(trim(expit(as.matrix(cbind(X,Astar,Ystar))%*%eta)))
   R <- rbinom(nrow(X),size=1,prob = Rprobs)
@@ -233,10 +236,10 @@ results <- foreach(1:nsim,.combine=rbind) %dopar% {
 
   ### *************
   ### *************
-  drcmd_res_tml <- drcmd(Y,A,X,
+  drcmd_res_tml <- drcmd::drcmd(Y,A,X,
                          W=data.frame(Ystar,Astar),
                          default_learners= sl_lib,
-                         r_learners='SL.glm',
+                         Rprobs=Rprobs,
                          k=1,tml=T) ; drcmd_res_tml
   ### *************
   ### *************
@@ -249,10 +252,11 @@ results <- foreach(1:nsim,.combine=rbind) %dopar% {
   drcmd_tml_cov <- (drcmd_tml_int[1] <= 2.5) & (drcmd_tml_int[2] >= 2.5)
 
   # Estimate with eem
-  drcmd_res_evm <- drcmd(Y,A,X,
+  drcmd_res_evm <-  drcmd::drcmd(Y,A,X,
                          W=data.frame(Ystar,Astar),
                          default_learners= sl_lib,
-                         r_learners='SL.glm',
+                         # r_learners='SL.glm',
+                         Rprobs=Rprobs,
                          eem_ind=TRUE,k=1) ; drcmd_res_evm
 
   IF1 <- mean(drcmd_res_evm$results$nuis$m_1_hat) + mean(R/Rprobs*drcmd_res_evm$results$nuis$phi_1_hat)
@@ -260,11 +264,12 @@ results <- foreach(1:nsim,.combine=rbind) %dopar% {
   rw_aipws <- IF1 - IF0
 
   # Estimate without eem
-  drcmd_res_mid <- drcmd(Y,A,X,
+  drcmd_res_mid <-  drcmd(Y,A,X,
                          W=data.frame(Ystar,Astar),
                          default_learners= sl_lib,
-                         r_learners='SL.glm',
-                         eem_ind=FALSE,k=1,Rprobs=Rprobs)
+                         # r_learners='SL.glm',
+                         Rprobs=Rprobs,
+                         eem_ind=FALSE,k=1)
 
   # evm results
   drcmd_evm_ests <- drcmd_res_evm$results$estimates$psi_hat_ate

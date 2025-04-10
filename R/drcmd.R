@@ -121,6 +121,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                            eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled)
 
   if (yscaled) { # rescale estimates to original y scale if necessary
+    res$results$nuis$Ysc <- Y
     res$results$estimates <- res$results$estimates * (maxY - minY)
     res$results$ses <- res$results$ses * (maxY - minY)
 
@@ -643,9 +644,9 @@ tml_updates <- function(idx, Y,A,X,
   m_0_hat_star <- plogis(qlogis(m_0_hat) + coef(m_a_update)*H_0)
 
   return(list(
-    m_1_hat_star = m_1_hat, #m_1_hat_star,
-    m_0_hat_star = m_0_hat,  # m_0_hat_star,
-    plugin_ate_star = m_1_hat - m_0_hat, # m_1_hat_star - m_0_hat_star,
+    m_1_hat_star = m_1_hat_star, #m_1_hat_star,
+    m_0_hat_star = m_0_hat_star,  # m_0_hat_star,
+    plugin_ate_star = m_1_hat_star - m_0_hat_star,
     kappa_hat_ate_star = kappa_hat_ate_star
   )
   )

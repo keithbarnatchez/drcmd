@@ -73,10 +73,10 @@ est_m_a <- function(idx, Y, A, X, R,
                     m_learners) {
 
   yfam <- gaussian()
-  method <- 'method.NNLS'
+  # method <- 'method.NNLS'
   if (check_binary(Y)) { # will treat [0,1] bounded outcome as binary
     yfam <- binomial()
-    method <- 'method.CC_nloglik'
+    # method <- 'method.NNloglik'
   }
 
   data <- cbind(X,A)
@@ -84,6 +84,7 @@ est_m_a <- function(idx, Y, A, X, R,
                                         X=data[idx,],
                                         SL.library=m_learners,
                                         family=yfam,
+                                        # method=method,
                                         obsWeights=R[idx]/kappa_hat[idx])
   # get fitted values under A=1
   data[,ncol(data)] <- 1
@@ -124,6 +125,7 @@ est_g <- function(idx,A, X, R, kappa_hat,
                                       X=X[idx,,drop=FALSE],
                                       family=binomial(),
                                       SL.library=g_learners,
+                                      # method='method.NNloglik',
                                       obsWeights=R[idx]/kappa_hat[idx])
   g_hat <- predict(g_hat, newdata=X)$pred
 
@@ -320,6 +322,9 @@ est_varphi_eem <- function(idx, R, Z,
 SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
   # Fit HAL model
   fit <- hal9001::fit_hal(X = X, Y = Y, family = family$family,
+                          max_degree=2,num_knots=3,
+                          reduce_basis=TRUE,
+                          lambda=0.01,
                           weights = obsWeights, ...)
 
   # Predict on new data
@@ -345,3 +350,88 @@ SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
 predict.SL.hal9001 <- function(object, newdata, ...) {
   predict(object$object, new_data = newdata)
 }
+
+
+SL.earth_weight <- function(Y, X, newX, family, obsWeights, id,
+                            degree = 2, penalty = 3,
+                            nk = max(21, 2 * ncol(X) + 1),
+                            pmethod = "backward", nfold = 0,
+                            ncross = 1, minspan = 0, endspan = 0, ...) {
+  require("earth")
+
+  # Fit model with weights
+  if (family$family == "gaussian") {
+    fit.earth <- earth::earth(
+      x = X, y = Y, weights = obsWeights,
+      degree = degree, nk = nk, penalty = penalty,
+      pmethod = pmethod, nfold = nfold, ncross = ncross,
+      minspan = minspan, endspan = endspan
+    )
+  } else if (family$family == "binomial") {
+    fit.earth <- earth::earth(
+      x = X, y = Y, weights = obsWeights,
+      degree = degree, nk = nk, penalty = penalty,
+      pmethod = pmethod, nfold = nfold, ncross = ncross,
+      minspan = minspan, endspan = endspan,
+      glm = list(family = binomial)
+    )
+  } else {
+    stop("SL.earth_weight currently supports only gaussian and binomial families.")
+  }
+
+  # Predictions
+  pred <- predict(fit.earth, newdata = newX, type = "response")
+
+  # Return model object
+  fit <- list(object = fit.earth)
+  out <- list(pred = pred, fit = fit)
+  class(out$fit) <- "SL.earth_weight"
+
+  return(out)
+}
+
+SL.gam_interact <- function(Y, X, newX, family, obsWeights, deg.gam = 2, cts.num = 4, ...) {
+  requireNamespace("mgcv", quietly = TRUE)
+
+  # Identify continuous vs categorical variables
+  cts.x <- apply(X, 2, function(x) (length(unique(x)) > cts.num))
+
+  # Construct formula with smooth main effects and tensor interactions
+  if (sum(cts.x) > 1) {  # Only include interactions if >1 continuous variable
+    gam.model <- as.formula(paste(
+      "Y ~",
+      paste(paste("s(", colnames(X[, cts.x, drop = FALSE]), ", k=5, bs='tp')", sep = ""), collapse = " + "),
+      "+ te(", paste(colnames(X[, cts.x, drop = FALSE]), collapse = ", "), ", bs='tp')"
+    ))
+  } else if (sum(!cts.x) > 0) {  # If only categorical variables
+    gam.model <- as.formula(paste("Y ~", paste(colnames(X), collapse = "+")))
+  } else {  # If only one continuous variable, no interactions possible
+    gam.model <- as.formula(paste(
+      "Y ~", paste(paste("s(", colnames(X[, cts.x, drop = FALSE]), ", k=5, bs='tp')", sep = ""), collapse = " + ")
+    ))
+  }
+
+  # Fit GAM model using mgcv (supports `te()`)
+  fit.gam <- mgcv::gam(
+    gam.model, data = data.frame(Y = Y, X), family = family,
+    weights = obsWeights, method = "REML"
+  )
+
+  # Predict on new data
+  pred <- predict(fit.gam, newdata = newX, type = "response")
+
+  # Return model in required format
+  fit_obj <- list(object = fit.gam)
+  class(fit_obj) <- "SL.gam_interact"
+
+  return(list(pred = pred, fit = fit_obj))
+}
+
+# **Prediction wrapper for SuperLearner**
+predict.SL.gam_interact <- function(object, newdata, ...) {
+  predict(object$object, newdata = newdata, type = "response")
+}
+
+
+
+

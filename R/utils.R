@@ -43,7 +43,7 @@ find_missing_pattern <- function(Y,A,X,W) {
   }
 
   # If any values of Y, X or Z equal NA, set them to 0
-  # Some learners don't support NAs
+  # Doing this since some learners don't support NAs (these obs get 0 weight anyway)
   X[is.na(X)] <- 0
   Y[is.na(Y)] <- 0
   A[is.na(A)] <- 0
@@ -118,7 +118,7 @@ check_entry_errors <- function(Y,A,X,W,R,
 
   # Make sure A is a vector
   if (!is.vector(A) & !is.integer(A) ) {
-    stop('A must be a vector')
+    stop('A must be a vector and 0/1 binary')
   }
 
   # Make sure A is 0/1 binary

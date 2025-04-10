@@ -93,25 +93,27 @@ Users can specify learners for each nuisance function through nuisance-specific 
 drcmd::get_sl_libraries()
 ```
 
+`drcmd` estimates $m_a$ and $g_a$ through regressions that weight observations by the inverse probability of being a complete case $R/\hat r(Z)$. In turn, we strongly discourage the use of SuperLearner libraries that do not support weights. 
+
 The most straightforward way to specify Super Learner libraries is through the `default_learners` argument. Below we demonstrate an example call of `drcmd()` which instructs `drcmd` to estimate all nuisance functions with an ensemble of generalized linear models and splines.
 
 ```{r drcmd-simple}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
-             default_learners=c('SL.glm','SL.earth'))
+             default_learners=c('SL.glm','SL.gam'))
 ```
 
 To make use of the additional proxy variable, we can simply specify the `W` argument in the call to `drcmd()`. In general, `W` can be multidimensional. In our running example, we have that $Y^*=W$.
 
 ```{r drcmd-proxy, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X, W=data.frame(Ystar),
-             default_learners=c('SL.glm','SL.earth'))
+             default_learners=c('SL.glm','SL.gam'))
 ```
 
 Users can specify specific learners through nuisance-specific arguments, which will overwrite the learners specified in `default_learners` for that particular nuisance function if `default_learners` is specified. For example, to estimate the pseudo-outcome regression through generalized additive models (GAMs), and all other nuisance functions with a Super Learner ensemble of GLMs and splines, we can make the following call to `drcmd()`:
 
 ```{r drcmd-specific, eval=FALSE}
 res <- drcmd::drcmd::drcmd(Y=Y, A=A, X=X,
-             default_learners=c('SL.glm','SL.earth'),
+             default_learners=c('SL.glm','SL.gam'),
              po_learners = 'SL.gam')
 ```
 
@@ -119,7 +121,7 @@ Alternatively, one can omit specification of `default_learners` entirely, provid
 
 ```{r drcmd-nuis-no-def, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
-             m_learners = c('SL.glm','SL.earth'),
+             m_learners = c('SL.glm','SL.gam'),
              g_learners = 'SL.mean',
              r_learners = 'SL.glm.interaction',
              po_learners = c('SL.gam','SL.hal9001'))
@@ -162,7 +164,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 ### Empirical efficiency maximixation
 
-In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to be an inherently difficult nuisance function to estimate. While `drcmd` estimates this regression through conventional regression methods by default, users can optionally fit $\varphi_a$ through empirical efficiency maximization (EEM) by setting the argument `eem_ind` to `TRUE`. Given an implicitly-defined function class determined through choice of nuisance learner for $\varphi_a$, rather than attempt minimize the  MSE $\hat \varphi_a - \varphi_a||$, EEM aims to minimize the asymptotic variance of the causal estimand itself. An example function call is provided below:
+In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to be an inherently difficult nuisance function to estimate. While `drcmd` estimates this regression through conventional regression methods by default, users can optionally fit $\varphi_a$ through empirical efficiency maximization (EEM) by setting the argument `eem_ind` to `TRUE`. Given an implicitly-defined function class determined through choice of nuisance learner for $\varphi_a$, rather than attempt to minimize the MSE $||\hat \varphi_a - \varphi_a||$, EEM aims to minimize the asymptotic variance of the causal estimand itself. An example function call is provided below:
 
 ```{r drcmd_eem, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
@@ -243,10 +245,9 @@ plot(res)
 
 ## Observed and full data influence functions
 
-`drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution. In full generality, suppose there exists missingness free distribution one would ideally sample from---often valleed the  denoted $\mathbb{P}_F$, containing i.i.d. observations
-*full-data distribbution*---
+`drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution one actually has access to. In full generality, suppose there exists missingness free distribution one would ideally sample observations $F_i$ from the *full-data distribution* $\mathbb{P}_F$:
 $$
-F_i \sim \mathbb{P}_\text{F}
+F_i \sim \mathbb{P}_\text{F}, \ \ \ \ i=1,\ldots,n,
 $$
 where interest lies in some pathwise differentiable statistical functional $\Psi(\mathbb{P}_\text{F}$ and $F_i$ can be decomposed into $F_i = (V_i, U_i)$.
 
@@ -322,6 +323,20 @@ $$
 \hat \psi_a^\text{OS} = 
 \frac{1}{n} \sum_{i=1}^n \left[\frac{R_i}{\hat \kappa(Z_i)}\left\{ \hat m_a(X_i) + \left( \frac{I(A_i=a)}{\hat{\mathbb{P}}(A_i=a|X)} \right) \left( Y_i - \hat m_a(X_i) \right) - \hat{\psi}_a^\text{PI} \right\} - \left(\frac{R_i}{\hat \kappa(Z_i)} - 1 \right) \hat\varphi(O_i)\right]
 $$
+
+### Empirical efficiency maximization (EEM)
+
+The nuisance function $\varphi(O)$, often referred to as the pseudo-outcome regression function, is an inherently complicated nuisance function:
+
+$$
+\varphi_a(O) = \mathbb{E}\left[  m_a(X_i) + \left( \frac{I(A_i=a)}{{\mathbb{P}}(A_i=a|X)} \right) \left( Y_i - m_a(X_i) \right) - \psi_a \bigg|  \ Z \ \right] 
+$$
+Particularly when the relative share of complete cases $P(R=1)$ is small, estimation of $\varphi_a(O)$ can be a difficult task. The empirical efficiency maximixation framework is motivated by the finding that (under standard regularity conditions),
+
+$$
+\hat \psi_a - \psi_a = O_\mathbb{P}\left( \frac{1}{\sqrt n} + ||\hat m_a - m_a|| \cdot ||\hat g_a - g_a|| + ||\hat \kappa - \kappa || \cdot ||\hat \varphi_a - \varphi_a|| \right),
+$$
+meaning that if the complete case probabilities $\kappa(Z)$ are estimated consistently, mis-specification of $\varphi_a$ will not influence bias of the estimator, but *will* hamper efficiency.
 
 ### Targeted maximum likelihood estimation
 
