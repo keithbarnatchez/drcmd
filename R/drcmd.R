@@ -513,6 +513,7 @@ est_psi_tml <- function(idx, Y,A,X,
   # Note: form of the plugin will depend on availability of X. If X is always
   # available, can use m_hat directly. Otherwise, need to rescale the plugin
   # Will work on this eventually
+  n <- length(Y)
 
   # Update step
   updated_ests <- tml_updates(idx, Y,A,X,
