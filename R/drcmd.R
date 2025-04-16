@@ -321,10 +321,12 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   # Estimate varphi via pseudo-outcome regression
   phi_1_hat <- phi_hat$phi_1_hat
   phi_0_hat <- phi_hat$phi_0_hat
+  # browser()
   varphi_hat <- est_varphi_main(test,R,Z,phi_1_hat,phi_0_hat,
                                 nuisance_ests$kappa_hat,
                                 eem_ind,
-                                po_learners)
+                                po_learners,
+                                Y)
 
   # Form final estimate for this fold
   if (tml) { # est via tml if specified

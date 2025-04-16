@@ -21,7 +21,7 @@ options(error=traceback)
 
 n <- 3000
 X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-Y <- A + X + rnorm(n)
+Y <- rbinom(n,1,0.5) # A + X + rnorm(n)
 Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,0.5*plogis(X)) # error-prone outcome measurements
 
 # Make A NA if R==0
@@ -30,7 +30,7 @@ covariates <- data.frame(X1=X)
 
 drcmd_tml <- drcmd(Y,A,covariates,
                    default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
-                   eem_ind=F,tml=T,cutoff=0)
+                   eem_ind=F,cutoff=0)
 drcmd_tml$results$estimates
 
 registerDoParallel(cores=8)

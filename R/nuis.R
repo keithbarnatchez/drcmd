@@ -191,7 +191,10 @@ est_varphi_main <- function(idx, R,Z,
                             phi_1_hat, phi_0_hat,
                             kappa_hat,
                             eem_ind,
-                            po_learners){
+                            po_learners,
+                            Y){
+
+  # browser()
 
   if (all(R==1)) { # when no missing data at all, no need for pseudo-outcome reg
     return(list(varphi_1_hat=0,
@@ -203,12 +206,16 @@ est_varphi_main <- function(idx, R,Z,
     return(est_varphi_eem(idx, R, Z,
                           phi_1_hat, phi_0_hat,
                           kappa_hat,
-                          po_learners))
+                          po_learners,
+                          Y))
   } else {
     # browser()
-    return(est_varphi(idx, R, Z,
+    return(
+      est_varphi(idx, R, Z,
                       phi_1_hat, phi_0_hat,
-                      po_learners))
+                      po_learners,
+                      Y)
+           )
   }
 
 
@@ -226,23 +233,50 @@ est_varphi_main <- function(idx, R,Z,
 #' @export
 est_varphi <- function(idx, R, Z,
                        phi_1_hat, phi_0_hat,
-                       po_learners) {
+                       po_learners,
+                       Y) {
+
+  varphi_diff_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx]-phi_0_hat[idx],X=Z[idx,,drop=FALSE],
+                                                family=gaussian(),
+                                                SL.library=po_learners,
+                                                obsWeights=R[idx])
+
+  # if Y binary or all in (0,1), shift and scale IFs
+  fam <- gaussian()
+  if (check_binary(Y)) { # will treat [0,1] bounded outcome as binary
+    fam <- binomial()
+
+    max1 <- max(phi_1_hat)
+    min1 <- min(phi_1_hat)
+    max0 <- max(phi_0_hat)
+    min0 <- min(phi_0_hat)
+    mindiff <- min(phi_1_hat - phi_0_hat)
+    maxdiff <- max(phi_1_hat - phi_0_hat)
+
+    phi_1_hat <- (phi_1_hat - min1)/(max1 - min1)
+    phi_0_hat <- (phi_0_hat - min0)/(max0 - min0)
+    phi_diff_hat <- (phi_1_hat - phi_0_hat - mindiff)/(maxdiff - mindiff)
+
+  }
 
   varphi_1_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],
-                                             family=gaussian(),
+                                             family=fam,
                                              SL.library=po_learners,
                                              obsWeights=R[idx])
   varphi_0_hat <- SuperLearner::SuperLearner(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],
-                                             family=gaussian(),
+                                             family=fam,
                                              SL.library=po_learners,
                                              obsWeights=R[idx])
-  varphi_diff_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx]-phi_0_hat[idx],X=Z[idx,,drop=FALSE],
-                                               family=gaussian(),
-                                               SL.library=po_learners,
-                                               obsWeights=R[idx])
+
   varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
   varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
   varphi_diff_hat <- predict(varphi_diff_hat, newdata=Z)$pred
+
+  # rescale varphi_1_hat and varphi_0_hat if Y was binary
+  if (check_binary(Y)) {
+    varphi_1_hat <- varphi_1_hat * (max1 - min1) + min1
+    varphi_0_hat <- varphi_0_hat * (max0 - min0) + min0
+  }
 
 
   return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat,
@@ -267,7 +301,8 @@ est_varphi <- function(idx, R, Z,
 est_varphi_eem <- function(idx, R, Z,
                            phi_1_hat, phi_0_hat,
                            kappa_hat,
-                           po_learners) {
+                           po_learners,
+                           Y) {
 
   # Make pseudo outcomes
   ytilde1 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_1_hat
