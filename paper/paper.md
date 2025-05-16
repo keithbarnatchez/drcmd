@@ -1,5 +1,5 @@
 ---
-title: "`drcmd`: Doubly-robust causal inference with missing data
+title: "`drcmd`: Doubly-robust causal inference with missing data"
 tags:
     - causal inference
     - missing data
