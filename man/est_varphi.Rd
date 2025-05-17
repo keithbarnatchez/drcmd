@@ -4,7 +4,7 @@
 \alias{est_varphi}
 \title{Perform pseudo-outcome regression with conventional loss function}
 \usage{
-est_varphi(idx, R, Z, phi_1_hat, phi_0_hat, po_learners)
+est_varphi(idx, R, Z, phi_1_hat, phi_0_hat, po_learners, Y)
 }
 \arguments{
 \item{idx}{Indices to carry out estimation over}

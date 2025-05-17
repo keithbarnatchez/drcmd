@@ -4,7 +4,7 @@
 \alias{est_varphi_eem}
 \title{Perform pseudo-outcome regression with empirical efficiency maximization}
 \usage{
-est_varphi_eem(idx, R, Z, phi_1_hat, phi_0_hat, kappa_hat, po_learners)
+est_varphi_eem(idx, R, Z, phi_1_hat, phi_0_hat, kappa_hat, po_learners, Y)
 }
 \arguments{
 \item{R}{Binary missingness indicator, where 0 indicates missing data}

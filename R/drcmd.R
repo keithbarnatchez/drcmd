@@ -55,6 +55,7 @@
 #'  standard errors, and (iii) nuisance function estimates}
 #' }
 #' @import SuperLearner
+#' @import ggplot2
 #' @examples
 #' \dontrun{
 #' n <- 2500
@@ -82,7 +83,6 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                   Rprobs=NA, k=1, cutoff=0.025,
                   nboot=0) {
 
-  # require(SuperLearner)  importFrom SuperLearner SuperLearner All trimLogit
   loadNamespace("SuperLearner")
 
   # Proxy variables may be empty

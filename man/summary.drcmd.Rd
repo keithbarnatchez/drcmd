@@ -20,3 +20,22 @@ of estimation output, while also providing information on missingness
 mechanism. Can optionally print out values of user-supplied arguments by setting
 detail=TRUE
 }
+\examples{
+\dontrun{
+n <- 2500
+X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
+Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+
+# Make A NA if R==0
+A[R==0] <- NA
+covariates <- data.frame(X1=X,X2=X2)
+
+# Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
+# GAMs (save for the pseudo-outcome regression, which is done with XGboost)
+drcmd_res <- drcmd(Y,A,covariates,
+                   default_learners= c('SL.gam','SL.glm'),
+                   po_learners = 'SL.gam')
+print(drcmd_res)
+}
+}

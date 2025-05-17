@@ -3,6 +3,24 @@
 #' of results, and prints values of optional arguments. Use summary() function for
 #' more detailed summary of results.
 #' @param x An object of class drcmd
+#' @examples
+#' \dontrun{
+#' n <- 2500
+#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+#' Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
+#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+#'
+#' # Make A NA if R==0
+#' A[R==0] <- NA
+#' covariates <- data.frame(X1=X,X2=X2)
+#'
+#' # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
+#' # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
+#' drcmd_res <- drcmd(Y,A,covariates,
+#'                    default_learners= c('SL.gam','SL.glm'),
+#'                    po_learners = 'SL.gam')
+#' print(drcmd_res)
+#' }
 #' @export
 print.drcmd <- function(x, ...) {
   cat("drcmd results\n")
@@ -29,7 +47,24 @@ print.drcmd <- function(x, ...) {
 #' @param detail Logical. If TRUE, print out values of user-supplied arguments
 #'
 #' @return No return value. Called for printing a detailed results summary
+#' @examples
+#' \dontrun{
+#' n <- 2500
+#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+#' Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
+#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
 #'
+#' # Make A NA if R==0
+#' A[R==0] <- NA
+#' covariates <- data.frame(X1=X,X2=X2)
+#'
+#' # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
+#' # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
+#' drcmd_res <- drcmd(Y,A,covariates,
+#'                    default_learners= c('SL.gam','SL.glm'),
+#'                    po_learners = 'SL.gam')
+#' print(drcmd_res)
+#' }
 #' @export
 summary.drcmd <- function(x, detail=FALSE, ...) {
   cat("======================================================================\n")

@@ -10,7 +10,6 @@ affiliations:
     - name: Harvard T. H. Chan School of Public Health
     - index: 1
 date: 16 May 2025
-bibliography: refs.bib
 ---
 
 # Summary
@@ -22,15 +21,30 @@ The use of doubly-robust methods for performing causal inference of point exposu
 
 # Examples of Missing Data
 
-To illustrate the breadth of missingness patterns `drcmd` can accommodate, we outline multiple examples, including scenarios that aren't typically cast as missing data.
+To illustrate the breadth of missingness patterns `drcmd` can accommodate, we outline multiple examples, including scenarios that aren't typically cast as missing data. We assume the causal inference assumptions of consistency, treatment positivity, and no unmeasured confounding hold.
 
-### Example 1: Two phase sampling 
+### Example 1: Two-phase sampling 
+
+The theory of -- is most commonly invoked in *two-phase sampling* problems, where missingness probabilities are typically known by design. 
+
+Cons
+
+```{r}
+# drcmd::()
+```
 
 ### Example 2: Missing outcome and treatment
 
+Suppose the outcome and treatment are both missing according to a mechanism unknown to the researcher.
+
 ### Example 3: Surrogate outcomes
 
-### Example 4: Transportability
+
+### Example 4: Generalizability
+
+In generalizability problems, researchers typically aim to use data from a *source* dataset to make inferences about treatment effects in a broader target population of interest
+
+
 
 
 
