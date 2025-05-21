@@ -24,4 +24,6 @@ Imports:
 Suggests:
     gam,
     hal9001,
-    nnls
+    nnls,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

@@ -113,12 +113,12 @@ check_entry_errors <- function(Y,A,X,W,R,
 
  # Make sure Y is a vector
   if (!is.double(Y) & !is.integer(Y)) {
-    stop('Y must be a vector')
+    stop('Y must be a numeric vector')
   }
 
   # Make sure A is a vector
   if (!is.vector(A) & !is.integer(A) ) {
-    stop('A must be a vector and 0/1 binary')
+    stop('A must be a numeric vector and 0/1 binary')
   }
 
   # Make sure A is 0/1 binary
@@ -171,7 +171,11 @@ check_entry_errors <- function(Y,A,X,W,R,
     }
   }
 
-  if (!is.numeric(nboot)) {
+  if (k > length(Y)) {
+    stop('k must be less than the number of observations')
+  }
+
+  if (!is.numeric(nboot) | nboot<0) {
     stop('nboot must be a an integer')
   } else{
     if (floor(nboot) != nboot) {
@@ -193,7 +197,7 @@ check_entry_errors <- function(Y,A,X,W,R,
 #'
 truncate_g <- function(x, cutoff=0.025) {
   if (any( (x > 1 - cutoff) | (x < cutoff))) {
-    warning(cat("Propensity scores outside of ",cutoff," and ",1-cutoff,". Truncating to cutoffs"))
+    warning(cat("Propensity scores outside of ",cutoff," and ",1-cutoff,". Truncating to cutoffs\n"))
   }
   x <- ifelse(x > 1 - cutoff, 1 - cutoff, ifelse(x < cutoff, cutoff, x))
   return(x)
@@ -209,7 +213,7 @@ truncate_g <- function(x, cutoff=0.025) {
 #'
 truncate_r <- function(x, cutoff=0.01) {
   if (any( (x > 1 - cutoff) | (x < cutoff))) {
-    warning(cat("Complete case probabilities outside of ",cutoff," and ",1-cutoff,". Truncating to cutoffs"))
+    warning(cat("Complete case probabilities outside of ",cutoff," and ",1-cutoff,". Truncating to cutoffs\n"))
   }
   x <- ifelse(x > 1 - cutoff, 1 - cutoff, ifelse(x < cutoff, cutoff, x))
   return(x)
@@ -325,6 +329,8 @@ get_sl_libraries <- function() {
   all_wrappers <- suppressMessages(SuperLearner::listWrappers())
   sink()  # Restore console output
   SL_wrappers <- c(all_wrappers[grep("^SL\\.", all_wrappers)], "SL.hal9001")
+
+  ''
   return(SL_wrappers)
 }
 
@@ -340,5 +346,18 @@ clean_crossfit_nuis <- function(results) {
   1
 }
 
-
+get_clean_context <- function(calls) {
+  for (i in rev(seq_along(calls))) {
+    fn <- calls[[i]]
+    if (is.call(fn) && is.symbol(fn[[1]])) {
+      fname <- as.character(fn[[1]])
+      if (!any(grepl(fname, c("withCallingHandlers", "eval", "doWithOneRestart",
+                              "withRestarts", "signalCondition", "structure",
+                              "base::quote", "get_clean_context", "muffleWarning")))) {
+        return(deparse1(fn))
+      }
+    }
+  }
+  return("unknown")
+}
 

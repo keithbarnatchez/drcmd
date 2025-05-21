@@ -18,77 +18,6 @@ eem_ind <- FALSE
 default_learners <- 'SL.glm'
 options(error=traceback)
 #-------------------------------------------------------------------------------
-
-n <- 3000
-X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-Y <- rbinom(n,1,0.5) # A + X + rnorm(n)
-Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,0.5*plogis(X)) # error-prone outcome measurements
-
-# Make A NA if R==0
-Y[R==0] <- NA
-covariates <- data.frame(X1=X)
-
-drcmd_tml <- drcmd(Y,A,covariates,
-                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
-                   eem_ind=F,cutoff=0)
-drcmd_tml$results$estimates
-
-registerDoParallel(cores=8)
-reslist <- foreach(1:100, .combine='rbind') %dopar% {
-
-  n <- 5000
-  X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-  Y <- rbinom(n,1,prob = 0.2 + 0.3*A) # A + X + rnorm(n)
-  Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,0.5*plogis(X)) # error-prone outcome measurements
-
-  # Make A NA if R==0
-  Y[R==0] <- NA
-  covariates <- data.frame(X1=X)
-
-drcmd_tml <- drcmd(Y,A,covariates,
-                   default_learners= c('SL.glm','SL.glm.interaction','SL.gam'),
-                   r_learners='SL.glm',
-                   po_learners='SL.gam',
-                   eem_ind=F,cutoff=0)
-res <- data.frame(res=drcmd_tml$results$estimates$psi_hat_ate)
-}
-mean(reslist$res)
-sd(reslist$res)
-#-------------------------------------------------------------------------------
-# Make a couple functions for simulating simple missing outcome data structure
-
-n <- 5000
-X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-Y <-  rnorm(n) + A + X  # note: true ATE is 1
-# Y <- rbinom(n,1,0.5)
-Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
-X2=X+rnorm(n)
-
-# Make A NA if R==0
-A[R==0] <- NA
-covariates <- data.frame(X1=X,X2=X2)
-
-# Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
-# GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-drcmd_res <- drcmd(Y,A,covariates,
-                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
-                   eem_ind=F)
-
-drcmd_tml <- drcmd(Y,A,covariates,
-                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
-                   eem_ind=F,tml=T)
-
-drcmd_eem <- drcmd(Y,A,covariates,
-                   default_learners= c('SL.glm','SL.glm.interaction','SL.earth'),
-                   eem_ind=T)
-
-
-summary(drcmd_res, detail=T)
-summary(drcmd_tml, detail=T)
-summary(drcmd_eem, detail=T)
-plot(drcmd_res)
-
-#-------------------------------------------------------------------------------
 # Try with missing outcome and treatment
 
 n <- 1e3
@@ -105,8 +34,8 @@ df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
 # X = data.frame(cbind(X,X))
 W = X[,0]
 
-drcmd_res <- drcmd(Y,A,X, default_learners= c('SL.glm','SL.glm.interaction','SL.earth','SL.gam'),
-                   eem_ind=FALSE,k=1,tml=TRUE)
+drcmd_res <- drcmd(Y,A,X, default_learners= c('SL.glm','SL.glm.interaction','SL.gam'),
+                   eem_ind=FALSE,k=1,tml=FALSE)
 #-------------------------------------------------------------------------------
 # Missng outcome and proxy used
 

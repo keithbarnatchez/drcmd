@@ -67,6 +67,11 @@ print.drcmd <- function(x, ...) {
 #' }
 #' @export
 summary.drcmd <- function(x, detail=FALSE, ...) {
+
+  if (!is.logical(detail)) {
+    stop("Argument 'detail' must be logical (TRUE or FALSE)")
+  }
+
   cat("======================================================================\n")
   cat("                        Summary of drcmd results                      \n")
   cat("======================================================================\n")
@@ -142,6 +147,23 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
 #'  'IC', 'g_hat', 'r_hat'
 #'
 #' @return No return value. Called for plotting results from drcmd object
+#' @examples
+#' \dontrun{
+#' n <- 2500
+#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+#' Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
+#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+#'
+#' # Make A NA if R==0
+#' A[R==0] <- NA
+#'
+#' # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
+#' # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
+#' drcmd_res <- drcmd(Y,A,covariates,
+#'                    default_learners= c('SL.gam','SL.glm'),
+#'                    po_learners = 'SL.gam')
+#' plot(drcmd_res,type='PO')
+#' }
 #' @export
 plot.drcmd <- function(x, type = "All") {
 

@@ -111,10 +111,23 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 
   # Identify missing data structure
   V <- find_missing_pattern(Y,A,X,W)
-  Z <- V$Z ; R <- V$R ; X <- V$X ; Y <- V$Y ; A <- V$A
+  Z <- V$Z ; R <- as.integer(V$R) ; X <- V$X ; Y <- V$Y ; A <- as.integer(V$A)
 
   # Obtain estimates
   res <- list()
+  res$warnings <- list()
+  # res$results <- withCallingHandlers(
+  #   drcmd_est(Y, A, X, Z, R,
+  #             learners$m_learners, learners$g_learners,
+  #             learners$r_learners, learners$po_learners,
+  #             eem_ind, tml, Rprobs, k, cutoff, y_bin, yscaled),
+  #   warning = function(w) {
+  #     res$warnings <<- c(res$warnings, conditionMessage(w))
+  #     invokeRestart("muffleWarning")
+  #   }
+  # )
+  # res$warnings <- unique(res$warnings)
+
   res$results <- drcmd_est(Y,A,X,Z,R,
                            learners$m_learners,learners$g_learners,
                            learners$r_learners,learners$po_learners,
@@ -125,7 +138,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
     res$results$estimates <- res$results$estimates * (maxY - minY)
     res$results$ses <- res$results$ses * (maxY - minY)
 
-    # also need to deal eith E[Y(1)] and E[Y(0)]
+    # also need to deal with E[Y(1)] and E[Y(0)]
     res$results$estimates$psi_1_hat <- res$results$estimates$psi_1_hat + minY
     res$results$estimates$psi_0_hat <- res$results$estimates$psi_0_hat + minY
   }
@@ -150,6 +163,10 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   res$R <- R
   res$params <- params
   class(res) <- 'drcmd'
+
+  if (length(res$warnings) > 0) {
+    warning("Warnings were generated during estimation. See `results$warnings` for details.")
+  }
 
   # Return results
   return(res)
@@ -220,10 +237,7 @@ drcmd_est <- function(Y,A,X,Z,R,
                           eem_ind,tml,Rprobs,cutoff,y_bin)
     res <- list(estimates=res$ests,ses=sqrt(res$vars),nuis=res$nuis)
   }
-  # if (yscaled) { # rescale estimates to original y scale if necessary
-  #   res$estimates <- res$estimates * (maxY - minY)
-  #   res$ses <- res$ses * (maxY - minY)
-  # }
+
   return(res)
 }
 
@@ -303,7 +317,6 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
                            eem_ind,tml,Rprobs,cutoff,y_bin) {
 
-
   # Get training and test data indices
   train <- splits$train
   test <- splits$test
@@ -321,7 +334,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   # Estimate varphi via pseudo-outcome regression
   phi_1_hat <- phi_hat$phi_1_hat
   phi_0_hat <- phi_hat$phi_0_hat
-  # browser()
+
   varphi_hat <- est_varphi_main(test,R,Z,phi_1_hat,phi_0_hat,
                                 nuisance_ests$kappa_hat,
                                 eem_ind,
@@ -393,10 +406,6 @@ get_phi_hat <- function(Y, A, X, R, Z,
   phi_1_hat <- m_1_hat + A*(Y - m_1_hat)/g_hat - plugin1
   phi_0_hat <- m_0_hat + (1-A)*(Y - m_0_hat)/(1-g_hat) - plugin0
 
-  # Set values where R==0 to 0
-  # phi_1_hat[R==0] <- 0
-  # phi_0_hat[R==0] <- 0
-
   return(list(phi_1_hat=phi_1_hat,phi_0_hat=phi_0_hat,
               plugin1=plugin1,plugin0=plugin0))
 }
@@ -417,7 +426,6 @@ get_phi_hat <- function(Y, A, X, R, Z,
 est_psi <- function(idx, R, Z,
                     kappa_hat, phi_hat,varphi_hat,y_bin) {
 
-  # browser()
   n <- length(idx)
 
   # Set up necessary objects
@@ -432,9 +440,9 @@ est_psi <- function(idx, R, Z,
   varphi_diff_hat <- varphi_hat$varphi_diff_hat
 
   # Form estimates of psi1 and psi0 via EICs
-  psi_1_ic <- (R[idx]/kappa_hat[idx])*phi_1_hat[idx] - (R[idx]/kappa_hat[idx] - 1)*varphi_1_hat[idx]
-  psi_0_ic <- (R[idx]/kappa_hat[idx])*phi_0_hat[idx] - (R[idx]/kappa_hat[idx] - 1)*varphi_0_hat[idx]
-  psi_ate_ic <- (R[idx]/kappa_hat[idx])*(phi_1_hat[idx] - phi_0_hat[idx]) - (R[idx]/kappa_hat[idx] - 1)*varphi_diff_hat[idx]
+  psi_1_ic <- ((R/kappa_hat)*phi_1_hat - (R/kappa_hat - 1)*varphi_1_hat)[idx]
+  psi_0_ic <- ((R/kappa_hat)*phi_0_hat - (R/kappa_hat - 1)*varphi_0_hat)[idx]
+  psi_ate_ic <- ((R/kappa_hat)*(phi_1_hat - phi_0_hat) - (R/kappa_hat - 1)*varphi_diff_hat)[idx]
 
   # Get estimates of E[Y(1)] and E[Y(0)]
   psi_1_hat <- plugin1 + mean(psi_1_ic)
@@ -654,35 +662,3 @@ tml_updates <- function(idx, Y,A,X,
   )
   )
 }
-
-# TML for E[Y(1)]
-# kappa_hat_1_update <- glm(
-#   R ~ -1 + I(varphi_hat$varphi_1_hat/kappa_hat),
-#   offset=plogis(kappa_hat),
-#   family=binomial
-# )
-# kappa_hat_1_star <- predict(kappa_hat_1_update, type="response")
-#
-# m_1_hat_update <- glm(
-#   Y ~ -1 + H_1,
-#   family=binomial(),
-#   weights=R/kappa_hat_1_star,
-#   offset=plogis(m_1_hat)
-# )
-# m_1_hat_star <- predict(m_1_hat_update, type="response")
-#
-# # TML for E[Y(0)]
-# kappa_hat_0_update <- glm(
-#   R ~ -1 + I(varphi_hat$varphi_0_hat/kappa_hat),
-#   offset=plogis(kappa_hat),
-#   family=binomial
-# )
-# kappa_hat_0_star <- predict(kappa_hat_0_update, type="response")
-#
-# m_0_hat_update <- glm(
-#   Y ~ -1 + H_0,
-#   family=binomial(),
-#   weights=R/kappa_hat_0_star,
-#   offset=plogis(m_0_hat)
-# )
-# m_0_hat_star <- predict(m_0_hat_update, type="response")

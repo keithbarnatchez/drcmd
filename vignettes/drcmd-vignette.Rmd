@@ -30,10 +30,9 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 # source('../R/methods.R')
 ```
 
+**Note**: Package is still in development. Vignette here will be very generic until package is ready for CRAN submission, but all necessary details on how to use the package will be outlined below. *Exercise caution* while using this package until it's been fully developed, and please check back frequently for updates.
+
 # Introduction \label{intro}
-
-**Note**: Package is still in development. Vignette here will be very generic until package is ready for CRAN submission, but all necessary details on how to use the package will be outlined below.
-
 
 The `drcmd` `R` package performs semi-parametric efficient estimation of causal effects of point exposures in settings where the data available to the researcher is subject to missingness. By implementing methods from semi-parametric theory and missing data (see, e.g. @robins1994estimation and @kennedy2022semiparametric), `drcmd` accomodates general patterns of missing data, while enabling users to estimate nuisance functions with flexible machine leaening methods. `drcmd` automatically determines the missingness patterns present in user-supplied data, and provides information on assumptions that must hold regarding the missingness mechanisms in order for point estimates and inferences to be valid. By accommodating *general* patterns of missingness, `drcmd` serves as a centralized library for researchers aiming to perform causal inference with missing data.
 
@@ -47,9 +46,9 @@ The use of doubly-robust methods for performing causal inference of point exposu
 devtools::install_github('keithbarnatchez/drcmd')
 ```
 
-Note: Eventually we'll have a CRAN option as well
+Note: Eventually there will be a CRAN option as well.
 
-## Estimation of causal effects
+## Illustrative example
 
 To illustrate the use of the `drcmd` package, we will consider a missing data problem where the outcome of interest $Y$ is missing at random conditional on measured covariates. We will assume a cheap, noisy proxy measurement for $Y$, denoted $Y^*$, is available for all subjects but not predictive of missingness (so that it is not necessary to satisfy the MAR assumption), resulting in the following simple data generating process:
 
@@ -92,15 +91,23 @@ $$
 
 where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactcual mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$, and $Z$ collects all variables that are never subject to missingness (and are always available, regardless of whether $R=1$ or $R=0$. `drcmd` automatically determines the variables comprising $Z$.
 
-Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the SuperLearner libraries available, users can run `get_sl_libraries()`, and are encouraged to consult the `SuperLearner` package documentation for futher details.
+Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the base SuperLearner libraries available, users can run `get_sl_libraries()`:
 
 ```{r sl-libs}
 drcmd::get_sl_libraries()
 ```
 
-`drcmd` estimates $m_a$ and $g_a$ through regressions that weight observations by the inverse probability of being a complete case $R/\hat r(Z)$. In turn, we strongly discourage the use of SuperLearner libraries that do not support weights. 
+Users can additionally create custom libraries, and are encouraged to consult the `SuperLearner` package documentation for further details.
 
-The most straightforward way to specify Super Learner libraries is through the `default_learners` argument. Below we demonstrate an example call of `drcmd()` which instructs `drcmd` to estimate all nuisance functions with an ensemble of generalized linear models and splines.
+### Cautionary note: weighted regressions 
+
+The nuisance functions $m_a$ and $g_a$ are estimated with regressions that add weights $R/\mathbb{P}(R=1|Z)$ to the underlying loss functions. In turn, *libraries that do not support (or ignore) weights will tend to yield biased estimates*.
+
+## Using `drcmd`
+
+### Calling the `drcmd` function
+
+Below we demonstrate an example call of `drcmd()`, which requires users to provide an outcome `Y`, binary treatment `A`, covariate dataframe `X`, and SuperLearner libraries. We make use of the the `default_learners` argument to specify SuperLearner libraries for all nuisance functions, specifying  all nuisance functions be estimated an ensemble of generalized linear models and splines.
 
 ```{r drcmd-simple}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
@@ -126,12 +133,14 @@ Alternatively, one can omit specification of `default_learners` entirely, provid
 
 ```{r drcmd-nuis-no-def, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
-             m_learners = c('SL.glm','SL.gam'),
+             m_learners = c('SL.glm','SL.gam'), 
              g_learners = 'SL.mean',
              r_learners = 'SL.glm.interaction',
              po_learners = c('SL.gam','SL.hal9001'))
 
 ```
+
+### Outputting results
 
 Users can view a summary of the estimation procedure by calling the `summary()` function, which provides point estimates, standard errors and 95\% CIs for main causal estimands. By default, `drcmd` obtains estimates of $\mathbb{E}[Y(1)$, $\mathbb{E}[Y(0)]$, and the average treatment effect (ATE) $\mathbb{E}[Y(1)-Y(0)]$. 
 
@@ -169,7 +178,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 ### Empirical efficiency maximixation
 
-In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to be an inherently difficult nuisance function to estimate. While `drcmd` estimates this regression through conventional regression methods by default, users can optionally fit $\varphi_a$ through empirical efficiency maximization (EEM) by setting the argument `eem_ind` to `TRUE`. Given an implicitly-defined function class determined through choice of nuisance learner for $\varphi_a$, rather than attempt to minimize the MSE $||\hat \varphi_a - \varphi_a||$, EEM aims to minimize the asymptotic variance of the causal estimand itself. An example function call is provided below:
+In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to be an inherently difficult nuisance function to estimate. While `drcmd` estimates this regression through conventional regression methods by default, users can optionally fit $\varphi_a$ through empirical efficiency maximization (EEM) by setting the argument `eem_ind` to `TRUE`. Given an implicitly-defined function class determined through choice of nuisance learner for $\varphi_a$, rather than attempt to minimize the MSE $||\hat \varphi_a - \varphi_a||$, EEM aims to minimize the variance of the estimator itself. An example function call is provided below:
 
 ```{r drcmd_eem, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
@@ -250,7 +259,7 @@ plot(res)
 
 ## Observed and full data influence functions
 
-`drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution one actually has access to. In full generality, suppose there exists missingness free distribution one would ideally sample observations $F_i$ from the *full-data distribution* $\mathbb{P}_F$:
+`drcmd` leverages developments from semiparametric theory for the estimation of functionals in the presence of missing data. Key to semiparametric efficient estimation with missing data is the conceptualization of (i) the *full-data* distribution one would have access to in the presence of missing data, and (ii) the *observed* data distribution one actually has access to. In full generality, suppose there exists a missingness free distribution one would ideally sample observations $F_i$ from the *full-data distribution* $\mathbb{P}_F$:
 $$
 F_i \sim \mathbb{P}_\text{F}, \ \ \ \ i=1,\ldots,n,
 $$
@@ -268,18 +277,19 @@ where $\varphi(O) = \mathbb{E}[\chi(O,\mathbb{P}_\text{F}) | Z]$ and $\kappa(Z) 
 
 ## Estimation of counterfactual means
 
-Throughout, we will consider the scenario of estimating the counterfactual mean $\mathbb{E}[Y(a)]$. Under the core causal inference assumptions of consistency, positivity, and exchangeability, the counterfactual mean can be expressed as
+Throughout, we will consider the scenario of estimating a generic counterfactual mean $\mathbb{E}[Y(a)]$. Under the core causal inference assumptions of consistency, positivity, and exchangeability, the counterfactual mean can be expressed as
 $$
 \mathbb{E}[Y(a)] = \psi_a := \mathbb{E}[m_a(X)]
 $$
-where $m_a(X) = \mathbb{E}[Y|A=a,X]$ and $\psi_a$ is idenfitied under the complete-data distribution. 
+where $m_a(X) = \mathbb{E}[Y|A=a,X]$ and $\psi_a$ is identified under the complete-data distribution. 
 
 
 To build intuition, return to the earlier outcome proxy example where we observe
 $$
 O_i = (R_i Y_i, A_i, X_i, Y_i^*) \sim \mathbb{P}_O
 $$
-In this setting, the ideal distribution is given by $F = (Y, A, X)$, and notice $W=Y^*$, $Z = (Y^*, A, X)$ and $U = Y$.  It's well-known that the the efficient influence curve for $\psi_a$ in the full-data given by
+and assume $Y \perp R | A, X, Y^*.$
+In this setting, the ideal distribution is given by $F = (Y, A, X)$, and notice $W=Y^*$, $Z = (Y^*, A, X)$ and $U = Y$.  It's well-known that the the efficient influence curve for $\psi_a$ under the full-data distribution is given by
 $$
 \chi(F, \mathbb{P}_F) = m_a(X) + \left( \frac{I(A=a)}{\mathbb{P}(A=a|X)} \right) \left( Y - m_a(X) \right) - \psi_a
 $$
@@ -325,7 +335,7 @@ $$
 implying the form
 
 $$
-\hat \psi_a^\text{OS} = 
+\hat \psi_a^\text{OS} = \hat \psi_a^\text{PI} +
 \frac{1}{n} \sum_{i=1}^n \left[\frac{R_i}{\hat \kappa(Z_i)}\left\{ \hat m_a(X_i) + \left( \frac{I(A_i=a)}{\hat{\mathbb{P}}(A_i=a|X)} \right) \left( Y_i - \hat m_a(X_i) \right) - \hat{\psi}_a^\text{PI} \right\} - \left(\frac{R_i}{\hat \kappa(Z_i)} - 1 \right) \hat\varphi(O_i)\right]
 $$
 
@@ -336,7 +346,7 @@ The nuisance function $\varphi(O)$, often referred to as the pseudo-outcome regr
 $$
 \varphi_a(O) = \mathbb{E}\left[  m_a(X_i) + \left( \frac{I(A_i=a)}{{\mathbb{P}}(A_i=a|X)} \right) \left( Y_i - m_a(X_i) \right) - \psi_a \bigg|  \ Z \ \right] 
 $$
-Particularly when the relative share of complete cases $P(R=1)$ is small, estimation of $\varphi_a(O)$ can be a difficult task. The empirical efficiency maximixation framework is motivated by the finding that (under standard regularity conditions),
+where $Z$ collects all non-missing variables. Particularly when the relative share of complete cases $P(R=1)$ is small, estimation of $\varphi_a(O)$ can be a difficult task. The empirical efficiency maximixation framework is motivated by the finding that (under standard regularity conditions),
 
 $$
 \hat \psi_a - \psi_a = O_\mathbb{P}\left( \frac{1}{\sqrt n} + ||\hat m_a - m_a|| \cdot ||\hat g_a - g_a|| + ||\hat \kappa - \kappa || \cdot ||\hat \varphi_a - \varphi_a|| \right),

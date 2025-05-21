@@ -24,13 +24,16 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
                               Rprobs,cutoff) {
 
   kappa_hat <- Rprobs
-  if (any(is.na(Rprobs) )) {
-    kappa_hat <- est_kappa(idx,Z,R,r_learners)
+  if (all(R==1)) {
+    kappa_hat <- rep(1,nrow(X))
+  } else {
+    if (any(is.na(Rprobs) )) {
+      kappa_hat <- est_kappa(idx,Z,R,r_learners)
+    }
+    if (!is.null(cutoff)) {
+      kappa_hat <- truncate_r(kappa_hat,cutoff)
+    }
   }
-  if (!is.null(cutoff)) {
-    kappa_hat <- truncate_r(kappa_hat,cutoff)
-  }
-
   m_a_hat <- est_m_a(idx,Y,A,X,R,kappa_hat,m_learners)
   g_hat <- est_g(idx,A,X,R,kappa_hat,g_learners)
 
@@ -80,12 +83,21 @@ est_m_a <- function(idx, Y, A, X, R,
   }
 
   data <- cbind(X,A)
-  m_a_hat <- SuperLearner::SuperLearner(Y=Y[idx],
-                                        X=data[idx,],
-                                        SL.library=m_learners,
-                                        family=yfam,
-                                        # method=method,
-                                        obsWeights=R[idx]/kappa_hat[idx])
+
+  # if outcome is binary, weights will generate unecessary warnings
+  m_a_hat <- g_hat <- withCallingHandlers(
+    SuperLearner::SuperLearner(Y=Y[idx],
+                              X=data[idx,],
+                              SL.library=m_learners,
+                              family=yfam,
+                              # method=method,
+                              obsWeights=R[idx]/kappa_hat[idx]),
+    warning = function(w) {
+      if (conditionMessage(w) == "non-integer #successes in a binomial glm!") {
+        invokeRestart("muffleWarning")
+      }
+    })
+
   # get fitted values under A=1
   data[,ncol(data)] <- 1
   m_1_hat <- predict(m_a_hat, newdata=data)$pred
@@ -121,12 +133,22 @@ est_m_a <- function(idx, Y, A, X, R,
 est_g <- function(idx,A, X, R, kappa_hat,
                   g_learners) {
 
-  g_hat <- SuperLearner::SuperLearner(Y=A[idx],
-                                      X=X[idx,,drop=FALSE],
-                                      family=binomial(),
-                                      SL.library=g_learners,
-                                      # method='method.NNloglik',
-                                      obsWeights=R[idx]/kappa_hat[idx])
+  # regression with weights + binary outcome can create unnecessary warnings
+  g_hat <- withCallingHandlers(
+    SuperLearner::SuperLearner(
+      Y = A[idx],
+      X = X[idx, , drop = FALSE],
+      family = binomial(),
+      SL.library = g_learners,
+      obsWeights = R[idx] / kappa_hat[idx]
+    ),
+    warning = function(w) {
+      if (conditionMessage(w) == "non-integer #successes in a binomial glm!") {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
+
   g_hat <- predict(g_hat, newdata=X)$pred
 
   return(g_hat)
@@ -194,12 +216,10 @@ est_varphi_main <- function(idx, R,Z,
                             po_learners,
                             Y){
 
-  # browser()
-
   if (all(R==1)) { # when no missing data at all, no need for pseudo-outcome reg
-    return(list(varphi_1_hat=0,
-                varphi_0_hat=0,
-                varphi_diff_hat=0))
+    return(list(varphi_1_hat=rep(0,length(kappa_hat)),
+                varphi_0_hat=rep(0,length(kappa_hat)),
+                varphi_diff_hat=rep(0,length(kappa_hat))))
   }
 
   if (eem_ind==TRUE) { # estimate via EEM
@@ -209,7 +229,6 @@ est_varphi_main <- function(idx, R,Z,
                           po_learners,
                           Y))
   } else {
-    # browser()
     return(
       est_varphi(idx, R, Z,
                       phi_1_hat, phi_0_hat,
@@ -236,7 +255,8 @@ est_varphi <- function(idx, R, Z,
                        po_learners,
                        Y) {
 
-  varphi_diff_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx]-phi_0_hat[idx],X=Z[idx,,drop=FALSE],
+  varphi_diff_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx]-phi_0_hat[idx],
+                                                X=Z[idx,,drop=FALSE],
                                                 family=gaussian(),
                                                 SL.library=po_learners,
                                                 obsWeights=R[idx])
@@ -263,7 +283,7 @@ est_varphi <- function(idx, R, Z,
                                              family=fam,
                                              SL.library=po_learners,
                                              obsWeights=R[idx])
-  varphi_0_hat <- SuperLearner::SuperLearner(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],
+   varphi_0_hat <- SuperLearner::SuperLearner(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],
                                              family=fam,
                                              SL.library=po_learners,
                                              obsWeights=R[idx])
@@ -310,34 +330,20 @@ est_varphi_eem <- function(idx, R, Z,
 
   # Estimate E[phi|Z] via EEM
   #### ***** need to update hal code below
-  if (all(po_learners=='hal')) { # estimate via HAL
-    varphi_1_hat <- hal9001::fit_hal(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
-                                   weights=(R[idx]/kappa_hat[idx] - 1)^2)
-    varphi_0_hat <- hal9001::fit_hal(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
-                                   weights=(R[idx]/kappa_hat[idx] - 1)^2)
-
-    varphi_diff_hat <- hal9001::fit_hal(Y=ytilde1[idx]-ytilde0[idx],X=Z[idx,,drop=FALSE],
-                                     weights=(R[idx]/kappa_hat[idx] - 1)^2)
-
-    varphi_1_hat <- predict(varphi_1_hat, new_data=Z)
-    varphi_0_hat <- predict(varphi_0_hat, new_data=Z)
-    varphi_diff_hat <- predict(varphi_diff_hat, new_data=Z)
-
-  } else { # estimate via SL
-    varphi_1_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
+  varphi_1_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
+                                           family=gaussian(),SL.library=po_learners,
+                                           obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
+  varphi_0_hat <- SuperLearner::SuperLearner(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
                                              family=gaussian(),SL.library=po_learners,
                                              obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
-    varphi_0_hat <- SuperLearner::SuperLearner(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
-                                               family=gaussian(),SL.library=po_learners,
-                                               obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
-    varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
-    varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
+  varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
+  varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
 
-    varphi_diff_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx]-ytilde0[idx],X=Z[idx,,drop=FALSE],
-                                                  family=gaussian(),SL.library=po_learners,
-                                                  obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
-    varphi_diff_hat <- predict(varphi_diff_hat, newdata=Z)$pred
-  }
+  varphi_diff_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx]-ytilde0[idx],X=Z[idx,,drop=FALSE],
+                                                family=gaussian(),SL.library=po_learners,
+                                                obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
+  varphi_diff_hat <- predict(varphi_diff_hat, newdata=Z)$pred
+
   return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat,
               varphi_diff_hat=varphi_diff_hat))
 }
