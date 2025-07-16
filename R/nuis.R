@@ -24,7 +24,7 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
                               Rprobs,cutoff) {
 
   kappa_hat <- Rprobs
-  if (all(R==1)) {
+  if (all(R==1)) { # if no missing data
     kappa_hat <- rep(1,nrow(X))
   } else {
     if (any(is.na(Rprobs) )) {

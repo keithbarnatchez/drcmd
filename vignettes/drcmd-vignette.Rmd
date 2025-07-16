@@ -11,11 +11,12 @@ preamble: >
   \usepackage{amsmath}
 # documentclass: jss
 # classoption: article
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteIndexEntry{`drcmd`: Doubly-Robust Causal Inference with Missing Data}
-  %\VignetteEncoding{UTF-8}
+output:
+  html_document:
+    mathjax: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    toc: true            # optional
+    df_print: paged      # optional
+bibliography: sources.bib
 ---
 
 <script type="text/x-mathjax-config">
@@ -30,23 +31,23 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 # source('../R/methods.R')
 ```
 
-**Note**: Package is still in development. Vignette here will be very generic until package is ready for CRAN submission, but all necessary details on how to use the package will be outlined below. *Exercise caution* while using this package until it's been fully developed, and please check back frequently for updates.
+**Note**: Package is still in development. *Exercise caution* while using this package until it's been fully developed, and please check back frequently for updates.
 
 # Introduction \label{intro}
 
-The `drcmd` `R` package performs semi-parametric efficient estimation of causal effects of point exposures in settings where the data available to the researcher is subject to missingness. By implementing methods from semi-parametric theory and missing data (see, e.g. @robins1994estimation and @kennedy2022semiparametric), `drcmd` accomodates general patterns of missing data, while enabling users to estimate nuisance functions with flexible machine leaening methods. `drcmd` automatically determines the missingness patterns present in user-supplied data, and provides information on assumptions that must hold regarding the missingness mechanisms in order for point estimates and inferences to be valid. By accommodating *general* patterns of missingness, `drcmd` serves as a centralized library for researchers aiming to perform causal inference with missing data.
+The `drcmd` `R` package performs semi-parametric efficient estimation of causal effects of point exposures in settings where the data available to the researcher is subject to missingness. By implementing methods from semi-parametric theory and missing data (see, e.g. @robins1994estimation and @kennedy2022semiparametric), `drcmd` accommodates general patterns of missing data, while enabling users to estimate nuisance functions with flexible machine learning methods. `drcmd` automatically determines the missingness patterns present in user-supplied data, and provides information on assumptions that must hold regarding the missingness mechanisms in order for point estimates and inferences to be valid. By accommodating *general* patterns of missingness, `drcmd` serves as a centralized library for researchers aiming to perform causal inference with missing data.
 
 The use of doubly-robust methods for performing causal inference of point exposures on outcomes of interest has surged over the past decade, and numerous software packages have been developed for implementing these estimators. While these packages are well-suited for use on complete, missingness-free data, leading statistical software packages provide little to no support for missing data. The lack of a centralized package for performing doubly-robust causal inference has functioned as a severe impediment for researchers, as missing data is ubiquiotous in real-world data, and the specific patterns of missingness can greatly vary across applications. `drcmd` addresses this shortcoming by providing a single R package for performing doubly-robust causal inference in the presence of general missing data patterns.
 
-# Using `drcmd` \label{using}
+# Getting started
 
 ## Installation
+
+`drcmd` is hosted on GitHub. The latest version be installed through the `devtools` package:
 
 ```{r install, eval=FALSE} 
 devtools::install_github('keithbarnatchez/drcmd')
 ```
-
-Note: Eventually there will be a CRAN option as well.
 
 ## Illustrative example
 
@@ -75,8 +76,8 @@ head(df)
 
 The main function from the `drcmd` package is `drcmd()`. The core arguments are `Y`, `A` and `X`, representing the outcome, binary treatment and covariates. Users can optionally specify proxy variables `W` that are (i) predictive of the missing variables, (ii) possibly influence the missingness mechanism, and (iii) wouldn't be involved in the causal analysis under the presence of complete data. Such variables commonly arise in semi-supervised inference, where cheap proxies are often available for expensive-to-measure variables. In our running example, we have that $Y^*=W$. In practice, $W$ can be multi-dimensional when multiple proxies are available.  `W` defaults to `NULL` when not specified by the user, consistent with settings where proxies are not available.
 
-Missing data are allowed in the outcome, treatment, and covariates (including any subset of covariates), as well as any combination of the three. The only requirement for running `drcmd` is that there exists at *least* one variable that is never missing, either in `Y`, `A`, `X`, `W`. `drcmd` detects missingness patterns in the data and automatically creates a variable `R` where `R=1` if the observation is a complete-case and `R=0` if the observation is missing. 
-Note that this does **not** guarantee identifiability of the causal estimands $\mathbb{E}[Y(1)]$ or $\mathbb{E}[Y(0)]$. The validity of the resulting estimates hinges on the MAR assumption holding, a crucial problem-specific determination that should be made through subject matter expertise.
+Missing data are allowed in the outcome, treatment, and covariates (including any subset of covariates), as well as any combination of the three. The only requirement for running `drcmd` is that there exists at *least* one variable that is never missing, either in `Y`, `A`, `X`, `W`. `drcmd` detects missingness patterns in the data and automatically creates a variable `R`, where `R=1` if the observation is a complete-case and `R=0` if the observation is missing. 
+Note that this does **not** guarantee identifiability of the causal estimands $\mathbb{E}[Y(1)]$ or $\mathbb{E}[Y(0)]$. The validity of the resulting estimates hinges on the MAR assumption holding, a crucial problem-specific determination.
 
 Along with specifying variables, users must specify means by which to estimate all nuisance functions. All nuisance functions are estimated through a Super Learner (a stacking algorithm) using the `SuperLearner` package. There are 4 nuisance functions that are fit by `drcmd`, for $a = 0,1$:
 
@@ -101,13 +102,13 @@ Users can additionally create custom libraries, and are encouraged to consult th
 
 ### Cautionary note: weighted regressions 
 
-The nuisance functions $m_a$ and $g_a$ are estimated with regressions that add weights $R/\mathbb{P}(R=1|Z)$ to the underlying loss functions. In turn, *libraries that do not support (or ignore) weights will tend to yield biased estimates*.
+The nuisance functions $m_a$ and $g_a$ are estimated with regressions that add weights $R/\mathbb{P}(R=1|Z)$ to the underlying loss functions. In turn, *libraries that do not support (or ignore) weights will tend to yield biased estimates*. Users are encouraged to ensure all libraries used support weights.
 
-## Using `drcmd`
+# Using `drcmd`
 
-### Calling the `drcmd` function
+## Calling the `drcmd` function
 
-Below we demonstrate an example call of `drcmd()`, which requires users to provide an outcome `Y`, binary treatment `A`, covariate dataframe `X`, and SuperLearner libraries. We make use of the the `default_learners` argument to specify SuperLearner libraries for all nuisance functions, specifying  all nuisance functions be estimated an ensemble of generalized linear models and splines.
+Below we demonstrate an example call of `drcmd()`, which requires users to provide an outcome `Y`, binary treatment `A`, covariate dataframe `X`, and SuperLearner libraries. We make use of the the `default_learners` argument to specify SuperLearner libraries for all nuisance functions, specifying  all nuisance functions be estimated an through ensemble of generalized linear models (GLMs) and generalized additive models (GAMs).
 
 ```{r drcmd-simple}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
@@ -121,7 +122,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X, W=data.frame(Ystar),
              default_learners=c('SL.glm','SL.gam'))
 ```
 
-Users can specify specific learners through nuisance-specific arguments, which will overwrite the learners specified in `default_learners` for that particular nuisance function if `default_learners` is specified. For example, to estimate the pseudo-outcome regression through generalized additive models (GAMs), and all other nuisance functions with a Super Learner ensemble of GLMs and splines, we can make the following call to `drcmd()`:
+Users can specify specific learners through nuisance-specific arguments, which will overwrite the learners specified in `default_learners` for that particular nuisance function if `default_learners` is specified. For example, to estimate the pseudo-outcome regression through GAMs, and all other nuisance functions with a Super Learner ensemble of GLMs and splines, we can make the following call to `drcmd()`:
 
 ```{r drcmd-specific, eval=FALSE}
 res <- drcmd::drcmd::drcmd(Y=Y, A=A, X=X,
@@ -140,7 +141,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 ```
 
-### Outputting results
+## Outputting results
 
 Users can view a summary of the estimation procedure by calling the `summary()` function, which provides point estimates, standard errors and 95\% CIs for main causal estimands. By default, `drcmd` obtains estimates of $\mathbb{E}[Y(1)$, $\mathbb{E}[Y(0)]$, and the average treatment effect (ATE) $\mathbb{E}[Y(1)-Y(0)]$. 
 
@@ -148,7 +149,7 @@ Users can view a summary of the estimation procedure by calling the `summary()` 
 summary(res)
 ```
  
-### Extracting output
+## Extracting output
 
 After running `drcmd()`, numerous objects are stored within the resulting output, including
 
@@ -164,11 +165,11 @@ Users can obtain a detailed summary by specifying `detail=TRUE` in the `summary`
 summary(res,detail=TRUE)
 ```
 
-## Additional parameters
+# Additional parameters
 
-### Cross-fitting
+## Cross-fitting
 
-While not enabled by default, users can estimate parameters through cross-fitting by setting the `k` argument to the desired number of folds. By default, `drcmd` uses a single fold. Cross-fitting is encouraged when the users specifies nuisance learners that cover complex function classes, such as random forests. See the technical details section for more information on the rationale behind and implementation of cross-fitting.
+While not enabled by default, users can estimate parameters through cross-fitting by setting the `k` argument to the desired number of folds. By default, `drcmd` uses a single fold. Cross-fitting is encouraged when the user specifies nuisance learners that cover complex function classes, such as random forests. See the technical details section for more information on the rationale behind and implementation of cross-fitting.
 
 ```{r drcmd_simple, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
@@ -176,7 +177,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
              k=3)
 ```
 
-### Empirical efficiency maximixation
+## Empirical efficiency maximixation
 
 In practice, the pseudo-outcome regression function $\varphi_a(Z)$ will tend to be an inherently difficult nuisance function to estimate. While `drcmd` estimates this regression through conventional regression methods by default, users can optionally fit $\varphi_a$ through empirical efficiency maximization (EEM) by setting the argument `eem_ind` to `TRUE`. Given an implicitly-defined function class determined through choice of nuisance learner for $\varphi_a$, rather than attempt to minimize the MSE $||\hat \varphi_a - \varphi_a||$, EEM aims to minimize the variance of the estimator itself. An example function call is provided below:
 
@@ -189,7 +190,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 Further details on the EEM procedure are provided in the Technical Details section.
 
-### Targeted maximum likelihood estimation
+## Targeted maximum likelihood estimation
 
 By default, `drcmd` constructs debiased machine learning estimators (often called one-step debiased estimators) of counterfactual means and treatment effects. A alternative, asymptotically equivalent framework based on targetted maximum likelihood (TML) to construct the final estimators can be used by setting the `tml` argument to `TRUE`:
 
@@ -202,7 +203,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 When `tml=FALSE` (the default), `drcmd` constructs the final estimator through a one-step debiased estimator. The two frameworks (one-step and TML) rely on the same four nuisance function estimates, and only differ in how they leverage those estimates to construct the final estimator. Further details are provided in the Technical Details section.
 
-### User-provided complete-case probabilities
+## User-provided complete-case probabilities
 
 In most settings, the probability of an individual observation being a complete case will be unknown and estimated by `drcmd`. However, in some study designs (e.g. two-phase sampling designs), complete cases probabilities are *known* by design and controlled by the researcher. In these settings, users can provide complete-case probabilities through the argument `Rprobs`:
 
@@ -219,7 +220,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 When provided, `drcmd` will use the user-supplied `Rprobs` in place of estimating $\mathbb{P}(R=1|Z)$. 
 
-### Trimming of propensity scores
+## Trimming of propensity scores
 
 Extreme estimated propensity scores, used to form inverse probability weights that account for the treatment mechanism and missing data mechanism, can lead to unstable estimators. To mitigate instability, `drcmd` truncates propensity scores at the values 0.025 and 0.975 by default. Users can adjust these values through the `cutoff` argument, which will truncate propensity scores at the values `cutoff` and `1-cutoff`. For instance, to avoid truncating weights one can set `cutoff=0`:
 
@@ -315,7 +316,7 @@ $$
 above, $\hat m_a(X)$ can be estimated through a regression of $Y$ on $A$ and $X$ which weights the underlying loss function by $R/\hat \kappa(Z)$, where $\hat \kappa(Z)$ are estimated complete case probabilities. In the event that covariates are partially missing, one can instead implement the plug-in estimator 
 
 $$
-\hat \psi_a = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat{\kappa}(Z_i)} \right) \hat{m}_a(X_i)
+\hat \psi_a = \frac{1}{n} \sum_{i=1}^n \left(\frac{R_i}{\hat{\kappa}(Z_i)} \right) \hat{m} \ {}_a(X_i)
 $$
 
 While the above estimator is straightforward to implement, its asymptotic distribution is intractable when the above nuisance functions are estimated with machine learning methods. Specifically, it can be shown that under modest regularity conditions,
@@ -424,7 +425,7 @@ $$
 \frac{\sigma_1^2}{\psi_0^2} + \frac{\sigma_0^2 \psi_1^2}{\psi_0^4} - \frac{2\nu \psi_1}{\psi_0^3}.
 \end{aligned}
 $$
-`drcmd` estimates the above asymptotic variance by substituting estimates for each component. 
+`drcmd` estimates the above asymptotic variance by substituting plug-in estimates for each component. 
 
 **Odds ratio**: Continue to let $\hat \psi_1$ and $\hat \psi_0$ be asymptotically linear estimators of $\psi_1$ and $\psi_0$, respectively. One can (i) find the asymptotic variance of the *log* odds ratio estimator $\log(\hat \psi_1/\hat \psi_0)$, and (ii) apply the delta method an additional time to obtain the asymptotic variance of the odds ratio estimator $\hat \psi_\text{OR} = \hat \psi_1/(1-\hat\psi_1) \big/\hat \psi_0 /(1-\hat \psi_0)$:
 
@@ -434,4 +435,4 @@ $$
 \end{aligned}
 $$
 
-
+# References
