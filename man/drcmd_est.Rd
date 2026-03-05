@@ -67,3 +67,20 @@ A list of point estimates and standard errors for all estimands considered
 Outer function for estimating counterfactual means through cross-fitting.
 Calls \code{drcmd_est_fold} to obtain estimates for each cross-fitting fold
 }
+\examples{
+\dontrun{
+n <- 500
+X <- data.frame(X1 = rnorm(n))
+A <- rbinom(n, 1, plogis(X$X1))
+Y <- A + X$X1 + rnorm(n)
+R <- rbinom(n, 1, plogis(X$X1))
+Y[R == 0] <- 0; A[R == 0] <- 0
+Z <- X
+res <- drcmd_est(Y, A, X, Z, R,
+                 m_learners = "SL.glm", g_learners = "SL.glm",
+                 r_learners = "SL.glm", po_learners = "SL.glm",
+                 eem_ind = FALSE, tml = FALSE,
+                 Rprobs = NA, k = 1, cutoff = 0.025,
+                 y_bin = FALSE, yscaled = FALSE)
+}
+}

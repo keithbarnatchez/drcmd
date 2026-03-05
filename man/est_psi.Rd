@@ -41,3 +41,9 @@ and various counterfactual contrasts
 Function for obtaining counterfactual mean estimates for the current
 fold of the cross-fitting procedure
 }
+\examples{
+\dontrun{
+# Typically called internally by drcmd_est_fold() after obtaining
+# nuisance estimates, phi_hat, and varphi_hat.
+}
+}

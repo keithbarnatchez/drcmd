@@ -30,13 +30,16 @@ carried out with SuperLearer, using learners specified in m_learners
 }
 \examples{
 \dontrun{
-n <- 1000
+n <- 500
 X <- rnorm(n)
-A <- rbinom(n,1,plogis(X))
-R <- rbinom(n,1,plogis(X))
+A <- rbinom(n, 1, plogis(X))
+R <- rbinom(n, 1, plogis(X))
+Y <- A + X + rnorm(n)
+Y[R == 0] <- 0; A[R == 0] <- 0
 X <- data.frame(X)
-Y <- A + X rnorm(n)
-m_learners <- c('SL.glm','SL.gam')
-est_m_a(idx=1:n, A=A, X=X, R=R, kappa_hat=kappa_hat, g_learners=g_learners)
+kappa_hat <- rep(1, n)
+m_learners <- c('SL.glm')
+m_hat <- est_m_a(idx = 1:n, Y = Y, A = A, X = X, R = R,
+                 kappa_hat = kappa_hat, m_learners = m_learners)
 }
 }

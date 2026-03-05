@@ -47,3 +47,17 @@ Function for obtaining estimate of E\link{phi_a|Z} through pseudo-outcome
 regression. Calls inner function to perform estimation, depending on whether
 user wishes to perform empirical efficiency maximization or not
 }
+\examples{
+\dontrun{
+n <- 500
+Z <- data.frame(Z1 = rnorm(n))
+R <- rbinom(n, 1, 0.7)
+phi_1_hat <- rnorm(n)
+phi_0_hat <- rnorm(n)
+kappa_hat <- rep(0.7, n)
+Y <- rnorm(n)
+varphi <- est_varphi_main(1:n, R, Z, phi_1_hat, phi_0_hat,
+                          kappa_hat, eem_ind = FALSE,
+                          po_learners = "SL.glm", Y = Y)
+}
+}

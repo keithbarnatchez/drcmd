@@ -64,3 +64,20 @@ A list of results from estimation on current fold
 \description{
 Outer function for obtaining point estimates for single fold
 }
+\examples{
+\dontrun{
+n <- 500
+X <- data.frame(X1 = rnorm(n))
+A <- rbinom(n, 1, plogis(X$X1))
+Y <- A + X$X1 + rnorm(n)
+R <- rbinom(n, 1, plogis(X$X1))
+Y[R == 0] <- 0; A[R == 0] <- 0
+Z <- X
+splits <- list(train = 1:n, test = 1:n)
+fold_res <- drcmd_est_fold(splits, Y, A, X, Z, R,
+                           m_learners = "SL.glm", g_learners = "SL.glm",
+                           r_learners = "SL.glm", po_learners = "SL.glm",
+                           eem_ind = FALSE, tml = FALSE,
+                           Rprobs = NA, cutoff = 0.025, y_bin = FALSE)
+}
+}

@@ -23,11 +23,12 @@ Function for obtaining complete case propensity score estimates
 }
 \examples{
 \dontrun{
-n <- 1000
+n <- 500
 Z <- rnorm(n)
-R <- rbinom(n,1,plogis(Z))
+R <- rbinom(n, 1, plogis(Z))
 Z <- data.frame(Z)
-g_learners <- c('SL.glm','SL.gam')
-est_g(idx=1:n, Z=Z, R=R, r_learners=r_learners)
+r_learners <- c('SL.glm')
+kappa_hat <- est_kappa(idx = 1:n, Z = Z, R = R,
+                       r_learners = r_learners)
 }
 }

@@ -38,3 +38,16 @@ A list containing the estimate of E\link{phi_a|Z} for a=0 and a=1
 Function for obtaining estimate of E\link{phi_a|Z} via empirical efficiency
 maximization
 }
+\examples{
+\dontrun{
+n <- 500
+Z <- data.frame(Z1 = rnorm(n))
+R <- rbinom(n, 1, 0.7)
+phi_1_hat <- rnorm(n)
+phi_0_hat <- rnorm(n)
+kappa_hat <- rep(0.7, n)
+Y <- rnorm(n)
+varphi <- est_varphi_eem(1:n, R, Z, phi_1_hat, phi_0_hat,
+                         kappa_hat, po_learners = "SL.glm", Y = Y)
+}
+}

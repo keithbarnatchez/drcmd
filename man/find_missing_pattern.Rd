@@ -25,3 +25,16 @@ A character string containing the missing pattern
 \description{
 Find the missing pattern in the data
 }
+\examples{
+n <- 200
+X <- data.frame(X1 = rnorm(n))
+A <- rbinom(n, 1, 0.5)
+Y <- rnorm(n)
+R <- rbinom(n, 1, 0.7)
+Y[R == 0] <- NA
+W <- X[, 0]
+result <- find_missing_pattern(Y, A, X, W)
+result$Z  # variables without missingness
+result$U  # variables with missingness
+result$R  # complete case indicator
+}

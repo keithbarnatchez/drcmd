@@ -12,3 +12,9 @@ A character vector of all available SuperLearner libraries
 \description{
 List all available SuperLearner libraries
 }
+\examples{
+\dontrun{
+libs <- get_sl_libraries()
+head(libs)
+}
+}

@@ -59,3 +59,10 @@ targeted maximum likelihood. To be called within drcmd_est_fold(). Updates
 estimate of P(R=1|Z) and the plug-in estimator in a manner which removes the
 plug-in bias incurred by an initial plug-in estimator
 }
+\examples{
+\dontrun{
+# Typically called internally by drcmd_est_fold() when tml = TRUE.
+# Requires nuisance estimates from get_nuisance_ests() and
+# pseudo-outcome estimates from est_varphi_main().
+}
+}

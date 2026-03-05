@@ -19,6 +19,21 @@
 #'
 #' @return A list of nuisance estimates
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 500
+#' X <- data.frame(X1 = rnorm(n))
+#' A <- rbinom(n, 1, plogis(X$X1))
+#' Y <- A + X$X1 + rnorm(n)
+#' R <- rbinom(n, 1, plogis(X$X1))
+#' Y[R == 0] <- 0; A[R == 0] <- 0
+#' Z <- X
+#' nuis <- get_nuisance_ests(1:n, Y, A, X, Z, R,
+#'                           m_learners = "SL.glm",
+#'                           g_learners = "SL.glm",
+#'                           r_learners = "SL.glm",
+#'                           Rprobs = NA, cutoff = 0.025)
+#' }
 get_nuisance_ests <- function(idx,Y,A,X,Z,R,
                               m_learners,g_learners,r_learners,
                               Rprobs,cutoff,cv_folds=5,quiet=TRUE) {
@@ -65,14 +80,17 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 #' @export
 #' @examples
 #' \dontrun{
-#' n <- 1000
+#' n <- 500
 #' X <- rnorm(n)
-#' A <- rbinom(n,1,plogis(X))
-#' R <- rbinom(n,1,plogis(X))
+#' A <- rbinom(n, 1, plogis(X))
+#' R <- rbinom(n, 1, plogis(X))
+#' Y <- A + X + rnorm(n)
+#' Y[R == 0] <- 0; A[R == 0] <- 0
 #' X <- data.frame(X)
-#' Y <- A + X rnorm(n)
-#' m_learners <- c('SL.glm','SL.gam')
-#' est_m_a(idx=1:n, A=A, X=X, R=R, kappa_hat=kappa_hat, g_learners=g_learners)
+#' kappa_hat <- rep(1, n)
+#' m_learners <- c('SL.glm')
+#' m_hat <- est_m_a(idx = 1:n, Y = Y, A = A, X = X, R = R,
+#'                  kappa_hat = kappa_hat, m_learners = m_learners)
 #' }
 est_m_a <- function(idx, Y, A, X, R,
                     kappa_hat,
@@ -127,13 +145,16 @@ est_m_a <- function(idx, Y, A, X, R,
 #' @export
 #' @examples
 #' \dontrun{
-#' n <- 1000
+#' n <- 500
 #' X <- rnorm(n)
-#' A <- rbinom(n,1,plogis(X))
-#' R <- rbinom(n,1,plogis(X))
+#' A <- rbinom(n, 1, plogis(X))
+#' R <- rbinom(n, 1, plogis(X))
+#' A[R == 0] <- 0
 #' X <- data.frame(X)
-#' g_learners <- c('SL.glm','SL.gam')
-#' est_g(idx=1:n, A=A, X=X, R=R, kappa_hat=kappa_hat, g_learners=g_learners)
+#' kappa_hat <- rep(1, n)
+#' g_learners <- c('SL.glm')
+#' g_hat <- est_g(idx = 1:n, A = A, X = X, R = R,
+#'                kappa_hat = kappa_hat, g_learners = g_learners)
 #' }
 est_g <- function(idx,A, X, R, kappa_hat,
                   g_learners,
@@ -174,12 +195,13 @@ est_g <- function(idx,A, X, R, kappa_hat,
 #' @export
 #' @examples
 #' \dontrun{
-#' n <- 1000
+#' n <- 500
 #' Z <- rnorm(n)
-#' R <- rbinom(n,1,plogis(Z))
+#' R <- rbinom(n, 1, plogis(Z))
 #' Z <- data.frame(Z)
-#' g_learners <- c('SL.glm','SL.gam')
-#' est_g(idx=1:n, Z=Z, R=R, r_learners=r_learners)
+#' r_learners <- c('SL.glm')
+#' kappa_hat <- est_kappa(idx = 1:n, Z = Z, R = R,
+#'                        r_learners = r_learners)
 #' }
 est_kappa <- function (idx,Z, R,
                        r_learners,
@@ -218,6 +240,19 @@ est_kappa <- function (idx,Z, R,
 #'
 #' @return A list containing the estimate of E[phi_a|Z] for a=0 and a=1
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 500
+#' Z <- data.frame(Z1 = rnorm(n))
+#' R <- rbinom(n, 1, 0.7)
+#' phi_1_hat <- rnorm(n)
+#' phi_0_hat <- rnorm(n)
+#' kappa_hat <- rep(0.7, n)
+#' Y <- rnorm(n)
+#' varphi <- est_varphi_main(1:n, R, Z, phi_1_hat, phi_0_hat,
+#'                           kappa_hat, eem_ind = FALSE,
+#'                           po_learners = "SL.glm", Y = Y)
+#' }
 est_varphi_main <- function(idx, R,Z,
                             phi_1_hat, phi_0_hat,
                             kappa_hat,
@@ -307,6 +342,17 @@ est_varphi_main <- function(idx, R,Z,
 #' @param po_learners A character vector containing the names of the superlearner algorithms
 #' @return A list containing the estimate of E[phi|Z] for a=0 and a=1
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 500
+#' Z <- data.frame(Z1 = rnorm(n))
+#' R <- rbinom(n, 1, 0.7)
+#' phi_1_hat <- rnorm(n)
+#' phi_0_hat <- rnorm(n)
+#' Y <- rnorm(n)
+#' varphi <- est_varphi(1:n, R, Z, phi_1_hat, phi_0_hat,
+#'                      po_learners = "SL.glm", Y = Y)
+#' }
 est_varphi <- function(idx, R, Z,
                        phi_1_hat, phi_0_hat,
                        po_learners,
@@ -379,6 +425,18 @@ est_varphi <- function(idx, R, Z,
 #'
 #' @return A list containing the estimate of E[phi_a|Z] for a=0 and a=1
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 500
+#' Z <- data.frame(Z1 = rnorm(n))
+#' R <- rbinom(n, 1, 0.7)
+#' phi_1_hat <- rnorm(n)
+#' phi_0_hat <- rnorm(n)
+#' kappa_hat <- rep(0.7, n)
+#' Y <- rnorm(n)
+#' varphi <- est_varphi_eem(1:n, R, Z, phi_1_hat, phi_0_hat,
+#'                          kappa_hat, po_learners = "SL.glm", Y = Y)
+#' }
 est_varphi_eem <- function(idx, R, Z,
                            phi_1_hat, phi_0_hat,
                            kappa_hat,
@@ -425,6 +483,15 @@ est_varphi_eem <- function(idx, R, Z,
 #' @param ... Additional arguments to pass to the HAL function
 #' @return A list containing the prediction and the fitted model
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 200
+#' X <- data.frame(X1 = rnorm(n))
+#' Y <- X$X1 + rnorm(n)
+#' fit <- SL.hal9001(Y, X, newX = X, family = gaussian(),
+#'                   obsWeights = rep(1, n))
+#' head(fit$pred)
+#' }
 SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
   # Fit HAL model (let HAL select lambda via CV rather than hardcoding a single value,
   # which causes "Need more than one value of lambda for cv.glmnet" errors)
@@ -453,6 +520,15 @@ SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
 #' @param ... Additional arguments to pass to the HAL function
 #' @return Predicted values on new data
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 200
+#' X <- data.frame(X1 = rnorm(n))
+#' Y <- X$X1 + rnorm(n)
+#' fit <- SL.hal9001(Y, X, newX = X, family = gaussian(),
+#'                   obsWeights = rep(1, n))
+#' preds <- predict(fit$fit, newdata = X)
+#' }
 predict.SL.hal9001 <- function(object, newdata, ...) {
   predict(object$object, new_data = newdata)
 }

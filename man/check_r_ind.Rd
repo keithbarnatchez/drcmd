@@ -25,3 +25,14 @@ A logical value
 \description{
 Check if the missingness indicator R is defined correctly
 }
+\examples{
+n <- 200
+R <- rbinom(n, 1, 0.7)
+data <- data.frame(
+  Y = ifelse(R == 1, rnorm(n), NA),
+  A = ifelse(R == 1, rbinom(n, 1, 0.5), NA),
+  X1 = rnorm(n),
+  R = R
+)
+check_r_ind(data, Y = "Y", A = "A", X = "X1", W = character(0), R = "R")
+}

@@ -16,3 +16,10 @@ A list of cross-fit SEs
 Estimates cross-fit SEs by taking contributions to influence curve
 of each fold
 }
+\examples{
+\dontrun{
+# Typically called internally by drcmd_est() after cross-fitting.
+# res is a list of per-fold results from drcmd_est_fold(), each
+# containing an $ics data frame of influence curve contributions.
+}
+}

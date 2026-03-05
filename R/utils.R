@@ -11,6 +11,18 @@
 #'
 #' @return A character string containing the missing pattern
 #' @export
+#' @examples
+#' n <- 200
+#' X <- data.frame(X1 = rnorm(n))
+#' A <- rbinom(n, 1, 0.5)
+#' Y <- rnorm(n)
+#' R <- rbinom(n, 1, 0.7)
+#' Y[R == 0] <- NA
+#' W <- X[, 0]
+#' result <- find_missing_pattern(Y, A, X, W)
+#' result$Z  # variables without missingness
+#' result$U  # variables with missingness
+#' result$R  # complete case indicator
 find_missing_pattern <- function(Y,A,X,W) {
 
   # Combine variables into a single data frame
@@ -67,6 +79,16 @@ find_missing_pattern <- function(Y,A,X,W) {
 #'
 #' @return A logical value
 #' @export
+#' @examples
+#' n <- 200
+#' R <- rbinom(n, 1, 0.7)
+#' data <- data.frame(
+#'   Y = ifelse(R == 1, rnorm(n), NA),
+#'   A = ifelse(R == 1, rbinom(n, 1, 0.5), NA),
+#'   X1 = rnorm(n),
+#'   R = R
+#' )
+#' check_r_ind(data, Y = "Y", A = "A", X = "X1", W = character(0), R = "R")
 check_r_ind <- function(data,
                         Y,A,X,W,R) {
 
@@ -78,10 +100,10 @@ check_r_ind <- function(data,
   data_r0 <- data[data[[R]]==0,]
 
   # check if Y, A, X and W are all available when R=1
-  check_r1 <- complete.cases(data_r1[,c(Y,A,X,W)])
+  check_r1 <- all(complete.cases(data_r1[,c(Y,A,X,W)]))
 
   # check if Y, A, X and W are all missing when R=0
-  check_r0 <- !complete.cases(data_r0[,c(Y,A,X,W)])
+  check_r0 <- all(!complete.cases(data_r0[,c(Y,A,X,W)]))
 
   # send error messages if r1 and or r0 are not satisfied
   if(!check_r1 & !check_r0) {
@@ -108,6 +130,14 @@ check_r_ind <- function(data,
 #' @param R A vector containing missingness indicator variable
 #'
 #' @export
+#' @examples
+#' n <- 200
+#' X <- data.frame(X1 = rnorm(n))
+#' W <- data.frame(W1 = rnorm(n))
+#' A <- rbinom(n, 1, 0.5)
+#' Y <- rnorm(n)
+#' R <- rbinom(n, 1, 0.7)
+#' check_entry_errors(Y, A, X, W, R, eem_ind = FALSE, Rprobs = NA, k = 1)
 check_entry_errors <- function(Y,A,X,W,R,
                                eem_ind,Rprobs,
                                k) {
@@ -187,6 +217,9 @@ check_entry_errors <- function(Y,A,X,W,R,
 #'
 #' @return A vector of treatment propensity scores truncated to interval [c, 1-c]
 #' @export
+#' @examples
+#' x <- c(0.001, 0.3, 0.5, 0.7, 0.999)
+#' suppressWarnings(truncate_g(x, cutoff = 0.025))
 #'
 truncate_g <- function(x, cutoff=0.025) {
   if (any( (x > 1 - cutoff) | (x < cutoff))) {
@@ -203,6 +236,9 @@ truncate_g <- function(x, cutoff=0.025) {
 #'
 #' @return A vector of complete propensity scores truncated to interval [c, 1-c]
 #' @export
+#' @examples
+#' x <- c(0.001, 0.3, 0.5, 0.7, 0.999)
+#' suppressWarnings(truncate_r(x, cutoff = 0.01))
 #'
 truncate_r <- function(x, cutoff=0.01) {
   if (any( (x > 1 - cutoff) | (x < cutoff))) {
@@ -317,6 +353,11 @@ create_folds <- function(n, k) {
 #' @description List all available SuperLearner libraries
 #' @return A character vector of all available SuperLearner libraries
 #' @export
+#' @examples
+#' \dontrun{
+#' libs <- get_sl_libraries()
+#' head(libs)
+#' }
 get_sl_libraries <- function() {
   sink(tempfile())  # Redirect console output
   all_wrappers <- suppressMessages(SuperLearner::listWrappers())

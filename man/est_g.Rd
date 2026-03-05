@@ -27,12 +27,15 @@ Function for obtaining propensity score estimates P(A=a|X)
 }
 \examples{
 \dontrun{
-n <- 1000
+n <- 500
 X <- rnorm(n)
-A <- rbinom(n,1,plogis(X))
-R <- rbinom(n,1,plogis(X))
+A <- rbinom(n, 1, plogis(X))
+R <- rbinom(n, 1, plogis(X))
+A[R == 0] <- 0
 X <- data.frame(X)
-g_learners <- c('SL.glm','SL.gam')
-est_g(idx=1:n, A=A, X=X, R=R, kappa_hat=kappa_hat, g_learners=g_learners)
+kappa_hat <- rep(1, n)
+g_learners <- c('SL.glm')
+g_hat <- est_g(idx = 1:n, A = A, X = X, R = R,
+               kappa_hat = kappa_hat, g_learners = g_learners)
 }
 }

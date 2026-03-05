@@ -1,7 +1,7 @@
 Package: drcmd
 Title: Doubly-Robust Causal Inference with Missing Data
 Version: 0.0.0.9000
-Author: Keith Barnatchez
+Author: Keith Barnatchez, Griffin DesRoches
 Maintainer: Keith Barnatchez <keithbarnatchez@gmail.com>
 Description: Doubly-robust estimation of counterfactual means in the presence of missing
     data. The drcmd() function estimates counterfactual means for binary point treatments

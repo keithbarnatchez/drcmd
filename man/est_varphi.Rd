@@ -25,3 +25,15 @@ A list containing the estimate of E\link{phi|Z} for a=0 and a=1
 \description{
 Outer function for obtaining estimate of E\link{phi|Z}
 }
+\examples{
+\dontrun{
+n <- 500
+Z <- data.frame(Z1 = rnorm(n))
+R <- rbinom(n, 1, 0.7)
+phi_1_hat <- rnorm(n)
+phi_0_hat <- rnorm(n)
+Y <- rnorm(n)
+varphi <- est_varphi(1:n, R, Z, phi_1_hat, phi_0_hat,
+                     po_learners = "SL.glm", Y = Y)
+}
+}

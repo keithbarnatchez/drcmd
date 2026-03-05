@@ -1,5 +1,5 @@
 ---
-title: "`drcmd`: An R packagee for doubly-robust causal inference with missing data"
+title: "`drcmd`: An R package for doubly-robust causal inference with missing data"
 tags:
     - causal inference
     - missing data
@@ -7,10 +7,14 @@ tags:
 authors: 
     - name: Keith Barnatchez
     - affiliation: 1
+    - Griffin DesRoches
+    - affiliation: 1
 affiliations:
-    - name: Harvard T. H. Chan School of Public Health
+    - name: Johns Hopkins University
     - index: 1
-date: 16 May 2025
+    - name: University of Massachusetts Amherst
+    - index: 2
+date: 5 March 2026
 bibliography: refs.bib
 ---
 
@@ -53,10 +57,6 @@ where $S_i$ is an always-observed surrogate outcome that serves as a proxy for t
 
 # Availability 
 `drcmd` is publically available for download on [GitHub](https://github.com/keithbarnatchez/drcmd). Further information on the use of the package can be found in the package vignette and user manual.
-
-# Acknowledgements
-
-This work was partially funded by National Institute of Health (NIH) grant T32AI007358.
 
 # References
 

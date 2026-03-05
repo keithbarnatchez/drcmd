@@ -55,3 +55,9 @@ A list containing updated estimates of the nuisance parameters
 Function for updating the nuisance functions m_a and kappa through
 TML
 }
+\examples{
+\dontrun{
+# Typically called internally by est_psi_tml() to perform the TML
+# targeting step on outcome and missingness nuisance functions.
+}
+}

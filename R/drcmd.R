@@ -203,6 +203,22 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 #'
 #' @return A list of point estimates and standard errors for all estimands considered
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 500
+#' X <- data.frame(X1 = rnorm(n))
+#' A <- rbinom(n, 1, plogis(X$X1))
+#' Y <- A + X$X1 + rnorm(n)
+#' R <- rbinom(n, 1, plogis(X$X1))
+#' Y[R == 0] <- 0; A[R == 0] <- 0
+#' Z <- X
+#' res <- drcmd_est(Y, A, X, Z, R,
+#'                  m_learners = "SL.glm", g_learners = "SL.glm",
+#'                  r_learners = "SL.glm", po_learners = "SL.glm",
+#'                  eem_ind = FALSE, tml = FALSE,
+#'                  Rprobs = NA, k = 1, cutoff = 0.025,
+#'                  y_bin = FALSE, yscaled = FALSE)
+#' }
 drcmd_est <- function(Y,A,X,Z,R,
                       m_learners,g_learners,r_learners,po_learners,
                       eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled,
@@ -263,6 +279,12 @@ drcmd_est <- function(Y,A,X,Z,R,
 #'
 #' @return A list of cross-fit SEs
 #' @export
+#' @examples
+#' \dontrun{
+#' # Typically called internally by drcmd_est() after cross-fitting.
+#' # res is a list of per-fold results from drcmd_est_fold(), each
+#' # containing an $ics data frame of influence curve contributions.
+#' }
 est_ses_crossfit <- function(res,
                              y_bin,
                              att=FALSE, atc=FALSE) {
@@ -340,6 +362,22 @@ est_ses_crossfit <- function(res,
 #'
 #' @return A list of results from estimation on current fold
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 500
+#' X <- data.frame(X1 = rnorm(n))
+#' A <- rbinom(n, 1, plogis(X$X1))
+#' Y <- A + X$X1 + rnorm(n)
+#' R <- rbinom(n, 1, plogis(X$X1))
+#' Y[R == 0] <- 0; A[R == 0] <- 0
+#' Z <- X
+#' splits <- list(train = 1:n, test = 1:n)
+#' fold_res <- drcmd_est_fold(splits, Y, A, X, Z, R,
+#'                            m_learners = "SL.glm", g_learners = "SL.glm",
+#'                            r_learners = "SL.glm", po_learners = "SL.glm",
+#'                            eem_ind = FALSE, tml = FALSE,
+#'                            Rprobs = NA, cutoff = 0.025, y_bin = FALSE)
+#' }
 drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
                            eem_ind,tml,Rprobs,cutoff,y_bin,
@@ -447,6 +485,19 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
 #' @param kappa_hat Missingness probabilities
 #'
 #' @export
+#' @examples
+#' \dontrun{
+#' n <- 500
+#' X <- data.frame(X1 = rnorm(n))
+#' A <- rbinom(n, 1, plogis(X$X1))
+#' Y <- A + X$X1 + rnorm(n)
+#' R <- rep(1, n)
+#' Z <- X
+#' g_hat <- plogis(X$X1)
+#' m_a_hat <- list(m_1_hat = 1 + X$X1, m_0_hat = X$X1)
+#' kappa_hat <- rep(1, n)
+#' phi <- get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat)
+#' }
 #'
 get_phi_hat <- function(Y, A, X, R, Z,
                         g_hat, m_a_hat, kappa_hat) {
@@ -484,6 +535,11 @@ get_phi_hat <- function(Y, A, X, R, Z,
 #' @return A list of point estimates and standard errors for counterfactual means
 #' and various counterfactual contrasts
 #' @export
+#' @examples
+#' \dontrun{
+#' # Typically called internally by drcmd_est_fold() after obtaining
+#' # nuisance estimates, phi_hat, and varphi_hat.
+#' }
 est_psi <- function(idx, R, Z,
                     kappa_hat, phi_hat,varphi_hat,y_bin,
                     att=FALSE,atc=FALSE,
@@ -600,6 +656,12 @@ est_psi <- function(idx, R, Z,
 #'
 #' @return A list containing updated estimates of the nuisance parameters
 #' @export
+#' @examples
+#' \dontrun{
+#' # Typically called internally by drcmd_est_fold() when tml = TRUE.
+#' # Requires nuisance estimates from get_nuisance_ests() and
+#' # pseudo-outcome estimates from est_varphi_main().
+#' }
 est_psi_tml <- function(idx, Y,A,X,
                         R, Z,
                         m_1_hat, m_0_hat, g_hat,kappa_hat,
@@ -715,6 +777,11 @@ est_psi_tml <- function(idx, Y,A,X,
 #'
 #' @return A list containing updated estimates of the nuisance parameters
 #' @export
+#' @examples
+#' \dontrun{
+#' # Typically called internally by est_psi_tml() to perform the TML
+#' # targeting step on outcome and missingness nuisance functions.
+#' }
 tml_updates <- function(idx, Y,A,X,
                     R, Z,
                     m_1_hat, m_0_hat, g_hat,kappa_hat,
