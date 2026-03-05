@@ -26,6 +26,12 @@ print.drcmd <- function(x, ...) {
   cat("drcmd results\n")
   cat("-------------------------------------------------\n")
   cat("ATE estimate: ",x$results$estimates$psi_hat_ate,'\n')
+  if (!is.na(x$results$estimates$psi_hat_att)) {
+    cat("ATT estimate: ",x$results$estimates$psi_hat_att,'\n')
+  }
+  if (!is.na(x$results$estimates$psi_hat_atc)) {
+    cat("ATC estimate: ",x$results$estimates$psi_hat_atc,'\n')
+  }
   cat("-------------------------------------------------\n")
   cat("Variables with missingness (U): ", x$U ,"\n")
   cat("-------------------------------------------------\n")
@@ -106,6 +112,16 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
   cat(sprintf("%-15s %12.3f %12.3f %26s\n",
               "Odds ratio:", x$results$estimates$psi_hat_or, x$results$ses$psi_hat_or,
               compute_CI(x$results$estimates$psi_hat_or, x$results$ses$psi_hat_or)))
+  }
+  if (!is.na(x$results$estimates$psi_hat_att)) {
+  cat(sprintf("%-15s %12.3f %12.3f %26s\n",
+              "ATT:", x$results$estimates$psi_hat_att, x$results$ses$psi_hat_att,
+              compute_CI(x$results$estimates$psi_hat_att, x$results$ses$psi_hat_att)))
+  }
+  if (!is.na(x$results$estimates$psi_hat_atc)) {
+  cat(sprintf("%-15s %12.3f %12.3f %26s\n",
+              "ATC:", x$results$estimates$psi_hat_atc, x$results$ses$psi_hat_atc,
+              compute_CI(x$results$estimates$psi_hat_atc, x$results$ses$psi_hat_atc)))
   }
 
   cat("----------------------------------------------------------------------\n")

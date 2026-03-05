@@ -85,7 +85,7 @@ est_m_a <- function(idx, Y, A, X, R,
   data <- cbind(X,A)
 
   # if outcome is binary, weights will generate unecessary warnings
-  m_a_hat <- g_hat <- withCallingHandlers(
+  m_a_hat <- withCallingHandlers(
     SuperLearner::SuperLearner(Y=Y[idx],
                               X=data[idx,],
                               SL.library=m_learners,
@@ -214,30 +214,53 @@ est_varphi_main <- function(idx, R,Z,
                             kappa_hat,
                             eem_ind,
                             po_learners,
-                            Y){
+                            Y,
+                            att=FALSE, atc=FALSE,
+                            phi_att_hat=NULL, phi_atc_hat=NULL){
 
   if (all(R==1)) { # when no missing data at all, no need for pseudo-outcome reg
-    return(list(varphi_1_hat=rep(0,length(kappa_hat)),
-                varphi_0_hat=rep(0,length(kappa_hat)),
-                varphi_diff_hat=rep(0,length(kappa_hat))))
+    result <- list(varphi_1_hat=rep(0,length(kappa_hat)),
+                   varphi_0_hat=rep(0,length(kappa_hat)),
+                   varphi_diff_hat=rep(0,length(kappa_hat)))
+    if (att) result$varphi_att_hat <- rep(0, length(kappa_hat))
+    if (atc) result$varphi_atc_hat <- rep(0, length(kappa_hat))
+    return(result)
   }
 
   if (eem_ind==TRUE) { # estimate via EEM
-    return(est_varphi_eem(idx, R, Z,
-                          phi_1_hat, phi_0_hat,
-                          kappa_hat,
-                          po_learners,
-                          Y))
+    result <- est_varphi_eem(idx, R, Z,
+                             phi_1_hat, phi_0_hat,
+                             kappa_hat,
+                             po_learners,
+                             Y)
   } else {
-    return(
-      est_varphi(idx, R, Z,
-                      phi_1_hat, phi_0_hat,
-                      po_learners,
-                      Y)
-           )
+    result <- est_varphi(idx, R, Z,
+                         phi_1_hat, phi_0_hat,
+                         po_learners,
+                         Y)
   }
 
+  # ATT pseudo-outcome regression
+  if (att && !is.null(phi_att_hat)) {
+    varphi_att_fit <- SuperLearner::SuperLearner(Y=phi_att_hat[idx],
+                                                  X=Z[idx,,drop=FALSE],
+                                                  family=gaussian(),
+                                                  SL.library=po_learners,
+                                                  obsWeights=R[idx])
+    result$varphi_att_hat <- predict(varphi_att_fit, newdata=Z)$pred
+  }
 
+  # ATC pseudo-outcome regression
+  if (atc && !is.null(phi_atc_hat)) {
+    varphi_atc_fit <- SuperLearner::SuperLearner(Y=phi_atc_hat[idx],
+                                                  X=Z[idx,,drop=FALSE],
+                                                  family=gaussian(),
+                                                  SL.library=po_learners,
+                                                  obsWeights=R[idx])
+    result$varphi_atc_hat <- predict(varphi_atc_fit, newdata=Z)$pred
+  }
+
+  return(result)
 }
 
 #' @title Perform pseudo-outcome regression with conventional loss function

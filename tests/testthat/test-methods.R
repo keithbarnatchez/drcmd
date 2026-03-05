@@ -19,3 +19,17 @@ test_that('error thrown if non-standard plot type provided', {
 test_that('error thrown if wrong arg thrown at summary', {
   expect_error(summary(results,detail='this should be a logical'))
 })
+
+test_that("print.drcmd runs without error", {
+  expect_output(print(results), "drcmd results")
+  expect_output(print(results), "ATE estimate")
+})
+
+test_that("summary.drcmd runs without error", {
+  expect_output(summary(results), "Summary of drcmd results")
+  expect_output(summary(results), "ATE")
+})
+
+test_that("summary.drcmd with detail=TRUE prints learner info", {
+  expect_output(summary(results, detail=TRUE), "nuisance learners")
+})

@@ -13,8 +13,7 @@ Description: Doubly-robust estimation of counterfactual means in the presence of
     the non-missingness probabilities through the Rprobs argument. Users can fit nuisance 
     functions through either highly-adaptive LASSO (HAL) or SuperLearner, the latter of which
     the user must specify libraries.
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2

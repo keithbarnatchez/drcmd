@@ -81,7 +81,8 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                   m_learners=NULL,g_learners=NULL,r_learners=NULL,po_learners=NULL,
                   eem_ind=FALSE, tml=FALSE,
                   Rprobs=NA, k=1, cutoff=0.025,
-                  nboot=0) {
+                  nboot=0,
+                  att=FALSE, atc=FALSE) {
 
   loadNamespace("SuperLearner")
 
@@ -109,6 +110,10 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   # Throw errors if anything is entered incorrectly
   check_entry_errors(Y,A,X,W,R,eem_ind,Rprobs,k,nboot)
 
+  # Validate att/atc
+  if (!is.logical(att) || length(att) != 1) stop("att must be a single logical value")
+  if (!is.logical(atc) || length(atc) != 1) stop("atc must be a single logical value")
+
   # Identify missing data structure
   V <- find_missing_pattern(Y,A,X,W)
   Z <- V$Z ; R <- as.integer(V$R) ; X <- V$X ; Y <- V$Y ; A <- as.integer(V$A)
@@ -131,7 +136,8 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   res$results <- drcmd_est(Y,A,X,Z,R,
                            learners$m_learners,learners$g_learners,
                            learners$r_learners,learners$po_learners,
-                           eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled)
+                           eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled,
+                           att,atc)
 
   if (yscaled) { # rescale estimates to original y scale if necessary
     res$results$nuis$Ysc <- Y
@@ -158,6 +164,8 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   params$tml <- tml
   params$Rprobs <- Rprobs
   params$k <- k
+  params$att <- att
+  params$atc <- atc
   res$Z <- colnames(Z)
   res$U <- V$U
   res$R <- R
@@ -200,7 +208,8 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 #' @export
 drcmd_est <- function(Y,A,X,Z,R,
                       m_learners,g_learners,r_learners,po_learners,
-                      eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled) {
+                      eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled,
+                      att=FALSE,atc=FALSE) {
 
   # Divide the data into k random "train-test" splits
   if (k>1) { # if doing cross-fitting
@@ -211,7 +220,7 @@ drcmd_est <- function(Y,A,X,Z,R,
                                                   m_learners,g_learners,
                                                   r_learners,po_learners,
                                                   eem_ind,tml,Rprobs,cutoff,
-                                                  y_bin))
+                                                  y_bin,att,atc))
 
     # Extract ests and SEs from each fold
     ests_df <- do.call(rbind, lapply(res, function(x) x$ests))
@@ -225,7 +234,7 @@ drcmd_est <- function(Y,A,X,Z,R,
       vars <- as.data.frame(t(colMeans( sweep(vars_df,2,e_ests_sq,'+') )))
     }
     else {
-      vars <- est_ses_crossfit(res, y_bin)
+      vars <- est_ses_crossfit(res, y_bin, att, atc)
     }
 
     # Get variances via fold-wise contributions to overall IC
@@ -234,7 +243,7 @@ drcmd_est <- function(Y,A,X,Z,R,
     splits <- create_folds(length(Y),k)
     res <- drcmd_est_fold(splits,Y,A,X,Z,R,
                           m_learners,g_learners,r_learners,po_learners,
-                          eem_ind,tml,Rprobs,cutoff,y_bin)
+                          eem_ind,tml,Rprobs,cutoff,y_bin,att,atc)
     res <- list(estimates=res$ests,ses=sqrt(res$vars),nuis=res$nuis)
   }
 
@@ -251,10 +260,12 @@ drcmd_est <- function(Y,A,X,Z,R,
 #' @return A list of cross-fit SEs
 #' @export
 est_ses_crossfit <- function(res,
-                             y_bin) {
+                             y_bin,
+                             att=FALSE, atc=FALSE) {
 
   # ics is a list of dataframes. rbind all the dataframes together
   ics_df <- do.call(rbind, lapply(res, function(x) x$ics))
+  n <- nrow(ics_df)
 
   psi_1_ic <- ics_df$psi_1_ic
   psi_0_ic <- ics_df$psi_0_ic
@@ -277,13 +288,25 @@ est_ses_crossfit <- function(res,
                                      2*Sig[1,2]/(psi_1_hat*(1-psi_1_hat)*psi_0_hat*(1-psi_0_hat)))/n
   }
 
+  # ATT/ATC variances
+  psi_hat_att_se <- NA
+  psi_hat_atc_se <- NA
+  if (att && !all(is.na(ics_df$psi_att_ic))) {
+    psi_hat_att_se <- var(ics_df$psi_att_ic)/n
+  }
+  if (atc && !all(is.na(ics_df$psi_atc_ic))) {
+    psi_hat_atc_se <- var(ics_df$psi_atc_ic)/n
+  }
+
   return(
     data.frame(psi_1_hat=var(psi_1_ic)/n,
                     psi_0_hat=var(psi_0_ic)/n,
                     psi_hat_ate=var(psi_1_ic - psi_0_ic)/n,
                     psi_hat_ate_direct=var(psi_ate_ic)/n,
                     psi_hat_rr=psi_hat_rr_se,
-                    psi_hat_or=psi_hat_or_se
+                    psi_hat_or=psi_hat_or_se,
+                    psi_hat_att=psi_hat_att_se,
+                    psi_hat_atc=psi_hat_atc_se
   )
   )
 
@@ -315,7 +338,8 @@ est_ses_crossfit <- function(res,
 #' @export
 drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
-                           eem_ind,tml,Rprobs,cutoff,y_bin) {
+                           eem_ind,tml,Rprobs,cutoff,y_bin,
+                           att=FALSE,atc=FALSE) {
 
   # Get training and test data indices
   train <- splits$train
@@ -335,25 +359,56 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   phi_1_hat <- phi_hat$phi_1_hat
   phi_0_hat <- phi_hat$phi_0_hat
 
+  # Build ATT/ATC EIFs if requested
+  g_hat <- nuisance_ests$g_hat
+  m_1_hat <- nuisance_ests$m_a_hat$m_1_hat
+  m_0_hat <- nuisance_ests$m_a_hat$m_0_hat
+  pi_hat <- mean(A)
+
+  phi_att_hat <- plugin_att <- NULL
+  phi_atc_hat <- plugin_atc <- NULL
+
+  if (att) {
+    if (all(colnames(X) %in% colnames(Z))) {
+      plugin_att <- mean(A * (m_1_hat - m_0_hat)) / pi_hat
+    } else {
+      plugin_att <- mean(R / nuisance_ests$kappa_hat * A * (m_1_hat - m_0_hat)) / pi_hat
+    }
+    phi_att_hat <- (A * (Y - m_0_hat) - g_hat * (1 - A) * (Y - m_0_hat) / (1 - g_hat)) / pi_hat - plugin_att
+  }
+
+  if (atc) {
+    if (all(colnames(X) %in% colnames(Z))) {
+      plugin_atc <- mean((1 - A) * (m_1_hat - m_0_hat)) / (1 - pi_hat)
+    } else {
+      plugin_atc <- mean(R / nuisance_ests$kappa_hat * (1 - A) * (m_1_hat - m_0_hat)) / (1 - pi_hat)
+    }
+    phi_atc_hat <- ((1 - g_hat) * A * (Y - m_1_hat) / g_hat - (1 - A) * (Y - m_1_hat)) / (1 - pi_hat) - plugin_atc
+  }
+
   varphi_hat <- est_varphi_main(test,R,Z,phi_1_hat,phi_0_hat,
                                 nuisance_ests$kappa_hat,
                                 eem_ind,
                                 po_learners,
-                                Y)
+                                Y,
+                                att,atc,phi_att_hat,phi_atc_hat)
 
   # Form final estimate for this fold
   if (tml) { # est via tml if specified
     ests <- est_psi_tml(test, Y,A,X,
                         R, Z,
-                        nuisance_ests$m_a_hat$m_1_hat,
-                        nuisance_ests$m_a_hat$m_0_hat,
-                        nuisance_ests$g_hat,
+                        m_1_hat,
+                        m_0_hat,
+                        g_hat,
                         nuisance_ests$kappa_hat,
                         phi_1_hat, phi_0_hat,
-                        varphi_hat)
+                        varphi_hat,
+                        att=att, atc=atc)
   } else { # otherwise est via one-step (default)
     ests <- est_psi(test, R, Z, nuisance_ests$kappa_hat,
-                    phi_hat,varphi_hat,y_bin)
+                    phi_hat,varphi_hat,y_bin,
+                    att,atc,plugin_att,plugin_atc,
+                    phi_att_hat,phi_atc_hat)
   }
 
   # Additionally return nuisance estimate values
@@ -424,7 +479,10 @@ get_phi_hat <- function(Y, A, X, R, Z,
 #' and various counterfactual contrasts
 #' @export
 est_psi <- function(idx, R, Z,
-                    kappa_hat, phi_hat,varphi_hat,y_bin) {
+                    kappa_hat, phi_hat,varphi_hat,y_bin,
+                    att=FALSE,atc=FALSE,
+                    plugin_att=NULL,plugin_atc=NULL,
+                    phi_att_hat=NULL,phi_atc_hat=NULL) {
 
   n <- length(idx)
 
@@ -467,23 +525,47 @@ est_psi <- function(idx, R, Z,
                                      2*Sig[1,2]/(psi_1_hat*(1-psi_1_hat)*psi_0_hat*(1-psi_0_hat)))/n
   }
 
+  # ATT/ATC one-step estimates
+  psi_hat_att <- psi_hat_att_se <- psi_att_ic <- NA
+  psi_hat_atc <- psi_hat_atc_se <- psi_atc_ic <- NA
+
+  if (att && !is.null(phi_att_hat)) {
+    varphi_att_hat <- varphi_hat$varphi_att_hat
+    psi_att_ic <- ((R/kappa_hat)*phi_att_hat - (R/kappa_hat - 1)*varphi_att_hat)[idx]
+    psi_hat_att <- plugin_att + mean(psi_att_ic)
+    psi_hat_att_se <- var(psi_att_ic)/n
+  }
+
+  if (atc && !is.null(phi_atc_hat)) {
+    varphi_atc_hat <- varphi_hat$varphi_atc_hat
+    psi_atc_ic <- ((R/kappa_hat)*phi_atc_hat - (R/kappa_hat - 1)*varphi_atc_hat)[idx]
+    psi_hat_atc <- plugin_atc + mean(psi_atc_ic)
+    psi_hat_atc_se <- var(psi_atc_ic)/n
+  }
+
   return(list(ests = data.frame(psi_1_hat=psi_1_hat,
                                 psi_0_hat=psi_0_hat,
                                 psi_hat_ate=psi_hat_ate,
                                 psi_hat_ate_direct=psi_hat_ate_direct,
                                 psi_hat_rr=psi_hat_rr,
-                                psi_hat_or=psi_hat_or
+                                psi_hat_or=psi_hat_or,
+                                psi_hat_att=psi_hat_att,
+                                psi_hat_atc=psi_hat_atc
               ),
               vars = data.frame(psi_1_hat=var(psi_1_ic)/n,
                                 psi_0_hat=var(psi_0_ic)/n,
                                 psi_hat_ate=var(psi_1_ic - psi_0_ic)/n,
                                 psi_hat_ate_direct=var(psi_ate_ic)/n,
                                 psi_hat_rr=psi_hat_rr_se,
-                                psi_hat_or=psi_hat_or_se
+                                psi_hat_or=psi_hat_or_se,
+                                psi_hat_att=psi_hat_att_se,
+                                psi_hat_atc=psi_hat_atc_se
               ),
               ics = data.frame(psi_1_ic=psi_1_ic,
                                psi_0_ic=psi_0_ic,
-                               psi_ate_ic=psi_ate_ic
+                               psi_ate_ic=psi_ate_ic,
+                               psi_att_ic=if (att) psi_att_ic else rep(NA, n),
+                               psi_atc_ic=if (atc) psi_atc_ic else rep(NA, n)
               )
          )
   )
@@ -517,7 +599,8 @@ est_psi_tml <- function(idx, Y,A,X,
                         m_1_hat, m_0_hat, g_hat,kappa_hat,
                         phi_1_hat, phi_0_hat,
                         varphi_hat,
-                        maxits=10) {
+                        maxits=10,
+                        att=FALSE, atc=FALSE) {
 
 
   # Note: form of the plugin will depend on availability of X. If X is always
@@ -581,18 +664,24 @@ est_psi_tml <- function(idx, Y,A,X,
                                 psi_hat_ate=mean(updated_ests$plugin_ate_star),
                                 psi_hat_ate_direct=psi_hat_ate,
                                 psi_hat_rr=psi_hat_rr,
-                                psi_hat_or=psi_hat_or
+                                psi_hat_or=psi_hat_or,
+                                psi_hat_att=NA,
+                                psi_hat_atc=NA
   ),
   vars = data.frame(psi_1_hat=var(psi_1_ic)/n,
                     psi_0_hat=var(psi_0_ic)/n,
                     psi_hat_ate=var(psi_1_ic - psi_0_ic)/n,
                     psi_hat_ate_direct=var(psi_1_ic - psi_0_ic)/n,
                     psi_hat_rr=psi_hat_rr_se,
-                    psi_hat_or=psi_hat_or_se
+                    psi_hat_or=psi_hat_or_se,
+                    psi_hat_att=NA,
+                    psi_hat_atc=NA
   ),
   ics = data.frame(psi_1_ic=psi_1_ic,
                    psi_0_ic=psi_0_ic,
-                   psi_ate_ic=psi_1_ic-psi_0_ic
+                   psi_ate_ic=psi_1_ic-psi_0_ic,
+                   psi_att_ic=rep(NA, length(psi_1_ic)),
+                   psi_atc_ic=rep(NA, length(psi_1_ic))
   )
   )
   )
