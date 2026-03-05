@@ -23,6 +23,7 @@ drcmd_est(
   yscaled,
   cv_folds = 5,
   parallel = FALSE,
+  quiet = TRUE,
   att = FALSE,
   atc = FALSE
 )

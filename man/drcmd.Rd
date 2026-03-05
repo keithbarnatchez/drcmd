@@ -20,6 +20,7 @@ drcmd(
   Rprobs = NA,
   k = 1,
   cutoff = 0.025,
+  quiet = TRUE,
   cv_folds = 5,
   parallel = FALSE,
   att = FALSE,
@@ -72,6 +73,9 @@ missingness probabilities are estimated.}
 
 \item{cutoff}{Cutoff for treatment and complete case propensity scores. Estimates outside
 of \link{cutoff, 1-cutoff} are set to cutoff or 1-cutoff, respectively}
+
+\item{quiet}{Logical indicating whether to suppress progress messages. Default
+is TRUE. Set to FALSE to see which nuisance function is being estimated.}
 
 \item{cv_folds}{Number of cross-validation folds used internally by SuperLearner
 for model selection. Default is 5. Lower values speed up estimation.}

@@ -15,6 +15,7 @@ est_varphi_main(
   po_learners,
   Y,
   cv_folds = 5,
+  quiet = TRUE,
   att = FALSE,
   atc = FALSE,
   phi_att_hat = NULL,

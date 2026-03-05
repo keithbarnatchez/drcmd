@@ -69,7 +69,7 @@ $Y$ is only available when the complete case indicator $R=1$, and the missing at
 
 ```{r simdata}
 n <- 1e3
-X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
+X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X + A*X
 Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
 Y[R==0] <- NA # Make Y NA if R==0
 
@@ -115,14 +115,15 @@ Below we demonstrate an example call of `drcmd()`, which requires users to provi
 
 ```{r drcmd-simple}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
-             default_learners=c('SL.glm','SL.gam'))
+             default_learners=c('SL.ranger'),
+             quiet=FALSE)
 ```
 
 To make use of the additional proxy variable, we can simply specify the `W` argument in the call to `drcmd()`. In general, `W` can be multidimensional. In our running example, we have that $Y^*=W$.
 
 ```{r drcmd-proxy, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X, W=data.frame(Ystar),
-             default_learners=c('SL.glm','SL.gam'))
+             default_learners=c('SL.gam'))
 ```
 
 Users can specify specific learners through nuisance-specific arguments, which will overwrite the learners specified in `default_learners` for that particular nuisance function if `default_learners` is specified. For example, to estimate the pseudo-outcome regression through GAMs, and all other nuisance functions with a Super Learner ensemble of GLMs and splines, we can make the following call to `drcmd()`:
@@ -235,7 +236,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 ## ATT / ATC estimation
 
-While not estimated by default, `drcmd` can additionally estimate and report the ATT and/or ATT through the logicals `att` and `atc`:
+While not estimated by default, `drcmd` can additionally estimate and the ATT and/or ATT through the logicals `att` and `atc`:
 
 ```{r drcmd_att, eval=TRUE}
 drcmd::drcmd(Y=Y, A=A, X=X,

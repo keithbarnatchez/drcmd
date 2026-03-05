@@ -16,7 +16,8 @@ get_nuisance_ests(
   r_learners,
   Rprobs,
   cutoff,
-  cv_folds = 5
+  cv_folds = 5,
+  quiet = TRUE
 )
 }
 \arguments{

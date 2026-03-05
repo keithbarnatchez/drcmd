@@ -21,6 +21,7 @@ drcmd_est_fold(
   cutoff,
   y_bin,
   cv_folds = 5,
+  quiet = TRUE,
   att = FALSE,
   atc = FALSE
 )
