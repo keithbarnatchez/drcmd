@@ -42,6 +42,8 @@
 #' @param k A numeric indicating the number of folds for cross-fitting
 #' @param cutoff Cutoff for treatment and complete case propensity scores. Estimates outside
 #' of [cutoff, 1-cutoff] are set to cutoff or 1-cutoff, respectively
+#' @param quiet Logical indicating whether to suppress progress messages. Default
+#' is TRUE. Set to FALSE to see which nuisance function is being estimated.
 #' @param cv_folds Number of cross-validation folds used internally by SuperLearner
 #' for model selection. Default is 5. Lower values speed up estimation.
 #' @param parallel Logical indicating whether to run cross-fitting folds in parallel
@@ -83,6 +85,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                   m_learners=NULL,g_learners=NULL,r_learners=NULL,po_learners=NULL,
                   eem_ind=FALSE, tml=FALSE,
                   Rprobs=NA, k=1, cutoff=0.025,
+                  quiet=TRUE,
                   cv_folds=5, parallel=FALSE,
                   att=FALSE, atc=FALSE) {
 
@@ -123,23 +126,12 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
   # Obtain estimates
   res <- list()
   res$warnings <- list()
-  # res$results <- withCallingHandlers(
-  #   drcmd_est(Y, A, X, Z, R,
-  #             learners$m_learners, learners$g_learners,
-  #             learners$r_learners, learners$po_learners,
-  #             eem_ind, tml, Rprobs, k, cutoff, y_bin, yscaled),
-  #   warning = function(w) {
-  #     res$warnings <<- c(res$warnings, conditionMessage(w))
-  #     invokeRestart("muffleWarning")
-  #   }
-  # )
-  # res$warnings <- unique(res$warnings)
 
   res$results <- drcmd_est(Y,A,X,Z,R,
                            learners$m_learners,learners$g_learners,
                            learners$r_learners,learners$po_learners,
                            eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled,
-                           cv_folds,parallel,
+                           cv_folds,parallel,quiet,
                            att,atc)
 
   if (yscaled) { # rescale estimates to original y scale if necessary
@@ -179,6 +171,8 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
     warning("Warnings were generated during estimation. See `results$warnings` for details.")
   }
 
+  if (!quiet) message("Done!")
+
   # Return results
   return(res)
 
@@ -212,7 +206,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 drcmd_est <- function(Y,A,X,Z,R,
                       m_learners,g_learners,r_learners,po_learners,
                       eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled,
-                      cv_folds=5,parallel=FALSE,
+                      cv_folds=5,parallel=FALSE,quiet=TRUE,
                       att=FALSE,atc=FALSE) {
 
   # Divide the data into k random "train-test" splits
@@ -220,14 +214,18 @@ drcmd_est <- function(Y,A,X,Z,R,
     splits <- create_folds(length(Y),k)
 
     # Function to estimate a single fold
-    fold_fn <- function(i) drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
-                                          m_learners,g_learners,
-                                          r_learners,po_learners,
-                                          eem_ind,tml,Rprobs,cutoff,
-                                          y_bin,cv_folds,att,atc)
+    fold_fn <- function(i) {
+      if (!quiet && !parallel) message("--- Fold ", i, " / ", k, " ---")
+      drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
+                     m_learners,g_learners,
+                     r_learners,po_learners,
+                     eem_ind,tml,Rprobs,cutoff,
+                     y_bin,cv_folds,quiet || parallel,att,atc)
+    }
 
     # Run folds in parallel or sequentially
     if (parallel) {
+      if (!quiet) message("Running ", k, " folds in parallel...")
       n_cores <- max(1, parallel::detectCores() - 1)
       res <- parallel::mclapply(1:k, fold_fn, mc.cores = min(n_cores, k))
     } else {
@@ -241,13 +239,7 @@ drcmd_est <- function(Y,A,X,Z,R,
 
     # Combine estimates across folds
     ests <- colMeans(ests_df)
-    if (FALSE) {
-      e_ests_sq <- colMeans( (sweep(ests_df,2,ests,'-'))^2 )
-      vars <- as.data.frame(t(colMeans( sweep(vars_df,2,e_ests_sq,'+') )))
-    }
-    else {
-      vars <- est_ses_crossfit(res, y_bin, att, atc)
-    }
+    vars <- est_ses_crossfit(res, y_bin, att, atc)
 
     # Get variances via fold-wise contributions to overall IC
     res <- list(estimates=as.data.frame(t(ests)),ses=sqrt(vars),nuis=average_nuis)
@@ -255,7 +247,7 @@ drcmd_est <- function(Y,A,X,Z,R,
     splits <- create_folds(length(Y),k)
     res <- drcmd_est_fold(splits,Y,A,X,Z,R,
                           m_learners,g_learners,r_learners,po_learners,
-                          eem_ind,tml,Rprobs,cutoff,y_bin,cv_folds,att,atc)
+                          eem_ind,tml,Rprobs,cutoff,y_bin,cv_folds,quiet,att,atc)
     res <- list(estimates=res$ests,ses=sqrt(res$vars),nuis=res$nuis)
   }
 
@@ -351,7 +343,7 @@ est_ses_crossfit <- function(res,
 drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
                            eem_ind,tml,Rprobs,cutoff,y_bin,
-                           cv_folds=5,
+                           cv_folds=5,quiet=TRUE,
                            att=FALSE,atc=FALSE) {
 
   # Get training and test data indices
@@ -361,7 +353,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   # Get nuisance estimates
   nuisance_ests <- get_nuisance_ests(train,Y,A,X,Z,R,
                                      m_learners,g_learners,r_learners,
-                                     Rprobs,cutoff,cv_folds)
+                                     Rprobs,cutoff,cv_folds,quiet)
 
   # Form full data EIF, phi, based on nuisance estimates
   phi_hat <- get_phi_hat(Y,A,X,R,Z,
@@ -404,7 +396,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                                 eem_ind,
                                 po_learners,
                                 Y,
-                                cv_folds,
+                                cv_folds,quiet,
                                 att,atc,phi_att_hat,phi_atc_hat)
 
   # Form final estimate for this fold

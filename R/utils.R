@@ -84,12 +84,12 @@ check_r_ind <- function(data,
   check_r0 <- !complete.cases(data_r0[,c(Y,A,X,W)])
 
   # send error messages if r1 and or r0 are not satisfied
-  if(!check_r1) {
+  if(!check_r1 & !check_r0) {
+    stop("Error: cases where R=1 but Y, A, X and W are not all available and cases where R=0 but Y, A, X and W are not all missing")
+  } else if(!check_r1) {
     stop("Error: cases where R=1 but Y, A, X and W are not all available")
   } else if(!check_r0) {
     stop("Error: cases where R=0 but Y, A, X and W are not all missing")
-  } else if(!check_r1 & !check_r0) {
-    stop("Error: cases where R=1 but Y, A, X and W are not all available and cases where R=0 but Y, A, X and W are not all missing")
   } else {
     return(TRUE)
   }
@@ -220,8 +220,8 @@ truncate_r <- function(x, cutoff=0.01) {
 #' @return A vector with values trimmed to avoid numerical instability
 #' @keywords Internal
 trim <- function(x,val=.Machine$double.neg.eps) {
-  x[x==0] <- x+val
-  x[x==1] <- x-val
+  x[x==0] <- val
+  x[x==1] <- 1 - val
   return(x)
 }
 

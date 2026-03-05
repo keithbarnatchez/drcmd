@@ -235,15 +235,21 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 ## ATT / ATC estimation
 
-While not estimated by default, `drcmd` can additionally estimate the ATT and/or ATT through the logicals `att` and `atc`:
+While not estimated by default, `drcmd` can additionally estimate and report the ATT and/or ATT through the logicals `att` and `atc`:
 
 ```{r drcmd_att, eval=TRUE}
-res <- drcmd::drcmd(Y=Y, A=A, X=X,
+drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners='SL.glm',
-             att=1,
+             att=TRUE,
              cutoff=0)
 ```
 
+```{r drcmd_atc, eval=TRUE}
+drcmd::drcmd(Y=Y, A=A, X=X,
+             default_learners='SL.glm',
+             atc=TRUE,
+             cutoff=0)
+```
 
 <!-- ### Bootstrap standard errors -->
 

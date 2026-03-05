@@ -21,20 +21,23 @@
 #' @export
 get_nuisance_ests <- function(idx,Y,A,X,Z,R,
                               m_learners,g_learners,r_learners,
-                              Rprobs,cutoff,cv_folds=5) {
+                              Rprobs,cutoff,cv_folds=5,quiet=TRUE) {
 
   kappa_hat <- Rprobs
   if (all(R==1)) { # if no missing data
     kappa_hat <- rep(1,nrow(X))
   } else {
     if (any(is.na(Rprobs) )) {
+      if (!quiet) message("  Fitting missingness model P(R=1|Z)...")
       kappa_hat <- est_kappa(idx,Z,R,r_learners,cv_folds)
     }
     if (!is.null(cutoff)) {
       kappa_hat <- truncate_r(kappa_hat,cutoff)
     }
   }
+  if (!quiet) message("  Fitting outcome model E[Y|A,X]...")
   m_a_hat <- est_m_a(idx,Y,A,X,R,kappa_hat,m_learners,cv_folds)
+  if (!quiet) message("  Fitting propensity score P(A=1|X)...")
   g_hat <- est_g(idx,A,X,R,kappa_hat,g_learners,cv_folds)
 
   # Trimming
@@ -221,7 +224,7 @@ est_varphi_main <- function(idx, R,Z,
                             eem_ind,
                             po_learners,
                             Y,
-                            cv_folds=5,
+                            cv_folds=5,quiet=TRUE,
                             att=FALSE, atc=FALSE,
                             phi_att_hat=NULL, phi_atc_hat=NULL){
 
@@ -234,6 +237,7 @@ est_varphi_main <- function(idx, R,Z,
     return(result)
   }
 
+  if (!quiet) message("  Fitting pseudo-outcome regression E[phi|Z]...")
   if (eem_ind==TRUE) { # estimate via EEM
     result <- est_varphi_eem(idx, R, Z,
                              phi_1_hat, phi_0_hat,
