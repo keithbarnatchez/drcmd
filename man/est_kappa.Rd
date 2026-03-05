@@ -4,7 +4,7 @@
 \alias{est_kappa}
 \title{Estimate complete case propensity scores}
 \usage{
-est_kappa(idx, Z, R, r_learners)
+est_kappa(idx, Z, R, r_learners, cv_folds = 5)
 }
 \arguments{
 \item{idx}{Indices to carry out estimation over}

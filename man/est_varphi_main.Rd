@@ -13,7 +13,12 @@ est_varphi_main(
   kappa_hat,
   eem_ind,
   po_learners,
-  Y
+  Y,
+  cv_folds = 5,
+  att = FALSE,
+  atc = FALSE,
+  phi_att_hat = NULL,
+  phi_atc_hat = NULL
 )
 }
 \arguments{

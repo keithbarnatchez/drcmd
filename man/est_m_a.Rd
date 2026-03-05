@@ -4,7 +4,7 @@
 \alias{est_m_a}
 \title{Estimating outcome regression}
 \usage{
-est_m_a(idx, Y, A, X, R, kappa_hat, m_learners)
+est_m_a(idx, Y, A, X, R, kappa_hat, m_learners, cv_folds = 5)
 }
 \arguments{
 \item{idx}{Indices to carry out estimation over}

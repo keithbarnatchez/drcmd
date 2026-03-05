@@ -4,7 +4,21 @@
 \alias{est_psi}
 \title{Obtain estimates for current cross fitting fold}
 \usage{
-est_psi(idx, R, Z, kappa_hat, phi_hat, varphi_hat, y_bin)
+est_psi(
+  idx,
+  R,
+  Z,
+  kappa_hat,
+  phi_hat,
+  varphi_hat,
+  y_bin,
+  att = FALSE,
+  atc = FALSE,
+  plugin_att = NULL,
+  plugin_atc = NULL,
+  phi_att_hat = NULL,
+  phi_atc_hat = NULL
+)
 }
 \arguments{
 \item{idx}{A data frame}

@@ -20,7 +20,10 @@ drcmd(
   Rprobs = NA,
   k = 1,
   cutoff = 0.025,
-  nboot = 0
+  cv_folds = 5,
+  parallel = FALSE,
+  att = FALSE,
+  atc = FALSE
 )
 }
 \arguments{
@@ -36,6 +39,10 @@ but not a cause of the outcome or exposure.}
 \item{R}{(optional) A character string specifying the missingness indicator,
 where 0 indicates missing data. If not specified, the function will create the
 missingness indicator by identifying the missingness pattern in the data}
+
+\item{default_learners}{A character vector containing SuperLearner libraries to use
+for estimating all nuisance functions. User can alternatively specify libraries
+for each nuisance function for added flexibility}
 
 \item{m_learners}{A character vector containing learners to be used for the
 outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
@@ -66,12 +73,11 @@ missingness probabilities are estimated.}
 \item{cutoff}{Cutoff for treatment and complete case propensity scores. Estimates outside
 of \link{cutoff, 1-cutoff} are set to cutoff or 1-cutoff, respectively}
 
-\item{nboot}{A numeric indicating the number of desired bootstrap samples.
-If >0, uses bootstrap to obtain SEs. If =0, uses asymptotic analytical SEs.}
+\item{cv_folds}{Number of cross-validation folds used internally by SuperLearner
+for model selection. Default is 5. Lower values speed up estimation.}
 
-\item{deafult_learners}{A character vector containing SuperLearner libraries to use
-for estimating all nuisance functions. User can alternatively specify libraries
-for each nuisance function for added flexibility}
+\item{parallel}{Logical indicating whether to run cross-fitting folds in parallel
+using \code{parallel::mclapply}. Only used when k > 1. Note: not supported on Windows.}
 }
 \value{
 An S3 object of class \code{"drcmd"} containing estimation results, information

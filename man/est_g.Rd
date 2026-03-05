@@ -4,7 +4,7 @@
 \alias{est_g}
 \title{Estimate the propensity score}
 \usage{
-est_g(idx, A, X, R, kappa_hat, g_learners)
+est_g(idx, A, X, R, kappa_hat, g_learners, cv_folds = 5)
 }
 \arguments{
 \item{idx}{Indices to carry out estimation over}

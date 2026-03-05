@@ -19,7 +19,7 @@
 #' @param R (optional) A character string specifying the missingness indicator,
 #' where 0 indicates missing data. If not specified, the function will create the
 #' missingness indicator by identifying the missingness pattern in the data
-#' @param deafult_learners A character vector containing SuperLearner libraries to use
+#' @param default_learners A character vector containing SuperLearner libraries to use
 #' for estimating all nuisance functions. User can alternatively specify libraries
 #' for each nuisance function for added flexibility
 #' @param m_learners A character vector containing learners to be used for the
@@ -42,8 +42,10 @@
 #' @param k A numeric indicating the number of folds for cross-fitting
 #' @param cutoff Cutoff for treatment and complete case propensity scores. Estimates outside
 #' of [cutoff, 1-cutoff] are set to cutoff or 1-cutoff, respectively
-#' @param nboot A numeric indicating the number of desired bootstrap samples.
-#' If >0, uses bootstrap to obtain SEs. If =0, uses asymptotic analytical SEs.
+#' @param cv_folds Number of cross-validation folds used internally by SuperLearner
+#' for model selection. Default is 5. Lower values speed up estimation.
+#' @param parallel Logical indicating whether to run cross-fitting folds in parallel
+#' using \code{parallel::mclapply}. Only used when k > 1. Note: not supported on Windows.
 #' @return An S3 object of class \code{"drcmd"} containing estimation results, information
 #' on the missing data structure, and parameters used in the estimation
 #' \describe{
@@ -81,7 +83,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                   m_learners=NULL,g_learners=NULL,r_learners=NULL,po_learners=NULL,
                   eem_ind=FALSE, tml=FALSE,
                   Rprobs=NA, k=1, cutoff=0.025,
-                  nboot=0,
+                  cv_folds=5, parallel=FALSE,
                   att=FALSE, atc=FALSE) {
 
   loadNamespace("SuperLearner")
@@ -108,7 +110,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                              po_learners)
 
   # Throw errors if anything is entered incorrectly
-  check_entry_errors(Y,A,X,W,R,eem_ind,Rprobs,k,nboot)
+  check_entry_errors(Y,A,X,W,R,eem_ind,Rprobs,k)
 
   # Validate att/atc
   if (!is.logical(att) || length(att) != 1) stop("att must be a single logical value")
@@ -137,6 +139,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
                            learners$m_learners,learners$g_learners,
                            learners$r_learners,learners$po_learners,
                            eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled,
+                           cv_folds,parallel,
                            att,atc)
 
   if (yscaled) { # rescale estimates to original y scale if necessary
@@ -209,18 +212,27 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 drcmd_est <- function(Y,A,X,Z,R,
                       m_learners,g_learners,r_learners,po_learners,
                       eem_ind,tml,Rprobs,k,cutoff,y_bin,yscaled,
+                      cv_folds=5,parallel=FALSE,
                       att=FALSE,atc=FALSE) {
 
   # Divide the data into k random "train-test" splits
   if (k>1) { # if doing cross-fitting
     splits <- create_folds(length(Y),k)
 
-    # Use lapply to get results for each fold
-    res <- lapply(1:k, function(i) drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
-                                                  m_learners,g_learners,
-                                                  r_learners,po_learners,
-                                                  eem_ind,tml,Rprobs,cutoff,
-                                                  y_bin,att,atc))
+    # Function to estimate a single fold
+    fold_fn <- function(i) drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
+                                          m_learners,g_learners,
+                                          r_learners,po_learners,
+                                          eem_ind,tml,Rprobs,cutoff,
+                                          y_bin,cv_folds,att,atc)
+
+    # Run folds in parallel or sequentially
+    if (parallel) {
+      n_cores <- max(1, parallel::detectCores() - 1)
+      res <- parallel::mclapply(1:k, fold_fn, mc.cores = min(n_cores, k))
+    } else {
+      res <- lapply(1:k, fold_fn)
+    }
 
     # Extract ests and SEs from each fold
     ests_df <- do.call(rbind, lapply(res, function(x) x$ests))
@@ -243,7 +255,7 @@ drcmd_est <- function(Y,A,X,Z,R,
     splits <- create_folds(length(Y),k)
     res <- drcmd_est_fold(splits,Y,A,X,Z,R,
                           m_learners,g_learners,r_learners,po_learners,
-                          eem_ind,tml,Rprobs,cutoff,y_bin,att,atc)
+                          eem_ind,tml,Rprobs,cutoff,y_bin,cv_folds,att,atc)
     res <- list(estimates=res$ests,ses=sqrt(res$vars),nuis=res$nuis)
   }
 
@@ -339,6 +351,7 @@ est_ses_crossfit <- function(res,
 drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                            m_learners,g_learners,r_learners,po_learners,
                            eem_ind,tml,Rprobs,cutoff,y_bin,
+                           cv_folds=5,
                            att=FALSE,atc=FALSE) {
 
   # Get training and test data indices
@@ -348,7 +361,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   # Get nuisance estimates
   nuisance_ests <- get_nuisance_ests(train,Y,A,X,Z,R,
                                      m_learners,g_learners,r_learners,
-                                     Rprobs,cutoff)
+                                     Rprobs,cutoff,cv_folds)
 
   # Form full data EIF, phi, based on nuisance estimates
   phi_hat <- get_phi_hat(Y,A,X,R,Z,
@@ -391,6 +404,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
                                 eem_ind,
                                 po_learners,
                                 Y,
+                                cv_folds,
                                 att,atc,phi_att_hat,phi_atc_hat)
 
   # Form final estimate for this fold

@@ -4,7 +4,7 @@
 \alias{est_ses_crossfit}
 \title{Cross-fit SE estimation via influence curve contributions}
 \usage{
-est_ses_crossfit(res, y_bin)
+est_ses_crossfit(res, y_bin, att = FALSE, atc = FALSE)
 }
 \arguments{
 \item{ics}{A list of influence curves for each fold, obtained within drcmd_est}

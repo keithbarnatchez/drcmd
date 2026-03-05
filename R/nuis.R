@@ -21,21 +21,21 @@
 #' @export
 get_nuisance_ests <- function(idx,Y,A,X,Z,R,
                               m_learners,g_learners,r_learners,
-                              Rprobs,cutoff) {
+                              Rprobs,cutoff,cv_folds=5) {
 
   kappa_hat <- Rprobs
   if (all(R==1)) { # if no missing data
     kappa_hat <- rep(1,nrow(X))
   } else {
     if (any(is.na(Rprobs) )) {
-      kappa_hat <- est_kappa(idx,Z,R,r_learners)
+      kappa_hat <- est_kappa(idx,Z,R,r_learners,cv_folds)
     }
     if (!is.null(cutoff)) {
       kappa_hat <- truncate_r(kappa_hat,cutoff)
     }
   }
-  m_a_hat <- est_m_a(idx,Y,A,X,R,kappa_hat,m_learners)
-  g_hat <- est_g(idx,A,X,R,kappa_hat,g_learners)
+  m_a_hat <- est_m_a(idx,Y,A,X,R,kappa_hat,m_learners,cv_folds)
+  g_hat <- est_g(idx,A,X,R,kappa_hat,g_learners,cv_folds)
 
   # Trimming
   if (!is.null(cutoff)) {
@@ -73,7 +73,8 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 #' }
 est_m_a <- function(idx, Y, A, X, R,
                     kappa_hat,
-                    m_learners) {
+                    m_learners,
+                    cv_folds=5) {
 
   yfam <- gaussian()
   # method <- 'method.NNLS'
@@ -91,7 +92,8 @@ est_m_a <- function(idx, Y, A, X, R,
                               SL.library=m_learners,
                               family=yfam,
                               # method=method,
-                              obsWeights=R[idx]/kappa_hat[idx]),
+                              obsWeights=R[idx]/kappa_hat[idx],
+                              cvControl=list(V=cv_folds)),
     warning = function(w) {
       if (conditionMessage(w) == "non-integer #successes in a binomial glm!") {
         invokeRestart("muffleWarning")
@@ -131,7 +133,8 @@ est_m_a <- function(idx, Y, A, X, R,
 #' est_g(idx=1:n, A=A, X=X, R=R, kappa_hat=kappa_hat, g_learners=g_learners)
 #' }
 est_g <- function(idx,A, X, R, kappa_hat,
-                  g_learners) {
+                  g_learners,
+                  cv_folds=5) {
 
   # regression with weights + binary outcome can create unnecessary warnings
   g_hat <- withCallingHandlers(
@@ -140,7 +143,8 @@ est_g <- function(idx,A, X, R, kappa_hat,
       X = X[idx, , drop = FALSE],
       family = binomial(),
       SL.library = g_learners,
-      obsWeights = R[idx] / kappa_hat[idx]
+      obsWeights = R[idx] / kappa_hat[idx],
+      cvControl = list(V = cv_folds)
     ),
     warning = function(w) {
       if (conditionMessage(w) == "non-integer #successes in a binomial glm!") {
@@ -175,7 +179,8 @@ est_g <- function(idx,A, X, R, kappa_hat,
 #' est_g(idx=1:n, Z=Z, R=R, r_learners=r_learners)
 #' }
 est_kappa <- function (idx,Z, R,
-                       r_learners) {
+                       r_learners,
+                       cv_folds=5) {
 
   # if estimating via highly adaptive lasso
   if (all(r_learners=='hal')) { # estimate via HAL
@@ -185,7 +190,8 @@ est_kappa <- function (idx,Z, R,
     loadNamespace("SuperLearner")
     kappa_hat <- SuperLearner::SuperLearner(Y=R[idx],X=Z[idx,,drop=FALSE],
                                             family=binomial(),
-                                            SL.library=r_learners)
+                                            SL.library=r_learners,
+                                            cvControl=list(V=cv_folds))
     kappa_hat <- predict(kappa_hat, newdata=Z)$pred
   }
 
@@ -215,6 +221,7 @@ est_varphi_main <- function(idx, R,Z,
                             eem_ind,
                             po_learners,
                             Y,
+                            cv_folds=5,
                             att=FALSE, atc=FALSE,
                             phi_att_hat=NULL, phi_atc_hat=NULL){
 
@@ -232,12 +239,14 @@ est_varphi_main <- function(idx, R,Z,
                              phi_1_hat, phi_0_hat,
                              kappa_hat,
                              po_learners,
-                             Y)
+                             Y,
+                             cv_folds)
   } else {
     result <- est_varphi(idx, R, Z,
                          phi_1_hat, phi_0_hat,
                          po_learners,
-                         Y)
+                         Y,
+                         cv_folds)
   }
 
   # ATT pseudo-outcome regression
@@ -246,7 +255,8 @@ est_varphi_main <- function(idx, R,Z,
                                                   X=Z[idx,,drop=FALSE],
                                                   family=gaussian(),
                                                   SL.library=po_learners,
-                                                  obsWeights=R[idx])
+                                                  obsWeights=R[idx],
+                                                  cvControl=list(V=cv_folds))
     result$varphi_att_hat <- predict(varphi_att_fit, newdata=Z)$pred
   }
 
@@ -256,7 +266,8 @@ est_varphi_main <- function(idx, R,Z,
                                                   X=Z[idx,,drop=FALSE],
                                                   family=gaussian(),
                                                   SL.library=po_learners,
-                                                  obsWeights=R[idx])
+                                                  obsWeights=R[idx],
+                                                  cvControl=list(V=cv_folds))
     result$varphi_atc_hat <- predict(varphi_atc_fit, newdata=Z)$pred
   }
 
@@ -276,13 +287,15 @@ est_varphi_main <- function(idx, R,Z,
 est_varphi <- function(idx, R, Z,
                        phi_1_hat, phi_0_hat,
                        po_learners,
-                       Y) {
+                       Y,
+                       cv_folds=5) {
 
   varphi_diff_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx]-phi_0_hat[idx],
                                                 X=Z[idx,,drop=FALSE],
                                                 family=gaussian(),
                                                 SL.library=po_learners,
-                                                obsWeights=R[idx])
+                                                obsWeights=R[idx],
+                                                cvControl=list(V=cv_folds))
 
   # if Y binary or all in (0,1), shift and scale IFs
   fam <- gaussian()
@@ -305,11 +318,13 @@ est_varphi <- function(idx, R, Z,
   varphi_1_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],
                                              family=fam,
                                              SL.library=po_learners,
-                                             obsWeights=R[idx])
+                                             obsWeights=R[idx],
+                                             cvControl=list(V=cv_folds))
    varphi_0_hat <- SuperLearner::SuperLearner(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],
                                              family=fam,
                                              SL.library=po_learners,
-                                             obsWeights=R[idx])
+                                             obsWeights=R[idx],
+                                             cvControl=list(V=cv_folds))
 
   varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
   varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
@@ -345,7 +360,8 @@ est_varphi_eem <- function(idx, R, Z,
                            phi_1_hat, phi_0_hat,
                            kappa_hat,
                            po_learners,
-                           Y) {
+                           Y,
+                           cv_folds=5) {
 
   # Make pseudo outcomes
   ytilde1 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_1_hat
@@ -355,16 +371,19 @@ est_varphi_eem <- function(idx, R, Z,
   #### ***** need to update hal code below
   varphi_1_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
                                            family=gaussian(),SL.library=po_learners,
-                                           obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
+                                           obsWeights=(R[idx]/kappa_hat[idx] - 1)^2,
+                                           cvControl=list(V=cv_folds))
   varphi_0_hat <- SuperLearner::SuperLearner(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
                                              family=gaussian(),SL.library=po_learners,
-                                             obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
+                                             obsWeights=(R[idx]/kappa_hat[idx] - 1)^2,
+                                             cvControl=list(V=cv_folds))
   varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
   varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
 
   varphi_diff_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx]-ytilde0[idx],X=Z[idx,,drop=FALSE],
                                                 family=gaussian(),SL.library=po_learners,
-                                                obsWeights=(R[idx]/kappa_hat[idx] - 1)^2)
+                                                obsWeights=(R[idx]/kappa_hat[idx] - 1)^2,
+                                                cvControl=list(V=cv_folds))
   varphi_diff_hat <- predict(varphi_diff_hat, newdata=Z)$pred
 
   return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat,

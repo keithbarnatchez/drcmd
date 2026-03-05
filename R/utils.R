@@ -18,16 +18,17 @@ find_missing_pattern <- function(Y,A,X,W) {
                 data.frame(Y=Y,A=A))
 
   # find variables that are never missing
-  never_missing <- colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)]
+  na_counts <- colSums(is.na(data))
+  never_missing <- colnames(data)[na_counts == 0]
   if(length(never_missing) == 0) {
     stop("Error: drcmd requires data to have at least one variable that is never missing")
   }
 
   # find variables that are sometimes missing
-  sometimes_missing <- colnames(data)[apply(data,2,function(x) sum(is.na(x))>0)]
+  sometimes_missing <- colnames(data)[na_counts > 0]
 
   # make variable that indicates complete cases and df of all complete data
-  R <- as.numeric(apply(data,1,function(x) sum(is.na(x))==0))
+  R <- as.numeric(rowSums(is.na(data)) == 0)
   if (all(R == 0)) {
     stop("Error: drcmd requires data to have at least one complete case")
   }
@@ -35,7 +36,7 @@ find_missing_pattern <- function(Y,A,X,W) {
     warning('Small number of complete cases. Results may be unstable')
   }
 
-  Z <- data[,colnames(data)[apply(data,2,function(x) sum(is.na(x))==0)],drop=FALSE]
+  Z <- data[, never_missing, drop=FALSE]
 
   # If 'Y' is in Z rename to 'y' (superlearner doesn't allow covariates named Y)
   if('Y' %in% colnames(Z)) {
@@ -109,7 +110,7 @@ check_r_ind <- function(data,
 #' @export
 check_entry_errors <- function(Y,A,X,W,R,
                                eem_ind,Rprobs,
-                               k,nboot) {
+                               k) {
 
  # Make sure Y is a vector
   if (!is.double(Y) & !is.integer(Y)) {
@@ -175,14 +176,6 @@ check_entry_errors <- function(Y,A,X,W,R,
     stop('k must be less than the number of observations')
   }
 
-  if (!is.numeric(nboot) | nboot<0) {
-    stop('nboot must be a an integer')
-  } else{
-    if (floor(nboot) != nboot) {
-      stop('nboot must be an integer')
-    }
-  }
-
   return(TRUE)
 
 }
@@ -197,7 +190,7 @@ check_entry_errors <- function(Y,A,X,W,R,
 #'
 truncate_g <- function(x, cutoff=0.025) {
   if (any( (x > 1 - cutoff) | (x < cutoff))) {
-    warning(cat("Propensity scores outside of ",cutoff," and ",1-cutoff,". Truncating to cutoffs\n"))
+    warning(paste0("Propensity scores outside of ", cutoff, " and ", 1-cutoff, ". Truncating to cutoffs"))
   }
   x <- ifelse(x > 1 - cutoff, 1 - cutoff, ifelse(x < cutoff, cutoff, x))
   return(x)
@@ -213,7 +206,7 @@ truncate_g <- function(x, cutoff=0.025) {
 #'
 truncate_r <- function(x, cutoff=0.01) {
   if (any( (x > 1 - cutoff) | (x < cutoff))) {
-    warning(cat("Complete case probabilities outside of ",cutoff," and ",1-cutoff,". Truncating to cutoffs\n"))
+    warning(paste0("Complete case probabilities outside of ", cutoff, " and ", 1-cutoff, ". Truncating to cutoffs"))
   }
   x <- ifelse(x > 1 - cutoff, 1 - cutoff, ifelse(x < cutoff, cutoff, x))
   return(x)
@@ -334,17 +327,6 @@ get_sl_libraries <- function() {
   return(SL_wrappers)
 }
 
-#' @title Clean nuisance function output from crossfit procedure
-#'
-#' @description Transforms nuisance output across folds into a dataframe of avgerge
-#' prediction at each point for each nuisance function
-#'
-#' @param results Nuisance functions output from drcmd_est
-#' @return A dataframe of averaged nuisance estimates across all folds
-#' @export
-clean_crossfit_nuis <- function(results) {
-  1
-}
 
 get_clean_context <- function(calls) {
   for (i in rev(seq_along(calls))) {

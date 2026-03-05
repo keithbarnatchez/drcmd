@@ -50,33 +50,33 @@ test_that('check_entry_errors catches issue upfront', {
   # too large of a cross-fitting value
   expect_error(check_entry_errors(Y,A,X,W,R,
                                   eem_ind,Rprobs,
-                                  k=n+10,nboot=10))
+                                  k=n+10))
 
   # X not in df format
   expect_error(check_entry_errors(Y,A,as.vector(X),
                                   W,R,
                                   eem_ind,Rprobs,
-                                  k=1,nboot=10))
+                                  k=1))
 
   # W not in df format
   expect_error(check_entry_errors(Y,A,X,
                                   as.vector(W),R,
                                   eem_ind,Rprobs,
-                                  k=1,nboot=10))
+                                  k=1))
 
   # Y not a numeric vector
   Ybad <- Y
   Ybad[1] <- 'a'
   expect_error(check_entry_errors(Ybad,A,X,W,R,
                                   eem_ind,Rprobs,
-                                  k=1,nboot=10))
+                                  k=1))
 
   # A not a numeric vector
   Abad <- A
   Abad[1] <- 'a'
   expect_error(check_entry_errors(Y,Abad,X,W,R,
                                   eem_ind,Rprobs,
-                                  k=1,nboot=10))
+                                  k=1))
 
   # catches naming conflicts (a few varnames arent allowed)
   for (bad_name in c('y','Y','A')) {
@@ -84,7 +84,7 @@ test_that('check_entry_errors catches issue upfront', {
 
     expect_error(check_entry_errors(Y,A,X,W,R,
                                     eem_ind,Rprobs,
-                                    k=1,nboot=10))
+                                    k=1))
   }
   colnames(X) <- 'X'
 
@@ -92,21 +92,21 @@ test_that('check_entry_errors catches issue upfront', {
   expect_error(
     check_entry_errors(Y,A,X,W,R,
                                   eem_ind,Rprobs=rnorm(n),
-                                  k=1,nboot=10)
+                                  k=1)
   )
 
   # catches differences in length
   expect_error(check_entry_errors(rnorm(n-10),A,X,W,R,
                                   eem_ind,Rprobs,
-                                  k=1,nboot=10))
+                                  k=1))
   expect_error(check_entry_errors(Y,rnorm(n-10),X,W,R,
                                   eem_ind,Rprobs,
-                                  k=1,nboot=10))
+                                  k=1))
 
   # enforces eem_ind to be a logical
   expect_error(check_entry_errors(Y,A,X,W,R,
                                   'this should be a logical',Rprobs,
-                                  k=1,nboot=10))
+                                  k=1))
 
 
 

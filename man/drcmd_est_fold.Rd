@@ -19,7 +19,10 @@ drcmd_est_fold(
   tml,
   Rprobs,
   cutoff,
-  y_bin
+  y_bin,
+  cv_folds = 5,
+  att = FALSE,
+  atc = FALSE
 )
 }
 \arguments{

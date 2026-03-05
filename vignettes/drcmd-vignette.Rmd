@@ -1,9 +1,12 @@
 ---
 author: |
     | Keith Barnatchez
-    | Harvard University
+    | Johns Hopkins University
     | Department of Biostatistics
-    | keithbarnatchez@g.harvard.edu
+    | kbarnat1@jh.edu
+    |
+    | Griffin DesRoches
+    | University of Massachusetts, Amherst
 title: '`drcmd`: Doubly-Robust Causal Inference with Missing Data'
 abstract: >
   
@@ -230,6 +233,18 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
              cutoff=0)
 ```
 
+## ATT / ATC estimation
+
+While not estimated by default, `drcmd` can additionally estimate the ATT and/or ATT through the logicals `att` and `atc`:
+
+```{r drcmd_att, eval=TRUE}
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
+             default_learners='SL.glm',
+             att=1,
+             cutoff=0)
+```
+
+
 <!-- ### Bootstrap standard errors -->
 
 <!-- By default, `drcmd` obtains standard errors through estimation of the asymptotic variance of the estimator. Particularly for small samples, users may wish to obtain standard errors through bootstrapping. Users can specify the number of bootstrap samples through the `nboot` argument. Below we demonstrate a call to `drcmd()` with 1000 bootstrap samples: -->
@@ -270,7 +285,9 @@ Rather than observe data from $\mathbb{P}_F$, we instead observe data from the *
 $$
 O_i = (W_i, \ V_i, \ R_i U_i, \ R_i)\sim \mathbb{P}_O.
 $$
-Above, $U_i$ is only observed when $R_i=1$, and $W_i$ is observed for all $i$ and contains variables that are (i) possibly predictive of missingness, and (ii) but not a component of $F$. Letting $\chi(O, \mathbb{P}_\text{F})$ denote the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$, the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$ induced by the observed data distribution can be written
+Above, $U_i$ is only observed when $R_i=1$, and $W_i$ is observed for all $i$ and contains variables that are (i) possibly predictive of missingness, and (ii) but not a component of $F$, in the sense that they wouldn't be used for estimating the target estimand when one has access to complete data. $W$ is closely connected to the notions of *proxy* and *surrogate* variables.
+
+Letting $\chi(O, \mathbb{P}_\text{F})$ denote the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$, the efficient influence curve for $\Psi(\mathbb{P}_\text{F})$ induced by the observed data distribution can be written
 $$
 \chi(O,\mathbb{P}_O) = \frac{R}{\kappa(Z)}\chi(F,\mathbb{P}_\text{F}) - \left(\frac{R}{\kappa(Z)} - 1 \right) \varphi(O) 
 $$

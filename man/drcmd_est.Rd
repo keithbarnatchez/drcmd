@@ -20,7 +20,11 @@ drcmd_est(
   k,
   cutoff,
   y_bin,
-  yscaled
+  yscaled,
+  cv_folds = 5,
+  parallel = FALSE,
+  att = FALSE,
+  atc = FALSE
 )
 }
 \arguments{

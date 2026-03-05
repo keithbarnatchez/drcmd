@@ -39,8 +39,7 @@ print.drcmd <- function(x, ...) {
   cat("-------------------------------------------------\n")
   cat('Validity of results requires causal assumptions to hold\n')
   cat('As well as the assumption that U is independent of R given Z\n')
-  cat("Number of cross-fitting folds (k):", x$k, "\n")
-  cat("Bootstrap samples (nboot):", x$nboot, "\n")
+  cat("Number of cross-fitting folds (k):", x$params$k, "\n")
 }
 
 #' @title Summarize results from drcmd
@@ -134,7 +133,6 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
   if (detail) {
     cat("----------------------------------------------------------------------\n")
     cat("Number of cross-fitting folds (k):", x$params$k, "\n")
-    cat("Bootstrap samples (nboot):", x$params$nboot, "\n")
     cat('Outcome regression nuisance learners:', x$params$m_learners, '\n')
     cat('Propensity score nuisance learners:', x$params$g_learners, '\n')
     cat('Missingness nuisance learners:', x$params$r_learners, '\n')
