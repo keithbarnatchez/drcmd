@@ -238,42 +238,56 @@ est_varphi_main <- function(idx, R,Z,
   }
 
   if (!quiet) message("  Fitting pseudo-outcome regression E[phi|Z]...")
-  if (eem_ind==TRUE) { # estimate via EEM
-    result <- est_varphi_eem(idx, R, Z,
-                             phi_1_hat, phi_0_hat,
-                             kappa_hat,
-                             po_learners,
-                             Y,
-                             cv_folds)
-  } else {
-    result <- est_varphi(idx, R, Z,
-                         phi_1_hat, phi_0_hat,
-                         po_learners,
-                         Y,
-                         cv_folds)
-  }
 
-  # ATT pseudo-outcome regression
-  if (att && !is.null(phi_att_hat)) {
-    varphi_att_fit <- SuperLearner::SuperLearner(Y=phi_att_hat[idx],
-                                                  X=Z[idx,,drop=FALSE],
-                                                  family=gaussian(),
-                                                  SL.library=po_learners,
-                                                  obsWeights=R[idx],
-                                                  cvControl=list(V=cv_folds))
-    result$varphi_att_hat <- predict(varphi_att_fit, newdata=Z)$pred
-  }
+  # Suppress harmless SuperLearner metalearner warnings in pseudo-outcome fits
+  result <- withCallingHandlers({
 
-  # ATC pseudo-outcome regression
-  if (atc && !is.null(phi_atc_hat)) {
-    varphi_atc_fit <- SuperLearner::SuperLearner(Y=phi_atc_hat[idx],
-                                                  X=Z[idx,,drop=FALSE],
-                                                  family=gaussian(),
-                                                  SL.library=po_learners,
-                                                  obsWeights=R[idx],
-                                                  cvControl=list(V=cv_folds))
-    result$varphi_atc_hat <- predict(varphi_atc_fit, newdata=Z)$pred
-  }
+    if (eem_ind==TRUE) { # estimate via EEM
+      res <- est_varphi_eem(idx, R, Z,
+                               phi_1_hat, phi_0_hat,
+                               kappa_hat,
+                               po_learners,
+                               Y,
+                               cv_folds)
+    } else {
+      res <- est_varphi(idx, R, Z,
+                           phi_1_hat, phi_0_hat,
+                           po_learners,
+                           Y,
+                           cv_folds)
+    }
+
+    # ATT pseudo-outcome regression
+    if (att && !is.null(phi_att_hat)) {
+      varphi_att_fit <- SuperLearner::SuperLearner(Y=phi_att_hat[idx],
+                                                    X=Z[idx,,drop=FALSE],
+                                                    family=gaussian(),
+                                                    SL.library=po_learners,
+                                                    obsWeights=R[idx],
+                                                    cvControl=list(V=cv_folds))
+      res$varphi_att_hat <- predict(varphi_att_fit, newdata=Z)$pred
+    }
+
+    # ATC pseudo-outcome regression
+    if (atc && !is.null(phi_atc_hat)) {
+      varphi_atc_fit <- SuperLearner::SuperLearner(Y=phi_atc_hat[idx],
+                                                    X=Z[idx,,drop=FALSE],
+                                                    family=gaussian(),
+                                                    SL.library=po_learners,
+                                                    obsWeights=R[idx],
+                                                    cvControl=list(V=cv_folds))
+      res$varphi_atc_hat <- predict(varphi_atc_fit, newdata=Z)$pred
+    }
+
+    res
+  },
+  warning = function(w) {
+    msg <- conditionMessage(w)
+    if (grepl("All algorithms have zero weight", msg) ||
+        grepl("All metalearner coefficients are zero", msg)) {
+      invokeRestart("muffleWarning")
+    }
+  })
 
   return(result)
 }
