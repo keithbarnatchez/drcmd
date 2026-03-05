@@ -239,7 +239,11 @@ est_varphi_main <- function(idx, R,Z,
 
   if (!quiet) message("  Fitting pseudo-outcome regression E[phi|Z]...")
 
-  # Suppress harmless SuperLearner metalearner warnings in pseudo-outcome fits
+  # Suppress SuperLearner metalearner warnings in pseudo-outcome fits.
+  # These occur when the learner(s) can't improve over the intercept for
+  # predicting E[phi|Z], which is common (e.g. when the treatment effect
+  # EIF has little conditional variation given Z). SuperLearner correctly
+  # falls back to the intercept model in this case — no bias is introduced.
   result <- withCallingHandlers({
 
     if (eem_ind==TRUE) { # estimate via EEM
@@ -284,7 +288,8 @@ est_varphi_main <- function(idx, R,Z,
   warning = function(w) {
     msg <- conditionMessage(w)
     if (grepl("All algorithms have zero weight", msg) ||
-        grepl("All metalearner coefficients are zero", msg)) {
+        grepl("All metalearner coefficients are zero", msg) ||
+        grepl("non-integer #successes in a binomial glm", msg)) {
       invokeRestart("muffleWarning")
     }
   })
@@ -421,11 +426,11 @@ est_varphi_eem <- function(idx, R, Z,
 #' @return A list containing the prediction and the fitted model
 #' @export
 SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
-  # Fit HAL model
+  # Fit HAL model (let HAL select lambda via CV rather than hardcoding a single value,
+  # which causes "Need more than one value of lambda for cv.glmnet" errors)
   fit <- hal9001::fit_hal(X = X, Y = Y, family = family$family,
                           max_degree=2,num_knots=3,
                           reduce_basis=TRUE,
-                          lambda=0.01,
                           weights = obsWeights, ...)
 
   # Predict on new data
