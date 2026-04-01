@@ -186,11 +186,10 @@ plot.drcmd <- function(x, type = "All") {
     stop("Invalid type argument. Must be one of 'All', PO', 'IC', 'ghat' or 'r_hat'")
   }
 
-  nuis <- x$results$nuis
-  R <- x$R
-  kappa_hat <- nuis$kappa_hat
-
   if (type == "PO" | type=='All') {
+
+    nuis <- x$results$nuis
+    R <- x$R
 
     phis <- rbind(data.frame(phi_hat=nuis$phi_1_hat[R==1], varphi_hat=nuis$varphi_1_hat[R==1],A=1),
                   data.frame(phi_hat=nuis$phi_0_hat[R==1], varphi_hat=nuis$varphi_0_hat[R==1],A=0))
@@ -218,10 +217,11 @@ plot.drcmd <- function(x, type = "All") {
   }
 
   if (type=='IC' | type=='All') {
-    IC1 <- (R/kappa_hat)*(nuis$phi_1_hat -
-            nuis$varphi_1_hat) + nuis$varphi_1_hat
-    ICO <- (R/kappa_hat)*(nuis$phi_0_hat -
-            nuis$varphi_0_hat) + nuis$varphi_0_hat
+    R <- x$R
+    IC1 <- (R*x$results$nuis$kappa_hat)*(x$results$nuis$phi_1_hat -
+            x$results$nuis$varphi_1_hat) + x$results$nuis$varphi_1_hat
+    ICO <- (R*x$results$nuis$kappa_hat)*(x$results$nuis$phi_0_hat -
+            x$results$nuis$varphi_0_hat) + x$results$nuis$varphi_0_hat
 
 
     ICs <- rbind(data.frame(IC=IC1, A='E[Y(1)]'),

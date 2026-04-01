@@ -406,11 +406,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   g_hat <- nuisance_ests$g_hat
   m_1_hat <- nuisance_ests$m_a_hat$m_1_hat
   m_0_hat <- nuisance_ests$m_a_hat$m_0_hat
-  if ("A" %in% colnames(Z)) {
-    pi_hat <- mean(A)
-  } else {
-    pi_hat <- mean(R / nuisance_ests$kappa_hat * A)
-  }
+  pi_hat <- mean(A)
 
   phi_att_hat <- plugin_att <- NULL
   phi_atc_hat <- plugin_atc <- NULL

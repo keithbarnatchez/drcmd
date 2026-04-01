@@ -1,0 +1,55 @@
+---
+title: "`drcmd`: Doubly-robust causal inference with missing data"
+tags:
+    - causal inference
+    - missing data
+    - R
+authors: 
+    - name: Keith Barnatchez
+affiliations:
+    - name: Harvard T. H. Chan School of Public Health
+    - index: 1
+date: 16 May 2025
+---
+
+# Summary
+
+The `drcmd` `R` package performs semi-parametric efficient estimation of causal effects of point exposures in settings where the data available to the researcher is subject to missingness. By implementing methods from semi-parametric theory and missing data (see, e.g. @robins1994estimation and @kennedy2022semiparametric), `drcmd` accomodates general patterns of missing data, while enabling users to estimate nuisance functions with flexible machine leaening methods. `drcmd` automatically determines the missingness patterns present in user-supplied data, and provides information on assumptions that must hold regarding the missingness mechanisms in order for point estimates and inferences to be valid. By accommodating *general* patterns of missingness, `drcmd` serves as a centralized library for researchers aiming to perform causal inference with missing data.
+
+# Statement of Need
+The use of doubly-robust methods for performing causal inference of point exposures on outcomes of interest has surged over the past decade, and numerous software packages have been developed for implementing these estimators. While these packages are well-suited for use on complete, missingness-free data, leading statistical software packages provide little to no support for missing data. The lack of a centralized package for performing doubly-robust causal inference has functioned as a severe impediment for researchers, as missing data is ubiquiotous in real-world data, and the specific patterns of missingness can greatly vary across applications. `drcmd` addresses this shortcoming by providing a single R package for performing doubly-robust causal inference in the presence of general missing data patterns.
+
+# Examples of Missing Data
+
+To illustrate the breadth of missingness patterns `drcmd` can accommodate, we outline multiple examples, including scenarios that aren't typically cast as missing data. We assume the causal inference assumptions of consistency, treatment positivity, and no unmeasured confounding hold.
+
+### Example 1: Two-phase sampling 
+
+The theory of -- is most commonly invoked in *two-phase sampling* problems, where missingness probabilities are typically known by design. 
+
+Cons
+
+```{r}
+# drcmd::()
+```
+
+### Example 2: Missing outcome and treatment
+
+Suppose the outcome and treatment are both missing according to a mechanism unknown to the researcher.
+
+### Example 3: Surrogate outcomes
+
+
+### Example 4: Generalizability
+
+In generalizability problems, researchers typically aim to use data from a *source* dataset to make inferences about treatment effects in a broader target population of interest
+
+
+
+
+
+# Availability 
+`drcmd` is publically available for download on [GitHub](https://github.com/keithbarnatchez/drcmd). Further information on the use of the package can be found on --
+
+# References
+

@@ -1,0 +1,30 @@
+* using log directory ‘/Users/kbarnatchez/Library/CloudStorage/Dropbox/drcmd/drcmd.Rcheck’
+* using R version 4.5.3 (2026-03-11)
+* using platform: aarch64-apple-darwin20
+* R was compiled by
+    Apple clang version 16.0.0 (clang-1600.0.26.6)
+    GNU Fortran (GCC) 14.2.0
+* running under: macOS Tahoe 26.3.1
+* using session charset: UTF-8
+* using option ‘--as-cran’
+* checking for file ‘drcmd/DESCRIPTION’ ... OK
+* this is package ‘drcmd’ version ‘0.0.0.9000’
+* package encoding: UTF-8
+* checking CRAN incoming feasibility ... NOTE
+Maintainer: ‘Keith Barnatchez <keithbarnatchez@gmail.com>’
+
+New submission
+
+Version contains large components (0.0.0.9000)
+* checking package namespace information ... OK
+* checking package dependencies ... ERROR
+Packages suggested but not available: 'hal9001', 'testthat'
+
+The suggested packages are required for a complete check.
+Checking can be attempted without them by setting the environment
+variable _R_CHECK_FORCE_SUGGESTS_ to a false value.
+
+See section ‘The DESCRIPTION file’ in the ‘Writing R Extensions’
+manual.
+* DONE
+Status: 1 ERROR, 1 NOTE
