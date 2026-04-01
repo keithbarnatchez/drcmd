@@ -57,7 +57,7 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 
   # Trimming
   if (!is.null(cutoff)) {
-    g_hat <- truncate_g(g_hat,cutoff)
+    g_hat <-  truncate_g(g_hat,cutoff)
   }
 
   return(list(kappa_hat=kappa_hat,m_a_hat=m_a_hat,g_hat=g_hat))
