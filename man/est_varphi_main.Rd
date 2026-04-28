@@ -40,10 +40,10 @@ est_varphi_main(
 \item{phi_hat}{A list containing the estimate of phi}
 }
 \value{
-A list containing the estimate of E\link{phi_a|Z} for a=0 and a=1
+A list containing the estimate of \code{E[phi_a | Z]} for a=0 and a=1
 }
 \description{
-Function for obtaining estimate of E\link{phi_a|Z} through pseudo-outcome
+Function for obtaining estimate of \code{E[phi_a | Z]} through pseudo-outcome
 regression. Calls inner function to perform estimation, depending on whether
 user wishes to perform empirical efficiency maximization or not
 }

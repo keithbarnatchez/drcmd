@@ -32,10 +32,10 @@ est_varphi_eem(
 \item{eem_ind}{A logical value indicating whether to estimate via EEM}
 }
 \value{
-A list containing the estimate of E\link{phi_a|Z} for a=0 and a=1
+A list containing the estimate of \code{E[phi_a | Z]} for a=0 and a=1
 }
 \description{
-Function for obtaining estimate of E\link{phi_a|Z} via empirical efficiency
+Function for obtaining estimate of \code{E[phi_a | Z]} via empirical efficiency
 maximization
 }
 \examples{

@@ -67,7 +67,7 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 
 #' @title Estimating outcome regression
 #'
-#' @description Function for obtaining estimate of E[Y|A=a,X]. Estimation is
+#' @description Function for obtaining estimate of `E[Y | A=a, X]`. Estimation is
 #' carried out with SuperLearer, using learners specified in m_learners
 #' @param idx Indices to carry out estimation over
 #' @param Y Outcome variable. Can be continuous or binary
@@ -76,7 +76,7 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 #' @param R Binary missingness indicator, where 0 indicates missing data
 #' @param kappa_hat A numeric vector containing the fitted values of kappa
 #' @param m_learners A character vector containing the names of the superlearner algorithms
-#' @return A list containing the estimate of E[Y|A=a,X]
+#' @return A list containing the estimate of `E[Y | A=a, X]`
 #' @export
 #' @examples
 #' \dontrun{
@@ -141,7 +141,7 @@ est_m_a <- function(idx, Y, A, X, R,
 #' @param R Binary missingness indicator, where 0 indicates missing data
 #' @param g_learners A character vector containing the names of the learners for estimation
 #'
-#' @return A list containing the estimate of E[Y|A=a,X,W]
+#' @return A list containing the estimate of `E[Y | A=a, X, W]`
 #' @export
 #' @examples
 #' \dontrun{
@@ -191,7 +191,7 @@ est_g <- function(idx,A, X, R, kappa_hat,
 #' @param R Binary missingness indicator, where 0 indicates missing data
 #' @param r_learners A character vector specifying learners to be used for estimation
 #'
-#' @return A numeric vector containing the estimate of E[R|Z]
+#' @return A numeric vector containing the estimate of `E[R | Z]`
 #' @export
 #' @examples
 #' \dontrun{
@@ -226,7 +226,7 @@ est_kappa <- function (idx,Z, R,
 
 #' @title Perform pseudo-outcome regression
 #'
-#' @description Function for obtaining estimate of E[phi_a|Z] through pseudo-outcome
+#' @description Function for obtaining estimate of `E[phi_a | Z]` through pseudo-outcome
 #' regression. Calls inner function to perform estimation, depending on whether
 #' user wishes to perform empirical efficiency maximization or not
 #' @param idx Indices to carry out estimation over
@@ -238,7 +238,7 @@ est_kappa <- function (idx,Z, R,
 #' @param phi_hat A list containing the estimate of phi
 #' @param eem_ind A logical value indicating whether to estimate via EEM
 #'
-#' @return A list containing the estimate of E[phi_a|Z] for a=0 and a=1
+#' @return A list containing the estimate of `E[phi_a | Z]` for a=0 and a=1
 #' @export
 #' @examples
 #' \dontrun{
@@ -333,14 +333,14 @@ est_varphi_main <- function(idx, R,Z,
 }
 
 #' @title Perform pseudo-outcome regression with conventional loss function
-#' @description Outer function for obtaining estimate of E[phi|Z]
+#' @description Outer function for obtaining estimate of `E[phi | Z]`
 #' @param idx Indices to carry out estimation over
 #' @param R Binary missingness indicator, where 0 indicates missing data
 #' @param Z Dataframe containing all non-missing variables
 #' @param phi_1_hat A numeric vector containing the fitted values of phi under A=1
 #' @param phi_0_hat A numeric vector containing the fitted values of phi under A=0
 #' @param po_learners A character vector containing the names of the superlearner algorithms
-#' @return A list containing the estimate of E[phi|Z] for a=0 and a=1
+#' @return A list containing the estimate of `E[phi | Z]` for a=0 and a=1
 #' @export
 #' @examples
 #' \dontrun{
@@ -412,7 +412,7 @@ est_varphi <- function(idx, R, Z,
 
 
 #' @title Perform pseudo-outcome regression with empirical efficiency maximization
-#' @description Function for obtaining estimate of E[phi_a|Z] via empirical efficiency
+#' @description Function for obtaining estimate of `E[phi_a | Z]` via empirical efficiency
 #' maximization
 #'
 #' @param data A data frame
@@ -423,7 +423,7 @@ est_varphi <- function(idx, R, Z,
 #' @param eem_ind A logical value indicating whether to estimate via EEM
 #' @param po_learners A character vector containing the names of the superlearner algorithms
 #'
-#' @return A list containing the estimate of E[phi_a|Z] for a=0 and a=1
+#' @return A list containing the estimate of `E[phi_a | Z]` for a=0 and a=1
 #' @export
 #' @examples
 #' \dontrun{

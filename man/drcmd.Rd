@@ -72,7 +72,7 @@ missingness probabilities are estimated.}
 \item{k}{A numeric indicating the number of folds for cross-fitting}
 
 \item{cutoff}{Cutoff for treatment and complete case propensity scores. Estimates outside
-of \link{cutoff, 1-cutoff} are set to cutoff or 1-cutoff, respectively}
+of \verb{[cutoff, 1-cutoff]} are set to cutoff or 1-cutoff, respectively}
 
 \item{quiet}{Logical indicating whether to suppress progress messages. Default
 is TRUE. Set to FALSE to see which nuisance function is being estimated.}
@@ -107,22 +107,17 @@ functions through either highly-adaptive LASSO (HAL) or SuperLearner, the latter
 the user must specify libraries.
 }
 \examples{
-\dontrun{
-n <- 2500
-X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
-Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+set.seed(1)
+n <- 200
+X <- rnorm(n)
+A <- rbinom(n, 1, plogis(X))
+Y <- rnorm(n) + A + X
+R_ind <- rbinom(n, 1, plogis(X))
+Y[R_ind == 0] <- NA
+covariates <- data.frame(X = X)
 
-# Make A NA if R==0
-A[R==0] <- NA
-covariates <- data.frame(X1=X,X2=X2)
-
-# Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
-# GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-drcmd_res <- drcmd(Y,A,covariates,
-                   default_learners= c('SL.gam','SL.earth'),
-                   po_learners = 'SL.gam',
-                   k=1,
-                   eem_ind=F)
-}
+fit <- drcmd(Y, A, covariates,
+             default_learners = "SL.glm",
+             k = 1)
+fit
 }

@@ -44,11 +44,11 @@ est_psi_tml(
 
 \item{kappa_hat}{A numeric vector containing the fitted values of kappa}
 
-\item{phi_1_hat}{Estimates of EIC for E\link{Y(1)}}
+\item{phi_1_hat}{Estimates of EIC for \code{E[Y(1)]}}
 
-\item{phi_0_hat}{Estimates of E\link{Y(0)}}
+\item{phi_0_hat}{Estimates of \code{E[Y(0)]}}
 
-\item{varphi_hat}{A list containing estimate of E\link{phi_a|Z}}
+\item{varphi_hat}{A list containing estimate of \code{E[phi_a | Z]}}
 }
 \value{
 A list containing updated estimates of the nuisance parameters

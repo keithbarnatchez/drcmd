@@ -212,10 +212,10 @@ check_entry_errors <- function(Y,A,X,W,R,
 
 #' @title Truncate treatment propensity scores
 #'
-#' @description Truncate propensity scores to interval [c, 1-c]
+#' @description Truncate propensity scores to interval `[c, 1-c]`
 #' @param x A vector of treatment propensity scores
 #'
-#' @return A vector of treatment propensity scores truncated to interval [c, 1-c]
+#' @return A vector of treatment propensity scores truncated to interval `[c, 1-c]`
 #' @export
 #' @examples
 #' x <- c(0.001, 0.3, 0.5, 0.7, 0.999)
@@ -231,10 +231,10 @@ truncate_g <- function(x, cutoff=0.025) {
 
 #' @title Truncate complete case propensity scores
 #'
-#' @description Truncate propensity scores to interval [c, 1-c]
+#' @description Truncate propensity scores to interval `[c, 1-c]`
 #' @param x A vector of complete case propensity scores
 #'
-#' @return A vector of complete propensity scores truncated to interval [c, 1-c]
+#' @return A vector of complete propensity scores truncated to interval `[c, 1-c]`
 #' @export
 #' @examples
 #' x <- c(0.001, 0.3, 0.5, 0.7, 0.999)

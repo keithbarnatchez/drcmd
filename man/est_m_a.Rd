@@ -22,10 +22,10 @@ est_m_a(idx, Y, A, X, R, kappa_hat, m_learners, cv_folds = 5)
 \item{m_learners}{A character vector containing the names of the superlearner algorithms}
 }
 \value{
-A list containing the estimate of E\link{Y|A=a,X}
+A list containing the estimate of \verb{E[Y | A=a, X]}
 }
 \description{
-Function for obtaining estimate of E\link{Y|A=a,X}. Estimation is
+Function for obtaining estimate of \verb{E[Y | A=a, X]}. Estimation is
 carried out with SuperLearer, using learners specified in m_learners
 }
 \examples{

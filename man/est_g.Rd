@@ -20,7 +20,7 @@ est_g(idx, A, X, R, kappa_hat, g_learners, cv_folds = 5)
 \item{Y}{Outcome variable. Can be continuous or binary}
 }
 \value{
-A list containing the estimate of E\link{Y|A=a,X,W}
+A list containing the estimate of \verb{E[Y | A=a, X, W]}
 }
 \description{
 Function for obtaining propensity score estimates P(A=a|X)

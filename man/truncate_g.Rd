@@ -10,10 +10,10 @@ truncate_g(x, cutoff = 0.025)
 \item{x}{A vector of treatment propensity scores}
 }
 \value{
-A vector of treatment propensity scores truncated to interval \link{c, 1-c}
+A vector of treatment propensity scores truncated to interval \verb{[c, 1-c]}
 }
 \description{
-Truncate propensity scores to interval \link{c, 1-c}
+Truncate propensity scores to interval \verb{[c, 1-c]}
 }
 \examples{
 x <- c(0.001, 0.3, 0.5, 0.7, 0.999)

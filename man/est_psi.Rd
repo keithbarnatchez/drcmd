@@ -29,9 +29,9 @@ est_psi(
 
 \item{kappa_hat}{A numeric vector containing the fitted values of kappa}
 
-\item{phi_hat}{A list containing the estimate of E\link{phi|Z}}
+\item{phi_hat}{A list containing the estimate of \code{E[phi | Z]}}
 
-\item{varphi_hat}{A list containing the estimate of E\link{phi|Z}}
+\item{varphi_hat}{A list containing the estimate of \code{E[phi | Z]}}
 }
 \value{
 A list of point estimates and standard errors for counterfactual means

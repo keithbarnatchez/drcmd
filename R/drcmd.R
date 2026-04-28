@@ -41,7 +41,7 @@
 #' missingness probabilities are estimated.
 #' @param k A numeric indicating the number of folds for cross-fitting
 #' @param cutoff Cutoff for treatment and complete case propensity scores. Estimates outside
-#' of [cutoff, 1-cutoff] are set to cutoff or 1-cutoff, respectively
+#' of `[cutoff, 1-cutoff]` are set to cutoff or 1-cutoff, respectively
 #' @param quiet Logical indicating whether to suppress progress messages. Default
 #' is TRUE. Set to FALSE to see which nuisance function is being estimated.
 #' @param cv_folds Number of cross-validation folds used internally by SuperLearner
@@ -61,24 +61,19 @@
 #' @import SuperLearner
 #' @import ggplot2
 #' @examples
-#' \dontrun{
-#' n <- 2500
-#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-#' Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
-#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+#' set.seed(1)
+#' n <- 200
+#' X <- rnorm(n)
+#' A <- rbinom(n, 1, plogis(X))
+#' Y <- rnorm(n) + A + X
+#' R_ind <- rbinom(n, 1, plogis(X))
+#' Y[R_ind == 0] <- NA
+#' covariates <- data.frame(X = X)
 #'
-#' # Make A NA if R==0
-#' A[R==0] <- NA
-#' covariates <- data.frame(X1=X,X2=X2)
-#'
-#' # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
-#' # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-#' drcmd_res <- drcmd(Y,A,covariates,
-#'                    default_learners= c('SL.gam','SL.earth'),
-#'                    po_learners = 'SL.gam',
-#'                    k=1,
-#'                    eem_ind=F)
-#' }
+#' fit <- drcmd(Y, A, covariates,
+#'              default_learners = "SL.glm",
+#'              k = 1)
+#' fit
 #' @export
 drcmd <- function(Y, A, X, W=NA, R=NA,
                   default_learners=NULL,
@@ -533,8 +528,8 @@ get_phi_hat <- function(Y, A, X, R, Z,
 #' @param R A character string containing randomization variable name
 #' @param Z A character vector containing the names of the variables in Z
 #' @param kappa_hat A numeric vector containing the fitted values of kappa
-#' @param phi_hat A list containing the estimate of E[phi|Z]
-#' @param varphi_hat A list containing the estimate of E[phi|Z]
+#' @param phi_hat A list containing the estimate of `E[phi | Z]`
+#' @param varphi_hat A list containing the estimate of `E[phi | Z]`
 #'
 #' @return A list of point estimates and standard errors for counterfactual means
 #' and various counterfactual contrasts
@@ -654,9 +649,9 @@ est_psi <- function(idx, R, Z,
 #' @param m_0_hat A numeric vector containing the fitted outcome predictions under A=0
 #' @param g_hat A numeric vector containing the fitted treatment propensity scores
 #' @param kappa_hat A numeric vector containing the fitted values of kappa
-#' @param phi_1_hat  Estimates of EIC for E[Y(1)]
-#' @param phi_0_hat  Estimates of E[Y(0)]
-#' @param varphi_hat A list containing estimate of E[phi_a|Z]
+#' @param phi_1_hat  Estimates of EIC for `E[Y(1)]`
+#' @param phi_0_hat  Estimates of `E[Y(0)]`
+#' @param varphi_hat A list containing estimate of `E[phi_a | Z]`
 #'
 #' @return A list containing updated estimates of the nuisance parameters
 #' @export
@@ -775,9 +770,9 @@ est_psi_tml <- function(idx, Y,A,X,
 #' @param m_0_hat A numeric vector containing the fitted outcome predictions under A=0
 #' @param g_hat A numeric vector containing the fitted treatment propensity scores
 #' @param kappa_hat A numeric vector containing the fitted values of kappa
-#' @param phi_1_hat  Estimates of EIC for E[Y(1)]
-#' @param phi_0_hat  Estimates of E[Y(0)]
-#' @param varphi_hat A list containing estimate of E[phi_a|Z]
+#' @param phi_1_hat  Estimates of EIC for `E[Y(1)]`
+#' @param phi_0_hat  Estimates of `E[Y(0)]`
+#' @param varphi_hat A list containing estimate of `E[phi_a | Z]`
 #'
 #' @return A list containing updated estimates of the nuisance parameters
 #' @export
