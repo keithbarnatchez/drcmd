@@ -1,4 +1,4 @@
-# dcrmd
+# drcmd
 
 **D**oubly **R**obust **C**ausal Inference with **M**issing **D**ata
 
@@ -51,3 +51,8 @@ Tsiatis, A. A. (2006). *Semiparametric theory and missing data* (Vol. 4). New Yo
 Laan, M. J., & Robins, J. M. (2003). *Unified methods for censored longitudinal data and causality*. Springer New York.
 
 ------------------------------------------------------------------------
+## Contributing, reporting issues
+
+ - **Bugs/feature requests**: open an issue at https://github.com/keithbarnatchez/drcmd/issues                                                            
+  - **Contributions**: PRs welcome — please run `devtools::check()` and `devtools::test()` before opening one                                                
+  - **Questions**: email keithbarnatchez@gmail.com or open a discussion  
