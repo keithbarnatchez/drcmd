@@ -4,12 +4,14 @@
 \alias{summary.drcmd}
 \title{Summarize results from drcmd}
 \usage{
-\method{summary}{drcmd}(x, detail = FALSE, ...)
+\method{summary}{drcmd}(object, detail = FALSE, ...)
 }
 \arguments{
+\item{object}{An object of class drcmd}
+
 \item{detail}{Logical. If TRUE, print out values of user-supplied arguments}
 
-\item{results}{An object of class drcmd}
+\item{...}{Additional arguments (unused)}
 }
 \value{
 No return value. Called for printing a detailed results summary
@@ -21,21 +23,15 @@ mechanism. Can optionally print out values of user-supplied arguments by setting
 detail=TRUE
 }
 \examples{
-\dontrun{
-n <- 2500
-X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
-Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+set.seed(1)
+n <- 200
+X <- rnorm(n)
+A <- rbinom(n, 1, plogis(X))
+Y <- rnorm(n) + A + X
+R_ind <- rbinom(n, 1, plogis(X))
+Y[R_ind == 0] <- NA
+covariates <- data.frame(X = X)
 
-# Make A NA if R==0
-A[R==0] <- NA
-covariates <- data.frame(X1=X,X2=X2)
-
-# Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
-# GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-drcmd_res <- drcmd(Y,A,covariates,
-                   default_learners= c('SL.gam','SL.glm'),
-                   po_learners = 'SL.gam')
-print(drcmd_res)
-}
+fit <- drcmd(Y, A, covariates, default_learners = "SL.glm", k = 1)
+summary(fit)
 }

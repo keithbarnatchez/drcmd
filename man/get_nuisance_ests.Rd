@@ -34,18 +34,22 @@ get_nuisance_ests(
 \item{R}{Binary missingness indicator, where 0 indicates missing data}
 
 \item{m_learners}{A character vector containing learners to be used for the
-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
+outcome regression. A vector of SuperLearner library names}
 
 \item{g_learners}{A character vector containing learners to be used for the
-propensity score. User can specify 'hal' or a vector of SuperLearner libraries}
+propensity score. A vector of SuperLearner library names}
 
 \item{r_learners}{A character vector containing learners to be used for the
-missingness indicator regression. User can specify 'hal' or a vector of
-SuperLearner libraries}
+missingness indicator regression. A vector of SuperLearner library
+names}
 
 \item{Rprobs}{A vector of probabilities for R}
 
-\item{eem_ind}{A logical indicating whether to use empirical efficiency maximization}
+\item{cutoff}{Cutoff for propensity score truncation}
+
+\item{cv_folds}{Number of cross-validation folds for SuperLearner}
+
+\item{quiet}{Logical indicating whether to suppress progress messages}
 }
 \value{
 A list of nuisance estimates
@@ -69,3 +73,4 @@ nuis <- get_nuisance_ests(1:n, Y, A, X, Z, R,
                           Rprobs = NA, cutoff = 0.025)
 }
 }
+\keyword{internal}

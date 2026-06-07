@@ -16,7 +16,7 @@ est_kappa(idx, Z, R, r_learners, cv_folds = 5)
 \item{r_learners}{A character vector specifying learners to be used for estimation}
 }
 \value{
-A numeric vector containing the estimate of E\link{R|Z}
+A numeric vector containing the estimate of \code{E[R | Z]}
 }
 \description{
 Function for obtaining complete case propensity score estimates
@@ -32,3 +32,4 @@ kappa_hat <- est_kappa(idx = 1:n, Z = Z, R = R,
                        r_learners = r_learners)
 }
 }
+\keyword{internal}

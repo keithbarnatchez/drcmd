@@ -7,17 +7,11 @@
 \method{predict}{SL.hal9001}(object, newdata, ...)
 }
 \arguments{
-\item{...}{Additional arguments to pass to the HAL function}
+\item{object}{A fitted SL.hal9001 object}
 
-\item{Y}{Outcome variable}
+\item{newdata}{Data frame of covariates for prediction}
 
-\item{X}{Matrix of covariates}
-
-\item{newX}{Matrix of covariates for prediction}
-
-\item{family}{Family of the outcome variable}
-
-\item{obsWeights}{Observation weights}
+\item{...}{Additional arguments (unused)}
 }
 \value{
 Predicted values on new data

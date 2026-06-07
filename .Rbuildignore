@@ -1,2 +1,13 @@
 ^drcmd\.Rproj$
 ^\.Rproj\.user$
+^demo$
+^paper$
+^manual$
+^examples$
+^drcmd_.*\.tar\.gz$
+^drcmd\.Rcheck$
+^vignettes$
+^\.Rhistory$
+^.*\.Rhistory$
+^\.github$
+^\.claude$

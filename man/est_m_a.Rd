@@ -43,3 +43,4 @@ m_hat <- est_m_a(idx = 1:n, Y = Y, A = A, X = X, R = R,
                  kappa_hat = kappa_hat, m_learners = m_learners)
 }
 }
+\keyword{internal}

@@ -57,8 +57,6 @@ pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner li
 \item{Rprobs}{A vector of probabilities for R}
 
 \item{k}{A numeric indicating the number of folds for cross-fitting}
-
-\item{data}{A data frame}
 }
 \value{
 A list of point estimates and standard errors for all estimands considered
@@ -84,3 +82,4 @@ res <- drcmd_est(Y, A, X, Z, R,
                  y_bin = FALSE, yscaled = FALSE)
 }
 }
+\keyword{internal}

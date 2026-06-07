@@ -16,7 +16,9 @@ A vector of complete propensity scores truncated to interval \verb{[c, 1-c]}
 Truncate propensity scores to interval \verb{[c, 1-c]}
 }
 \examples{
+\dontrun{
 x <- c(0.001, 0.3, 0.5, 0.7, 0.999)
 suppressWarnings(truncate_r(x, cutoff = 0.01))
-
 }
+}
+\keyword{internal}

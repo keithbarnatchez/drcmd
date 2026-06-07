@@ -2,16 +2,15 @@
 
 #' @title find_missing_pattern
 #' @description Find the missing pattern in the data
-#' @param data A data frame
 #' @param Y A vector or data frame containing outcome values
 #' @param A A vector or data frame  containing treatment variable values
 #' @param X A data frame containing covariate values
 #' @param W A data frame containing proxy variable values
-#' @param R A vector containing missingness indicator variable
 #'
 #' @return A character string containing the missing pattern
-#' @export
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' n <- 200
 #' X <- data.frame(X1 = rnorm(n))
 #' A <- rbinom(n, 1, 0.5)
@@ -23,6 +22,7 @@
 #' result$Z  # variables without missingness
 #' result$U  # variables with missingness
 #' result$R  # complete case indicator
+#' }
 find_missing_pattern <- function(Y,A,X,W) {
 
   # Combine variables into a single data frame
@@ -78,8 +78,9 @@ find_missing_pattern <- function(Y,A,X,W) {
 #' @param R A character string containing randomization variable name
 #'
 #' @return A logical value
-#' @export
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' n <- 200
 #' R <- rbinom(n, 1, 0.7)
 #' data <- data.frame(
@@ -89,6 +90,7 @@ find_missing_pattern <- function(Y,A,X,W) {
 #'   R = R
 #' )
 #' check_r_ind(data, Y = "Y", A = "A", X = "X1", W = character(0), R = "R")
+#' }
 check_r_ind <- function(data,
                         Y,A,X,W,R) {
 
@@ -129,8 +131,9 @@ check_r_ind <- function(data,
 #' @param W A data frame containing proxy variable values
 #' @param R A vector containing missingness indicator variable
 #'
-#' @export
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' n <- 200
 #' X <- data.frame(X1 = rnorm(n))
 #' W <- data.frame(W1 = rnorm(n))
@@ -138,6 +141,7 @@ check_r_ind <- function(data,
 #' Y <- rnorm(n)
 #' R <- rbinom(n, 1, 0.7)
 #' check_entry_errors(Y, A, X, W, R, eem_ind = FALSE, Rprobs = NA, k = 1)
+#' }
 check_entry_errors <- function(Y,A,X,W,R,
                                eem_ind,Rprobs,
                                k) {
@@ -212,15 +216,16 @@ check_entry_errors <- function(Y,A,X,W,R,
 
 #' @title Truncate treatment propensity scores
 #'
-#' @description Truncate propensity scores to interval [c, 1-c]
+#' @description Truncate propensity scores to interval `[c, 1-c]`
 #' @param x A vector of treatment propensity scores
 #'
-#' @return A vector of treatment propensity scores truncated to interval [c, 1-c]
-#' @export
+#' @return A vector of treatment propensity scores truncated to interval `[c, 1-c]`
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' x <- c(0.001, 0.3, 0.5, 0.7, 0.999)
 #' suppressWarnings(truncate_g(x, cutoff = 0.025))
-#'
+#' }
 truncate_g <- function(x, cutoff=0.025) {
   if (any( (x > 1 - cutoff) | (x < cutoff))) {
     warning(paste0("Propensity scores outside of ", cutoff, " and ", 1-cutoff, ". Truncating to cutoffs"))
@@ -231,15 +236,16 @@ truncate_g <- function(x, cutoff=0.025) {
 
 #' @title Truncate complete case propensity scores
 #'
-#' @description Truncate propensity scores to interval [c, 1-c]
+#' @description Truncate propensity scores to interval `[c, 1-c]`
 #' @param x A vector of complete case propensity scores
 #'
-#' @return A vector of complete propensity scores truncated to interval [c, 1-c]
-#' @export
+#' @return A vector of complete propensity scores truncated to interval `[c, 1-c]`
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' x <- c(0.001, 0.3, 0.5, 0.7, 0.999)
 #' suppressWarnings(truncate_r(x, cutoff = 0.01))
-#'
+#' }
 truncate_r <- function(x, cutoff=0.01) {
   if (any( (x > 1 - cutoff) | (x < cutoff))) {
     warning(paste0("Complete case probabilities outside of ", cutoff, " and ", 1-cutoff, ". Truncating to cutoffs"))
@@ -272,13 +278,13 @@ trim <- function(x,val=.Machine$double.neg.eps) {
 #' @param default_learners Either null, or a character vector containing SuperLearner
 #'  libraries to use for estimating all nuisance functions. User can alternatively
 #'  specify libraries for each nuisance function for added flexibility
-#' @param m_sl_learners Either null, or a character vector containing SuperLearner
+#' @param m_learners Either null, or a character vector containing SuperLearner
 #' libraries to be used for the outcome regression
-#' @param g_sl_learners Either null, or a character vector containing SuperLearner
+#' @param g_learners Either null, or a character vector containing SuperLearner
 #' libraries to be used for the propensity scores
-#' @param r_sl_learners Either null, or a character vector containing SuperLearner
+#' @param r_learners Either null, or a character vector containing SuperLearner
 #' libraries to be used for the missingness indicator regression
-#' @param po_sl_learners Either null, or a character vector containing SuperLearner
+#' @param po_learners Either null, or a character vector containing SuperLearner
 #' libraries to be used for the pseudo outcome regression
 #'
 #' @return A list of
@@ -352,7 +358,7 @@ create_folds <- function(n, k) {
 #'
 #' @description List all available SuperLearner libraries
 #' @return A character vector of all available SuperLearner libraries
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' libs <- get_sl_libraries()

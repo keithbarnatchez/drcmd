@@ -4,12 +4,14 @@
 \alias{summary.drcmd}
 \title{Summarize results from drcmd}
 \usage{
-\method{summary}{drcmd}(x, detail = FALSE, ...)
+\method{summary}{drcmd}(object, detail = FALSE, ...)
 }
 \arguments{
+\item{object}{An object of class drcmd}
+
 \item{detail}{Logical. If TRUE, print out values of user-supplied arguments}
 
-\item{results}{An object of class drcmd}
+\item{...}{Additional arguments (unused)}
 }
 \value{
 No return value. Called for printing a detailed results summary

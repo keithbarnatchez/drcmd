@@ -18,7 +18,6 @@ est_psi_tml(
   phi_1_hat,
   phi_0_hat,
   varphi_hat,
-  maxits = 10,
   att = FALSE,
   atc = FALSE
 )
@@ -49,15 +48,21 @@ est_psi_tml(
 \item{phi_0_hat}{Estimates of \code{E[Y(0)]}}
 
 \item{varphi_hat}{A list containing estimate of \code{E[phi_a | Z]}}
+
+\item{att}{Logical. Not supported under TML; must be FALSE}
+
+\item{atc}{Logical. Not supported under TML; must be FALSE}
 }
 \value{
-A list containing updated estimates of the nuisance parameters
+A list with point estimates, variances, and influence-curve
+contributions for E\link{Y(1)}, E\link{Y(0)}, and ATE
 }
 \description{
 Function for obtaining estimates of causal estimands through
-targeted maximum likelihood. To be called within drcmd_est_fold(). Updates
-estimate of P(R=1|Z) and the plug-in estimator in a manner which removes the
-plug-in bias incurred by an initial plug-in estimator
+targeted maximum likelihood. To be called within drcmd_est_fold(). Runs a
+separate TML fluctuation for each of the ATE, E\link{Y(1)} and E\link{Y(0)}, so each
+estimand is debiased directly. ATT/ATC are not supported here -- use the
+one-step option (tml=FALSE) for those.
 }
 \examples{
 \dontrun{
@@ -66,3 +71,4 @@ plug-in bias incurred by an initial plug-in estimator
 # pseudo-outcome estimates from est_varphi_main().
 }
 }
+\keyword{internal}

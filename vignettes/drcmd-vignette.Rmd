@@ -8,8 +8,6 @@ author: |
     | Griffin DesRoches
     | University of Massachusetts, Amherst
 title: '`drcmd`: Doubly-Robust Causal Inference with Missing Data'
-abstract: >
-  
 preamble: >
   \usepackage{amsmath}
 # documentclass: jss
@@ -64,9 +62,9 @@ $$
 \begin{aligned}
 X & \sim N(0,1) \ \ \ \ \ \  &\text{(Covariates)} \\
 A|X & \sim \text{Bernoulli}(p = \text{logit}^{-1}(X)) \ \ \ \ \ \  &\text{(Treatment)} \\
-Y|A,X & \sim N(\mu=1 + A + X, \sigma^2=1) \ \ \ \ \ \  &\text{(Outcome)} \\
+Y|A,X & \sim N(\mu=A + X + AX, \sigma^2=1) \ \ \ \ \ \  &\text{(Outcome)} \\
 Y^* & = Y + \varepsilon, \ \varepsilon \sim N(\mu=0,\sigma^2 = 1/4) \ \ \ \ \ \  &\text{(Outcome Proxy)} \\
-R &\sim \text{Bernoulli}(X) \ \ \ \ \ \  &\text{(Complete case Indicator)} \\
+R &\sim \text{Bernoulli}(\text{logit}^{-1}(X)) \ \ \ \ \ \  &\text{(Complete case Indicator)} \\
 \end{aligned}
 $$
 $Y$ is only available when the complete case indicator $R=1$, and the missing at random assumption implies $Y \perp R | X$. We simulate data from this model below:
@@ -81,7 +79,7 @@ df <- data.frame(Y=Y,A=A,X=X,Ystar=Ystar,R=R)
 head(df)
 ```
 
-The main function from the `drcmd` package is `drcmd()`. The core arguments are `Y`, `A` and `X`, representing the outcome, binary treatment and covariates. Users can optionally specify proxy variables `W` that are (i) predictive of the missing variables, (ii) possibly influence the missingness mechanism, and (iii) wouldn't be involved in the causal analysis under the presence of complete data. Such variables commonly arise in semi-supervised inference, where cheap proxies are often available for expensive-to-measure variables. In our running example, we have that $Y^*=W$. In practice, $W$ can be multi-dimensional when multiple proxies are available.  `W` defaults to `NULL` when not specified by the user, consistent with settings where proxies are not available.
+The main function from the `drcmd` package is `drcmd()`. The core arguments are `Y`, `A` and `X`, representing the outcome, binary treatment and covariates. Users can optionally specify proxy variables `W` that are (i) predictive of the missing variables, (ii) possibly influence the missingness mechanism, and (iii) wouldn't be involved in the causal analysis under the presence of complete data. Such variables commonly arise in semi-supervised inference, where cheap proxies are often available for expensive-to-measure variables. In our running example, we have that $Y^*=W$. In practice, $W$ can be multi-dimensional when multiple proxies are available.  `W` defaults to `NA` when not specified by the user, consistent with settings where proxies are not available.
 
 Missing data are allowed in the outcome, treatment, and covariates (including any subset of covariates), as well as any combination of the three. The only requirement for running `drcmd` is that there exists at *least* one variable that is never missing, either in `Y`, `A`, `X`, `W`. `drcmd` detects missingness patterns in the data and automatically creates a variable `R`, where `R=1` if the observation is a complete-case and `R=0` if the observation is missing. 
 Note that this does **not** guarantee identifiability of the causal estimands $\mathbb{E}[Y(1)]$ or $\mathbb{E}[Y(0)]$. The validity of the resulting estimates hinges on the MAR assumption holding, a crucial problem-specific determination.
@@ -97,15 +95,25 @@ $$
 \end{aligned}
 $$
 
-where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactcual mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$, and $Z$ collects all variables that are never subject to missingness (and are always available, regardless of whether $R=1$ or $R=0$. `drcmd` automatically determines the variables comprising $Z$.
+where $\chi_a(X) = m_a(X) + \frac{I(A=a)}{g_a(X)}(Y-m_a(X))$ is the *pseudo-outcome* formed by the efficient influence function for estimating the counterfactual mean functional $\mathbb{E}[\mathbb{E}(Y|A=a,X)]$, and $Z$ collects all variables that are never subject to missingness (and are always available, regardless of whether $R=1$ or $R=0$). `drcmd` automatically determines the variables comprising $Z$.
 
-Users can specify learners for each nuisance function through nuisance-specific arguments `m_learners`, `g_learners`, `r_learners` and `po_learners`, as well as set default learners through the `default_learners` argument. To estimate a particular nuisance function through Super Learner, users can specify Super Learner libraries using the same syntax one passes directly into `SuperLearner`. To see the base SuperLearner libraries available, users can run `get_sl_libraries()`:
+Users can specify learners for each nuisance function through the nuisance-specific arguments below, or set a common library for all of them through `default_learners`. A nuisance-specific argument overrides `default_learners` for that function.
+
+| Argument | Nuisance function | Role |
+|--------------------|------------------------------------|----------------------------------------------|
+| `m_learners`   | $m_a(X) = \mathbb{E}(Y\mid A=a,X)$ | Outcome regression |
+| `g_learners`   | $g_a(X) = \mathbb{P}(A=a\mid X)$   | Treatment propensity score |
+| `r_learners`   | $r(Z) = \mathbb{P}(R=1\mid Z)$     | Complete-case (missingness) propensity score |
+| `po_learners`  | $\varphi_a(Z)$                     | Pseudo-outcome regression |
+| `default_learners` | —                              | Library applied to any nuisance not given its own argument |
+
+Each argument takes a vector of `SuperLearner` library names, using the same syntax one passes directly into `SuperLearner`. To see the base libraries available, users can run `get_sl_libraries()`:
 
 ```{r sl-libs}
 drcmd::get_sl_libraries()
 ```
 
-Users can additionally create custom libraries, and are encouraged to consult the `SuperLearner` package documentation for further details.
+This list includes `SL.hal9001`, a wrapper for the highly-adaptive LASSO (HAL). Users can additionally create custom libraries, and are encouraged to consult the `SuperLearner` package documentation for further details.
 
 ### Cautionary note: weighted regressions 
 
@@ -115,11 +123,11 @@ The nuisance functions $m_a$ and $g_a$ are estimated with regressions that add w
 
 ## Calling the `drcmd` function
 
-Below we demonstrate an example call of `drcmd()`, which requires users to provide an outcome `Y`, binary treatment `A`, covariate dataframe `X`, and SuperLearner libraries. We make use of the the `default_learners` argument to specify SuperLearner libraries for all nuisance functions, specifying  all nuisance functions be estimated an through ensemble of generalized linear models (GLMs) and generalized additive models (GAMs).
+Below we demonstrate an example call of `drcmd()`, which requires users to provide an outcome `Y`, binary treatment `A`, covariate dataframe `X`, and SuperLearner libraries. We make use of the `default_learners` argument to specify SuperLearner libraries for all nuisance functions, estimating each through an ensemble of generalized linear models (GLMs) and generalized additive models (GAMs).
 
 ```{r drcmd-simple}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
-             default_learners=c('SL.ranger'),
+             default_learners=c('SL.glm','SL.gam'),
              quiet=FALSE)
 ```
 
@@ -151,7 +159,7 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 ## Outputting results
 
-Users can view a summary of the estimation procedure by calling the `summary()` function, which provides point estimates, standard errors and 95\% CIs for main causal estimands. By default, `drcmd` obtains estimates of $\mathbb{E}[Y(1)]$, $\mathbb{E}[Y(0)]$, and the average treatment effect (ATE) $\mathbb{E}[Y(1)-Y(0)]$. 
+Users can view a summary of the estimation procedure by calling the `summary()` function, which provides point estimates, standard errors and 95\% CIs for main causal estimands. By default, `drcmd` obtains estimates of $\mathbb{E}[Y(1)]$, $\mathbb{E}[Y(0)]$, and the average treatment effect (ATE) $\mathbb{E}[Y(1)-Y(0)]$. When the outcome is binary, `drcmd` additionally reports the causal risk ratio $\mathbb{E}[Y(1)]/\mathbb{E}[Y(0)]$ and odds ratio. Standard errors for these estimands are obtained via the delta method (see the Technical Details section).
 
 ```{r drcmd_summary}
 summary(res)
@@ -178,6 +186,8 @@ summary(res,detail=TRUE)
 ## Cross-fitting
 
 While not enabled by default, users can estimate parameters through cross-fitting by setting the `k` argument to the desired number of folds. By default, `drcmd` uses a single fold. Cross-fitting is encouraged when the user specifies nuisance learners that cover complex function classes, such as random forests. See the technical details section for more information on the rationale behind and implementation of cross-fitting.
+
+When `k > 1`, the folds are independent and can be fit concurrently by setting `parallel=TRUE`, which distributes them across cores via `parallel::mclapply` (not supported on Windows). Separately, the `cv_folds` argument controls the number of cross-validation folds `SuperLearner` uses internally for model selection within each fit (default 5); lowering it speeds up estimation at some cost to learner selection.
 
 ```{r drcmd_simple, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
@@ -240,20 +250,22 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 ## ATT / ATC estimation
 
-While not estimated by default, `drcmd` can additionally estimate and the ATT and/or ATC through the logicals `att` and `atc`:
+While not estimated by default, `drcmd` can additionally estimate the ATT and/or ATC through the logicals `att` and `atc`. Note that ATT/ATC estimation is currently supported only with one-step estimation, so it cannot be combined with `tml=TRUE`.
 
 ```{r drcmd_att, eval=TRUE}
-drcmd::drcmd(Y=Y, A=A, X=X,
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners='SL.glm',
              att=TRUE,
              cutoff=0)
+summary(res)
 ```
 
 ```{r drcmd_atc, eval=TRUE}
-drcmd::drcmd(Y=Y, A=A, X=X,
+res <- drcmd::drcmd(Y=Y, A=A, X=X,
              default_learners='SL.glm',
              atc=TRUE,
              cutoff=0)
+summary(res)
 ```
 
 <!-- ### Bootstrap standard errors -->
@@ -269,7 +281,7 @@ drcmd::drcmd(Y=Y, A=A, X=X,
 ## Diagnostic plots
 
 While users can extract output from the results structure to construct plots manually, `drcmd` comes with numerous built-in plotting functions to help users diagnose potential issues in the fitting procedure.
-Users can specify their desired plot with the `type` argument: (i) `PO`: residuals of psuedo-outcome regression vs predicted values, (ii) `IC`: density plots of the influence curves for $\mathbb{E}[Y(1)]$, $\mathbb{E}[Y(0)]$ and the ATE, (iii) `g_hat`: Density plots of fitted treatment propensity scores among complete cases, (iv) `r_hat`: Density plots of fitted complete case propensity scores among complete cases.
+Users can specify their desired plot with the `type` argument: (i) `PO`: residuals of pseudo-outcome regression vs predicted values, (ii) `IC`: density plots of the influence curves for $\mathbb{E}[Y(1)]$, $\mathbb{E}[Y(0)]$ and the ATE, (iii) `g_hat`: Density plots of fitted treatment propensity scores among complete cases, (iv) `r_hat`: Density plots of fitted complete case propensity scores among complete cases.
 
 ```{r diagplotPO, fig.width=6, fig.height=3}
 plot(res,type='PO')
@@ -318,7 +330,7 @@ $$
 O_i = (R_i Y_i, A_i, X_i, Y_i^*) \sim \mathbb{P}_O
 $$
 and assume $Y \perp R | A, X, Y^*.$
-In this setting, the ideal distribution is given by $F = (Y, A, X)$, and notice $W=Y^*$, $Z = (Y^*, A, X)$ and $U = Y$.  It's well-known that the the efficient influence curve for $\psi_a$ under the full-data distribution is given by
+In this setting, the ideal distribution is given by $F = (Y, A, X)$, and notice $W=Y^*$, $Z = (Y^*, A, X)$ and $U = Y$.  It's well-known that the efficient influence curve for $\psi_a$ under the full-data distribution is given by
 $$
 \chi(F, \mathbb{P}_F) = m_a(X) + \left( \frac{I(A=a)}{\mathbb{P}(A=a|X)} \right) \left( Y - m_a(X) \right) - \psi_a
 $$

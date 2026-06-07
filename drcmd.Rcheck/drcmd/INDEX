@@ -1,0 +1,13 @@
+SL.hal9001              SuperLearner wrapper for the highly-adaptive
+                        lasso
+check_binary            check_binary
+clean_learners          Clean SuperLearner libraries
+create_folds            Create folds for cross-fitting
+drcmd                   Doubly-robust causal inference with missing
+                        data
+plot.drcmd              Plot results from drcmd object
+predict.SL.hal9001      Prediction wrapper for the highly-adaptive
+                        lasso
+print.drcmd             Print drcmd object
+summary.drcmd           Summarize results from drcmd
+trim                    Trim vector (for numerical stability)

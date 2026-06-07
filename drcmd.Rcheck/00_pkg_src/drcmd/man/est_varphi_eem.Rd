@@ -17,6 +17,8 @@ est_varphi_eem(
 )
 }
 \arguments{
+\item{idx}{Indices to carry out estimation over}
+
 \item{R}{Binary missingness indicator, where 0 indicates missing data}
 
 \item{Z}{Dataframe containing all non-missing variables}
@@ -25,17 +27,17 @@ est_varphi_eem(
 
 \item{phi_0_hat}{Vector of predicted phi under A=0}
 
+\item{kappa_hat}{A numeric vector containing the fitted values of kappa}
+
 \item{po_learners}{A character vector containing the names of the superlearner algorithms}
 
-\item{data}{A data frame}
-
-\item{eem_ind}{A logical value indicating whether to estimate via EEM}
+\item{Y}{Outcome variable. Can be continuous or binary}
 }
 \value{
-A list containing the estimate of E\link{phi_a|Z} for a=0 and a=1
+A list containing the estimate of \code{E[phi_a | Z]} for a=0 and a=1
 }
 \description{
-Function for obtaining estimate of E\link{phi_a|Z} via empirical efficiency
+Function for obtaining estimate of \code{E[phi_a | Z]} via empirical efficiency
 maximization
 }
 \examples{
@@ -51,3 +53,4 @@ varphi <- est_varphi_eem(1:n, R, Z, phi_1_hat, phi_0_hat,
                          kappa_hat, po_learners = "SL.glm", Y = Y)
 }
 }
+\keyword{internal}

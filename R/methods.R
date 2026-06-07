@@ -3,6 +3,8 @@
 #' of results, and prints values of optional arguments. Use summary() function for
 #' more detailed summary of results.
 #' @param x An object of class drcmd
+#' @param ... Additional arguments (unused)
+#' @return No return value. Called for printing a concise results summary
 #' @examples
 #' set.seed(1)
 #' n <- 200
@@ -42,8 +44,9 @@ print.drcmd <- function(x, ...) {
 #' mechanism. Can optionally print out values of user-supplied arguments by setting
 #' detail=TRUE
 #'
-#' @param results An object of class drcmd
+#' @param object An object of class drcmd
 #' @param detail Logical. If TRUE, print out values of user-supplied arguments
+#' @param ... Additional arguments (unused)
 #'
 #' @return No return value. Called for printing a detailed results summary
 #' @examples
@@ -59,8 +62,9 @@ print.drcmd <- function(x, ...) {
 #' fit <- drcmd(Y, A, covariates, default_learners = "SL.glm", k = 1)
 #' summary(fit)
 #' @export
-summary.drcmd <- function(x, detail=FALSE, ...) {
+summary.drcmd <- function(object, detail=FALSE, ...) {
 
+  x <- object
   if (!is.logical(detail)) {
     stop("Argument 'detail' must be logical (TRUE or FALSE)")
   }
@@ -133,13 +137,15 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
       cat('Estimation method: augmented complete case one-step \n')
     }
     if (!x$params$tml & x$params$eem_ind)
-      cat('Estimation method: augmented complete case one-step with empirical efficiency maximixation \n')
+      cat('Estimation method: augmented complete case one-step with empirical efficiency maximization \n')
   }
 }
 
+utils::globalVariables(c("varphi_hat", "phi_hat", "A", "IC", "g_hat", "kappa_hat"))
+
 #' @title Plot results from drcmd object
 #' @description S3 method for plotting results from drcmd object. Plots are
-#' available for the following: (1) psuedo outcome regression fit, (2) influence
+#' available for the following: (1) pseudo-outcome regression fit, (2) influence
 #' curve distribution, (3) treatment propensity score distribution, and (4)
 #' complete-case propensity score distribution. When type='All' (the default),
 #' user can view all four plots in succession interactively
@@ -147,6 +153,7 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
 #' @param x An object of class drcmd
 #' @param type Character denoting type of plot to generate. Must be one of 'All', 'PO',
 #'  'IC', 'g_hat', 'r_hat'
+#' @param ... Additional arguments (unused)
 #'
 #' @return No return value. Called for plotting results from drcmd object
 #' @examples
@@ -167,7 +174,7 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
 #' plot(drcmd_res,type='PO')
 #' }
 #' @export
-plot.drcmd <- function(x, type = "All") {
+plot.drcmd <- function(x, type = "All", ...) {
 
   # First check if type is valid
   if (!(type %in% c('PO', 'IC', 'g_hat', 'r_hat','All'))) {

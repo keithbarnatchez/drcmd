@@ -17,16 +17,16 @@ clean_learners(
 libraries to use for estimating all nuisance functions. User can alternatively
 specify libraries for each nuisance function for added flexibility}
 
-\item{m_sl_learners}{Either null, or a character vector containing SuperLearner
+\item{m_learners}{Either null, or a character vector containing SuperLearner
 libraries to be used for the outcome regression}
 
-\item{g_sl_learners}{Either null, or a character vector containing SuperLearner
+\item{g_learners}{Either null, or a character vector containing SuperLearner
 libraries to be used for the propensity scores}
 
-\item{r_sl_learners}{Either null, or a character vector containing SuperLearner
+\item{r_learners}{Either null, or a character vector containing SuperLearner
 libraries to be used for the missingness indicator regression}
 
-\item{po_sl_learners}{Either null, or a character vector containing SuperLearner
+\item{po_learners}{Either null, or a character vector containing SuperLearner
 libraries to be used for the pseudo outcome regression}
 }
 \value{

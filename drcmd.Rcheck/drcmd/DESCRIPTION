@@ -1,0 +1,37 @@
+Package: drcmd
+Title: Doubly-Robust Causal Inference with Missing Data
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Keith", "Barnatchez",
+           email = "keithbarnatchez@gmail.com",
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-1451-9335")),
+    person("Griffin", "DesRoches",
+           role = "aut")
+    )
+Description: Doubly-robust estimation of counterfactual means in the presence of missing
+    data. The drcmd() function estimates counterfactual means for binary point treatments
+    and reports average treatment effects, as well as causal risk ratios and odds ratios
+    for binary outcomes. General missingness patterns in the data are allowed and automatically
+    determined by the function -- the only requirement is that any missingness occurs at random
+    conditional on variables that are always available. For scenarios where non-missingness
+    probabilities are known, as is common in two-phase sampling designs, users can provide
+    the non-missingness probabilities through the Rprobs argument. Users can fit nuisance
+    functions through either highly-adaptive LASSO (HAL) or SuperLearner, the latter of which
+    the user must specify libraries.
+License: GPL (>= 3)
+URL: https://github.com/keithbarnatchez/drcmd
+BugReports: https://github.com/keithbarnatchez/drcmd/issues
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports: SuperLearner, ggplot2
+Suggests: gam, hal9001, nnls, testthat (>= 3.0.0)
+Config/testthat/edition: 3
+NeedsCompilation: no
+Packaged: 2026-04-28 21:55:12 UTC; kbarnatchez
+Author: Keith Barnatchez [aut, cre] (ORCID:
+    <https://orcid.org/0000-0002-1451-9335>),
+  Griffin DesRoches [aut]
+Maintainer: Keith Barnatchez <keithbarnatchez@gmail.com>
+Built: R 4.5.3; ; 2026-04-28 21:55:22 UTC; unix

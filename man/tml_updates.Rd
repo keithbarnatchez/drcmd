@@ -17,8 +17,7 @@ tml_updates(
   kappa_hat,
   phi_1_hat,
   phi_0_hat,
-  varphi_hat,
-  maxits = 10
+  varphi_hat
 )
 }
 \arguments{
@@ -61,3 +60,4 @@ TML
 # targeting step on outcome and missingness nuisance functions.
 }
 }
+\keyword{internal}

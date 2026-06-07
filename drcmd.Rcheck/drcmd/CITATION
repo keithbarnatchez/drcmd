@@ -1,0 +1,11 @@
+bibentry(
+  bibtype  = "Manual",
+  title    = "drcmd: Doubly-Robust Causal Inference with Missing Data",
+  author   = c(
+    person("Keith", "Barnatchez"),
+    person("Griffin", "DesRoches")
+  ),
+  year     = "2025",
+  url      = "https://github.com/keithbarnatchez/drcmd",
+  note     = "R package version 0.0.0.9000"
+)

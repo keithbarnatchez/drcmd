@@ -1,7 +1,7 @@
 #' @title Doubly-robust causal inference with missing data
 #'
 #' @description Doubly-robust estimation of counterfactual means in the presence of missing
-#  'data. The drcmd() function estimates counterfactual means for binary point treatments
+#'  data. The drcmd() function estimates counterfactual means for binary point treatments
 #'  and reports average treatment effects, as well as causal risk ratios and odds ratios
 #'  for binary outcomes. General missingness patterns in the data are allowed and automatically
 #'  determined by the function -- the only requirement is that any missingness occurs at random
@@ -41,13 +41,17 @@
 #' missingness probabilities are estimated.
 #' @param k A numeric indicating the number of folds for cross-fitting
 #' @param cutoff Cutoff for treatment and complete case propensity scores. Estimates outside
-#' of [cutoff, 1-cutoff] are set to cutoff or 1-cutoff, respectively
+#' of `[cutoff, 1-cutoff]` are set to cutoff or 1-cutoff, respectively
 #' @param quiet Logical indicating whether to suppress progress messages. Default
 #' is TRUE. Set to FALSE to see which nuisance function is being estimated.
 #' @param cv_folds Number of cross-validation folds used internally by SuperLearner
 #' for model selection. Default is 5. Lower values speed up estimation.
 #' @param parallel Logical indicating whether to run cross-fitting folds in parallel
 #' using \code{parallel::mclapply}. Only used when k > 1. Note: not supported on Windows.
+#' @param att Logical indicating whether to additionally estimate the average
+#' treatment effect on the treated (ATT). Default is FALSE.
+#' @param atc Logical indicating whether to additionally estimate the average
+#' treatment effect on the controls (ATC). Default is FALSE.
 #' @return An S3 object of class \code{"drcmd"} containing estimation results, information
 #' on the missing data structure, and parameters used in the estimation
 #' \describe{
@@ -60,25 +64,22 @@
 #' }
 #' @import SuperLearner
 #' @import ggplot2
+#' @importFrom stats binomial coef complete.cases cov gaussian glm plogis
+#'   predict qlogis var
 #' @examples
-#' \dontrun{
-#' n <- 2500
-#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-#' Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
-#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+#' set.seed(1)
+#' n <- 200
+#' X <- rnorm(n)
+#' A <- rbinom(n, 1, plogis(X))
+#' Y <- rnorm(n) + A + X
+#' R_ind <- rbinom(n, 1, plogis(X))
+#' Y[R_ind == 0] <- NA
+#' covariates <- data.frame(X = X)
 #'
-#' # Make A NA if R==0
-#' A[R==0] <- NA
-#' covariates <- data.frame(X1=X,X2=X2)
-#'
-#' # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
-#' # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-#' drcmd_res <- drcmd(Y,A,covariates,
-#'                    default_learners= c('SL.gam','SL.earth'),
-#'                    po_learners = 'SL.gam',
-#'                    k=1,
-#'                    eem_ind=F)
-#' }
+#' fit <- drcmd(Y, A, covariates,
+#'              default_learners = "SL.glm",
+#'              k = 1)
+#' fit
 #' @export
 drcmd <- function(Y, A, X, W=NA, R=NA,
                   default_learners=NULL,
@@ -182,7 +183,6 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 #'
 #' @description Outer function for estimating counterfactual means through cross-fitting.
 #' Calls \code{drcmd_est_fold} to obtain estimates for each cross-fitting fold
-#' @param data A data frame
 #' @param Y Outcome variable. Can be continuous or binary
 #' @param A A binary treatment variable (1=treated, 0=control)
 #' @param X Dataframe containing baseline covariates
@@ -202,7 +202,7 @@ drcmd <- function(Y, A, X, W=NA, R=NA,
 #' @param k A numeric indicating the number of folds for cross-fitting
 #'
 #' @return A list of point estimates and standard errors for all estimands considered
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -275,10 +275,14 @@ drcmd_est <- function(Y,A,X,Z,R,
 #' @description Estimates cross-fit SEs by taking contributions to influence curve
 #' of each fold
 #'
-#' @param ics A list of influence curves for each fold, obtained within drcmd_est
+#' @param res A list of per-fold results from drcmd_est_fold, each containing
+#' an `ics` data frame of influence curve contributions
+#' @param y_bin Logical indicating whether the outcome is binary
+#' @param att Logical indicating whether to compute SEs for the ATT
+#' @param atc Logical indicating whether to compute SEs for the ATC
 #'
 #' @return A list of cross-fit SEs
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' # Typically called internally by drcmd_est() after cross-fitting.
@@ -358,10 +362,9 @@ est_ses_crossfit <- function(res,
 #' pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries
 #' @param eem_ind A logical indicating whether to use empirical efficiency maximization
 #' @param Rprobs A vector of probabilities for R
-#' @param c
 #'
 #' @return A list of results from estimation on current fold
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -406,7 +409,11 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
   g_hat <- nuisance_ests$g_hat
   m_1_hat <- nuisance_ests$m_a_hat$m_1_hat
   m_0_hat <- nuisance_ests$m_a_hat$m_0_hat
-  pi_hat <- mean(A)
+  if ("A" %in% colnames(Z)) {
+    pi_hat <- mean(A)
+  } else {
+    pi_hat <- mean(R / nuisance_ests$kappa_hat * A)
+  }
 
   phi_att_hat <- plugin_att <- NULL
   phi_atc_hat <- plugin_atc <- NULL
@@ -484,7 +491,7 @@ drcmd_est_fold <- function(splits,Y,A,X,Z,R,
 #' @param m_a_hat List of outcome predictions under A=0/1
 #' @param kappa_hat Missingness probabilities
 #'
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -529,12 +536,12 @@ get_phi_hat <- function(Y, A, X, R, Z,
 #' @param R A character string containing randomization variable name
 #' @param Z A character vector containing the names of the variables in Z
 #' @param kappa_hat A numeric vector containing the fitted values of kappa
-#' @param phi_hat A list containing the estimate of E[phi|Z]
-#' @param varphi_hat A list containing the estimate of E[phi|Z]
+#' @param phi_hat A list containing the estimate of `E[phi | Z]`
+#' @param varphi_hat A list containing the estimate of `E[phi | Z]`
 #'
 #' @return A list of point estimates and standard errors for counterfactual means
 #' and various counterfactual contrasts
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' # Typically called internally by drcmd_est_fold() after obtaining
@@ -650,12 +657,12 @@ est_psi <- function(idx, R, Z,
 #' @param m_0_hat A numeric vector containing the fitted outcome predictions under A=0
 #' @param g_hat A numeric vector containing the fitted treatment propensity scores
 #' @param kappa_hat A numeric vector containing the fitted values of kappa
-#' @param phi_1_hat  Estimates of EIC for E[Y(1)]
-#' @param phi_0_hat  Estimates of E[Y(0)]
-#' @param varphi_hat A list containing estimate of E[phi_a|Z]
+#' @param phi_1_hat  Estimates of EIC for `E[Y(1)]`
+#' @param phi_0_hat  Estimates of `E[Y(0)]`
+#' @param varphi_hat A list containing estimate of `E[phi_a | Z]`
 #'
 #' @return A list containing updated estimates of the nuisance parameters
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' # Typically called internally by drcmd_est_fold() when tml = TRUE.
@@ -771,12 +778,12 @@ est_psi_tml <- function(idx, Y,A,X,
 #' @param m_0_hat A numeric vector containing the fitted outcome predictions under A=0
 #' @param g_hat A numeric vector containing the fitted treatment propensity scores
 #' @param kappa_hat A numeric vector containing the fitted values of kappa
-#' @param phi_1_hat  Estimates of EIC for E[Y(1)]
-#' @param phi_0_hat  Estimates of E[Y(0)]
-#' @param varphi_hat A list containing estimate of E[phi_a|Z]
+#' @param phi_1_hat  Estimates of EIC for `E[Y(1)]`
+#' @param phi_0_hat  Estimates of `E[Y(0)]`
+#' @param varphi_hat A list containing estimate of `E[phi_a | Z]`
 #'
 #' @return A list containing updated estimates of the nuisance parameters
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' # Typically called internally by est_psi_tml() to perform the TML

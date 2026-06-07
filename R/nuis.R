@@ -8,17 +8,19 @@
 #' @param Z Dataframe containing all non-missing variables
 #' @param R Binary missingness indicator, where 0 indicates missing data
 #' @param m_learners A character vector containing learners to be used for the
-#' outcome regression. User can specify 'hal' or a vector of SuperLearner libraries
+#' outcome regression. A vector of SuperLearner library names
 #' @param g_learners A character vector containing learners to be used for the
-#' propensity score. User can specify 'hal' or a vector of SuperLearner libraries
+#' propensity score. A vector of SuperLearner library names
 #' @param r_learners A character vector containing learners to be used for the
-#' missingness indicator regression. User can specify 'hal' or a vector of
-#' SuperLearner libraries
-#' @param eem_ind A logical indicating whether to use empirical efficiency maximization
+#' missingness indicator regression. A vector of SuperLearner library
+#' names
 #' @param Rprobs A vector of probabilities for R
+#' @param cutoff Cutoff for propensity score truncation
+#' @param cv_folds Number of cross-validation folds for SuperLearner
+#' @param quiet Logical indicating whether to suppress progress messages
 #'
 #' @return A list of nuisance estimates
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -77,7 +79,7 @@ get_nuisance_ests <- function(idx,Y,A,X,Z,R,
 #' @param kappa_hat A numeric vector containing the fitted values of kappa
 #' @param m_learners A character vector containing the names of the superlearner algorithms
 #' @return A list containing the estimate of `E[Y | A=a, X]`
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -135,14 +137,15 @@ est_m_a <- function(idx, Y, A, X, R,
 #'
 #' @description Function for obtaining propensity score estimates P(A=a|X)
 #' @param idx Indices to carry out estimation over
-#' @param Y Outcome variable. Can be continuous or binary
 #' @param A A binary treatment variable (1=treated, 0=control)
 #' @param X Dataframe containing baseline covariates
 #' @param R Binary missingness indicator, where 0 indicates missing data
+#' @param kappa_hat A numeric vector containing the fitted values of kappa
 #' @param g_learners A character vector containing the names of the learners for estimation
+#' @param cv_folds Number of cross-validation folds for SuperLearner
 #'
 #' @return A list containing the estimate of `E[Y | A=a, X, W]`
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -192,7 +195,7 @@ est_g <- function(idx,A, X, R, kappa_hat,
 #' @param r_learners A character vector specifying learners to be used for estimation
 #'
 #' @return A numeric vector containing the estimate of `E[R | Z]`
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -207,18 +210,12 @@ est_kappa <- function (idx,Z, R,
                        r_learners,
                        cv_folds=5) {
 
-  # if estimating via highly adaptive lasso
-  if (all(r_learners=='hal')) { # estimate via HAL
-    kappa_hat <- hal9001::fit_hal(Y=R[idx],X=Z[idx,], family = 'binomial')
-    kappa_hat <- predict(kappa_hat, new_data=Z)
-  } else {  # estimate via SL
-    loadNamespace("SuperLearner")
-    kappa_hat <- SuperLearner::SuperLearner(Y=R[idx],X=Z[idx,,drop=FALSE],
-                                            family=binomial(),
-                                            SL.library=r_learners,
-                                            cvControl=list(V=cv_folds))
-    kappa_hat <- predict(kappa_hat, newdata=Z)$pred
-  }
+  loadNamespace("SuperLearner")
+  kappa_hat <- SuperLearner::SuperLearner(Y=R[idx],X=Z[idx,,drop=FALSE],
+                                          family=binomial(),
+                                          SL.library=r_learners,
+                                          cvControl=list(V=cv_folds))
+  kappa_hat <- predict(kappa_hat, newdata=Z)$pred
 
   return(kappa_hat)
 
@@ -230,16 +227,21 @@ est_kappa <- function (idx,Z, R,
 #' regression. Calls inner function to perform estimation, depending on whether
 #' user wishes to perform empirical efficiency maximization or not
 #' @param idx Indices to carry out estimation over
-#' @param Y Outcome variable. Can be continuous or binary
-#' @param A A binary treatment variable (1=treated, 0=control)
-#' @param X Dataframe containing baseline covariates
-#' @param Z Dataframe containing all non-missing variables
 #' @param R Binary missingness indicator, where 0 indicates missing data
-#' @param phi_hat A list containing the estimate of phi
+#' @param Z Dataframe containing all non-missing variables
+#' @param phi_1_hat Vector of pseudo-outcome values under A=1
+#' @param phi_0_hat Vector of pseudo-outcome values under A=0
+#' @param kappa_hat A numeric vector containing the fitted values of kappa
 #' @param eem_ind A logical value indicating whether to estimate via EEM
+#' @param po_learners A character vector containing the names of the SuperLearner algorithms
+#' @param Y Outcome variable. Can be continuous or binary
+#' @param cv_folds Number of cross-validation folds for SuperLearner
+#' @param quiet Logical indicating whether to suppress progress messages
+#' @param att Logical indicating whether to compute pseudo-outcome regression for ATT
+#' @param atc Logical indicating whether to compute pseudo-outcome regression for ATC
 #'
 #' @return A list containing the estimate of `E[phi_a | Z]` for a=0 and a=1
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -341,7 +343,7 @@ est_varphi_main <- function(idx, R,Z,
 #' @param phi_0_hat A numeric vector containing the fitted values of phi under A=0
 #' @param po_learners A character vector containing the names of the superlearner algorithms
 #' @return A list containing the estimate of `E[phi | Z]` for a=0 and a=1
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -415,16 +417,17 @@ est_varphi <- function(idx, R, Z,
 #' @description Function for obtaining estimate of `E[phi_a | Z]` via empirical efficiency
 #' maximization
 #'
-#' @param data A data frame
+#' @param idx Indices to carry out estimation over
 #' @param R Binary missingness indicator, where 0 indicates missing data
 #' @param Z Dataframe containing all non-missing variables
 #' @param phi_1_hat Vector of predicted phi under A=1
 #' @param phi_0_hat Vector of predicted phi under A=0
-#' @param eem_ind A logical value indicating whether to estimate via EEM
+#' @param kappa_hat A numeric vector containing the fitted values of kappa
 #' @param po_learners A character vector containing the names of the superlearner algorithms
+#' @param Y Outcome variable. Can be continuous or binary
 #'
 #' @return A list containing the estimate of `E[phi_a | Z]` for a=0 and a=1
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' n <- 500
@@ -512,12 +515,9 @@ SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
 #' @title Prediction wrapper for the highly-adaptive lasso
 #' @description Prediction wrapper for the highly-adaptive lasso (HAL) algorithm
 #' implemented in the hal9001 package
-#' @param Y Outcome variable
-#' @param X Matrix of covariates
-#' @param newX Matrix of covariates for prediction
-#' @param family Family of the outcome variable
-#' @param obsWeights Observation weights
-#' @param ... Additional arguments to pass to the HAL function
+#' @param object A fitted SL.hal9001 object
+#' @param newdata Data frame of covariates for prediction
+#' @param ... Additional arguments (unused)
 #' @return Predicted values on new data
 #' @export
 #' @examples

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN"
+                  "JATS-publishing1.dtd">
+<article xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" dtd-version="1.2" article-type="other">
+<front>
+<journal-meta>
+<journal-id></journal-id>
+<journal-title-group>
+<journal-title>Journal of Open Source Software</journal-title>
+<abbrev-journal-title>JOSS</abbrev-journal-title>
+</journal-title-group>
+<issn publication-format="electronic">2475-9066</issn>
+<publisher>
+<publisher-name>Open Journals</publisher-name>
+</publisher>
+</journal-meta>
+<article-meta>
+<article-id pub-id-type="publisher-id">0</article-id>
+<article-id pub-id-type="doi">N/A</article-id>
+<title-group>
+<article-title><monospace>drcmd</monospace>: An R package for
+doubly-robust causal inference with missing data</article-title>
+</title-group>
+<contrib-group>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-1451-9335</contrib-id>
+<name>
+<surname>Barnatchez</surname>
+<given-names>Keith</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>DesRoches</surname>
+<given-names>Griffin</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<aff id="aff-1">
+<institution-wrap>
+<institution>Johns Hopkins Bloomberg School of Public
+Health</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-2">
+<institution-wrap>
+<institution>University of Massachusetts Amherst</institution>
+</institution-wrap>
+</aff>
+</contrib-group>
+<pub-date date-type="pub" publication-format="electronic" iso-8601-date="2026-04-28">
+<day>28</day>
+<month>4</month>
+<year>2026</year>
+</pub-date>
+<volume>¿VOL?</volume>
+<issue>¿ISSUE?</issue>
+<fpage>¿PAGE?</fpage>
+<permissions>
+<copyright-statement>Authors of papers retain copyright and release the
+work under a Creative Commons Attribution 4.0 International License (CC
+BY 4.0)</copyright-statement>
+<copyright-year>1970</copyright-year>
+<copyright-holder>The article authors</copyright-holder>
+<license license-type="open-access" xlink:href="https://creativecommons.org/licenses/by/4.0/">
+<license-p>Authors of papers retain copyright and release the work under
+a Creative Commons Attribution 4.0 International License (CC BY
+4.0)</license-p>
+</license>
+</permissions>
+<kwd-group kwd-group-type="author">
+<kwd>causal inference</kwd>
+<kwd>missing data</kwd>
+<kwd>R</kwd>
+</kwd-group>
+</article-meta>
+</front>
+<body>
+<sec id="summary">
+  <title>Summary</title>
+  <p>The <monospace>drcmd</monospace> <monospace>R</monospace> package
+  performs semi-parametric efficient estimation of causal effects of
+  point exposures in settings where the data available to the researcher
+  is subject to missingness. By implementing methods from
+  semi-parametric theory and missing data (see, e.g. Robins et al.
+  (<xref alt="1994" rid="ref-robins1994estimation" ref-type="bibr">1994</xref>)
+  and Kennedy
+  (<xref alt="2022" rid="ref-kennedy2022semiparametric" ref-type="bibr">2022</xref>)),
+  <monospace>drcmd</monospace> accommodates general patterns of missing
+  data, while enabling users to estimate nuisance functions with
+  flexible machine learning methods. <monospace>drcmd</monospace>
+  automatically determines the missingness patterns present in
+  user-supplied data, and provides information on assumptions that must
+  hold regarding the missingness mechanisms in order for point estimates
+  and inferences to be valid. By accommodating <italic>general</italic>
+  patterns of missingness, <monospace>drcmd</monospace> serves as a
+  centralized library for researchers aiming to perform causal inference
+  with missing data.</p>
+</sec>
+<sec id="statement-of-need">
+  <title>Statement of Need</title>
+  <p>The use of doubly-robust methods for performing causal inference of
+  point exposures on outcomes of interest has surged over the past
+  decade, and numerous software packages have been developed for
+  implementing these estimators. While these packages are well-suited
+  for use on complete, missingness-free data, leading statistical
+  software packages provide little to no support for missing data. The
+  lack of a centralized package for performing doubly-robust causal
+  inference has functioned as a severe impediment for researchers, as
+  missing data is ubiquitous in real-world data, and the specific
+  patterns of missingness can greatly vary across applications.
+  <monospace>drcmd</monospace> addresses this shortcoming by providing a
+  single R package for performing doubly-robust causal inference in the
+  presence of general missing data patterns.</p>
+</sec>
+<sec id="state-of-the-field">
+  <title>State of the Field</title>
+</sec>
+<sec id="software-design">
+  <title>Software Design</title>
+</sec>
+<sec id="examples-of-missing-data">
+  <title>Examples of Missing Data</title>
+  <p>To illustrate the breadth of missingness patterns
+  <monospace>drcmd</monospace> can accommodate, we outline a
+  non-exhaustive set of example problems that can be directly addressed
+  by <monospace>drcmd</monospace>. Throughout, assume that the causal
+  inference assumptions of consistency, positivity and unconfoundedness
+  hold across all data structures provided below.</p>
+  <sec id="example-1-two-phase-sampling">
+    <title>Example 1: Two phase sampling</title>
+    <p>The statistical theory <monospace>drcmd</monospace> leverages is
+    most frequently invoked in two-phase sampling settings, where the
+    researcher controls the proportion of missingness for variables that
+    are typically difficult to measure. Suppose one observes
+    <disp-formula><alternatives>
+    <tex-math><![CDATA[
+    (Y_i, A_i, V_i, R_i U_i, R_i), \quad i = 1,\ldots,n
+    ]]></tex-math>
+    <mml:math display="block" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mo stretchy="false" form="prefix">(</mml:mo><mml:msub><mml:mi>Y</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>A</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>V</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>R</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:msub><mml:mi>U</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>R</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo stretchy="false" form="postfix">)</mml:mo><mml:mo>,</mml:mo><mml:mspace width="1.0em"></mml:mspace><mml:mi>i</mml:mi><mml:mo>=</mml:mo><mml:mn>1</mml:mn><mml:mo>,</mml:mo><mml:mi>…</mml:mi><mml:mo>,</mml:mo><mml:mi>n</mml:mi></mml:mrow></mml:math></alternatives></disp-formula>
+    where <inline-formula><alternatives>
+    <tex-math><![CDATA[Y]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mi>Y</mml:mi></mml:math></alternatives></inline-formula>
+    is an outcome of interest, <inline-formula><alternatives>
+    <tex-math><![CDATA[A]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mi>A</mml:mi></mml:math></alternatives></inline-formula>
+    a binary treatment, <inline-formula><alternatives>
+    <tex-math><![CDATA[R]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mi>R</mml:mi></mml:math></alternatives></inline-formula>
+    a complete case indicator, and <inline-formula><alternatives>
+    <tex-math><![CDATA[X=(V,U)]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mi>X</mml:mi><mml:mo>=</mml:mo><mml:mo stretchy="false" form="prefix">(</mml:mo><mml:mi>V</mml:mi><mml:mo>,</mml:mo><mml:mi>U</mml:mi><mml:mo stretchy="false" form="postfix">)</mml:mo></mml:mrow></mml:math></alternatives></inline-formula>
+    a vector of covariates sufficient to adjust for confounding. A
+    subset of variables in <inline-formula><alternatives>
+    <tex-math><![CDATA[X]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mi>X</mml:mi></mml:math></alternatives></inline-formula>,
+    denoted <inline-formula><alternatives>
+    <tex-math><![CDATA[U]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mi>U</mml:mi></mml:math></alternatives></inline-formula>,
+    are expensive to measure, and only measured for the subset of units
+    in which <inline-formula><alternatives>
+    <tex-math><![CDATA[R_i=1]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:msub><mml:mi>R</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>=</mml:mo><mml:mn>1</mml:mn></mml:mrow></mml:math></alternatives></inline-formula>.
+    This subset is usually selected according to a sampling function
+    dependent on the initially observed variables:
+    <inline-formula><alternatives>
+    <tex-math><![CDATA[P(R=1| Y, A, V)]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mi>P</mml:mi><mml:mo stretchy="false" form="prefix">(</mml:mo><mml:mi>R</mml:mi><mml:mo>=</mml:mo><mml:mn>1</mml:mn><mml:mo stretchy="false" form="prefix">|</mml:mo><mml:mi>Y</mml:mi><mml:mo>,</mml:mo><mml:mi>A</mml:mi><mml:mo>,</mml:mo><mml:mi>V</mml:mi><mml:mo stretchy="false" form="postfix">)</mml:mo></mml:mrow></mml:math></alternatives></inline-formula>.</p>
+    <p>Let <inline-formula><alternatives>
+    <tex-math><![CDATA[Y(a)]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mi>Y</mml:mi><mml:mo stretchy="false" form="prefix">(</mml:mo><mml:mi>a</mml:mi><mml:mo stretchy="false" form="postfix">)</mml:mo></mml:mrow></mml:math></alternatives></inline-formula>
+    denote a unit’s counterfactual outcome under treatment level
+    <inline-formula><alternatives>
+    <tex-math><![CDATA[A=a]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mi>A</mml:mi><mml:mo>=</mml:mo><mml:mi>a</mml:mi></mml:mrow></mml:math></alternatives></inline-formula>.
+    When interest lies in estimating general functions of counterfactual
+    means—such as average treatment effects—<monospace>drcmd</monospace>
+    can be readily applied to such a data structure. Further, the
+    selection probabilities <inline-formula><alternatives>
+    <tex-math><![CDATA[P(R=1| Y, A, V)]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mi>P</mml:mi><mml:mo stretchy="false" form="prefix">(</mml:mo><mml:mi>R</mml:mi><mml:mo>=</mml:mo><mml:mn>1</mml:mn><mml:mo stretchy="false" form="prefix">|</mml:mo><mml:mi>Y</mml:mi><mml:mo>,</mml:mo><mml:mi>A</mml:mi><mml:mo>,</mml:mo><mml:mi>V</mml:mi><mml:mo stretchy="false" form="postfix">)</mml:mo></mml:mrow></mml:math></alternatives></inline-formula>
+    can be directly incorporated by the package.</p>
+  </sec>
+  <sec id="example-2-missing-outcome-and-treatment">
+    <title>Example 2: Missing outcome and treatment</title>
+    <p>While the methods underpinning <monospace>drcmd</monospace> have
+    most commonly leveraged in two-phase settings like the one above,
+    their use is applicable in broader missing data problems. Suppose
+    the observed data structure is <disp-formula><alternatives>
+    <tex-math><![CDATA[
+    (R_i Y_i, R_i A_i, X_i, R_i), \ i = 1,\ldots,n
+    ]]></tex-math>
+    <mml:math display="block" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mo stretchy="false" form="prefix">(</mml:mo><mml:msub><mml:mi>R</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:msub><mml:mi>Y</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>R</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:msub><mml:mi>A</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>X</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>R</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo stretchy="false" form="postfix">)</mml:mo><mml:mo>,</mml:mo><mml:mspace width="0.222em"></mml:mspace><mml:mi>i</mml:mi><mml:mo>=</mml:mo><mml:mn>1</mml:mn><mml:mo>,</mml:mo><mml:mi>…</mml:mi><mml:mo>,</mml:mo><mml:mi>n</mml:mi></mml:mrow></mml:math></alternatives></disp-formula>
+    where <inline-formula><alternatives>
+    <tex-math><![CDATA[(Y, A) \perp R | X]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mo stretchy="false" form="prefix">(</mml:mo><mml:mi>Y</mml:mi><mml:mo>,</mml:mo><mml:mi>A</mml:mi><mml:mo stretchy="false" form="postfix">)</mml:mo><mml:mo>⟂</mml:mo><mml:mi>R</mml:mi><mml:mo stretchy="false" form="prefix">|</mml:mo><mml:mi>X</mml:mi></mml:mrow></mml:math></alternatives></inline-formula>.
+    Unlike two-phase sampling problems, the missingness mechanism
+    <inline-formula><alternatives>
+    <tex-math><![CDATA[P(R=1|X)]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mi>P</mml:mi><mml:mo stretchy="false" form="prefix">(</mml:mo><mml:mi>R</mml:mi><mml:mo>=</mml:mo><mml:mn>1</mml:mn><mml:mo stretchy="false" form="prefix">|</mml:mo><mml:mi>X</mml:mi><mml:mo stretchy="false" form="postfix">)</mml:mo></mml:mrow></mml:math></alternatives></inline-formula>
+    must be estimated. <monospace>drcmd</monospace> readily handles such
+    data structures.</p>
+  </sec>
+  <sec id="example-3-surrogate-outcomes">
+    <title>Example 3: Surrogate outcomes</title>
+    <p>In surrogate outcome settings, one observes
+    <disp-formula><alternatives>
+    <tex-math><![CDATA[
+    (R_i Y_i, A_i, X_i, R_i, S_i), \ i = 1,\ldots,n
+    ]]></tex-math>
+    <mml:math display="block" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mo stretchy="false" form="prefix">(</mml:mo><mml:msub><mml:mi>R</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:msub><mml:mi>Y</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>A</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>X</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>R</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo>,</mml:mo><mml:msub><mml:mi>S</mml:mi><mml:mi>i</mml:mi></mml:msub><mml:mo stretchy="false" form="postfix">)</mml:mo><mml:mo>,</mml:mo><mml:mspace width="0.222em"></mml:mspace><mml:mi>i</mml:mi><mml:mo>=</mml:mo><mml:mn>1</mml:mn><mml:mo>,</mml:mo><mml:mi>…</mml:mi><mml:mo>,</mml:mo><mml:mi>n</mml:mi></mml:mrow></mml:math></alternatives></disp-formula>
+    where <inline-formula><alternatives>
+    <tex-math><![CDATA[S_i]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:msub><mml:mi>S</mml:mi><mml:mi>i</mml:mi></mml:msub></mml:math></alternatives></inline-formula>
+    is an always-observed surrogate outcome that serves as a proxy for
+    the partially missing outcome of interest
+    <inline-formula><alternatives>
+    <tex-math><![CDATA[Y]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mi>Y</mml:mi></mml:math></alternatives></inline-formula>.
+    When <inline-formula><alternatives>
+    <tex-math><![CDATA[Y \perp R | X, A, S]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mi>Y</mml:mi><mml:mo>⟂</mml:mo><mml:mi>R</mml:mi><mml:mo stretchy="false" form="prefix">|</mml:mo><mml:mi>X</mml:mi><mml:mo>,</mml:mo><mml:mi>A</mml:mi><mml:mo>,</mml:mo><mml:mi>S</mml:mi></mml:mrow></mml:math></alternatives></inline-formula>,
+    <monospace>drcmd</monospace> can produce valid treatment effect
+    estimates.</p>
+  </sec>
+</sec>
+<sec id="availability">
+  <title>Availability</title>
+  <p><monospace>drcmd</monospace> is publicly available for download on
+  <ext-link ext-link-type="uri" xlink:href="https://github.com/keithbarnatchez/drcmd">GitHub</ext-link>.
+  Further information on the use of the package can be found in the
+  package vignette and user manual.</p>
+</sec>
+</body>
+<back>
+<ref-list>
+  <title>AI usage disclosure</title>
+  <ref id="ref-kennedy2022semiparametric">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Kennedy</surname><given-names>Edward H</given-names></name>
+      </person-group>
+      <article-title>Semiparametric doubly robust targeted double machine learning: A review</article-title>
+      <source>arXiv preprint arXiv:2203.06469</source>
+      <year iso-8601-date="2022">2022</year>
+    </element-citation>
+  </ref>
+  <ref id="ref-robins1994estimation">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Robins</surname><given-names>James M</given-names></name>
+        <name><surname>Rotnitzky</surname><given-names>Andrea</given-names></name>
+        <name><surname>Zhao</surname><given-names>Lue Ping</given-names></name>
+      </person-group>
+      <article-title>Estimation of regression coefficients when some regressors are not always observed</article-title>
+      <source>Journal of the American statistical Association</source>
+      <publisher-name>Taylor &amp; Francis</publisher-name>
+      <year iso-8601-date="1994">1994</year>
+      <volume>89</volume>
+      <issue>427</issue>
+      <fpage>846</fpage>
+      <lpage>866</lpage>
+    </element-citation>
+  </ref>
+</ref-list>
+</back>
+</article>

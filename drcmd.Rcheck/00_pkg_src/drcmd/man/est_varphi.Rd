@@ -20,10 +20,10 @@ est_varphi(idx, R, Z, phi_1_hat, phi_0_hat, po_learners, Y, cv_folds = 5)
 \item{po_learners}{A character vector containing the names of the superlearner algorithms}
 }
 \value{
-A list containing the estimate of E\link{phi|Z} for a=0 and a=1
+A list containing the estimate of \code{E[phi | Z]} for a=0 and a=1
 }
 \description{
-Outer function for obtaining estimate of E\link{phi|Z}
+Outer function for obtaining estimate of \code{E[phi | Z]}
 }
 \examples{
 \dontrun{
@@ -37,3 +37,4 @@ varphi <- est_varphi(1:n, R, Z, phi_1_hat, phi_0_hat,
                      po_learners = "SL.glm", Y = Y)
 }
 }
+\keyword{internal}

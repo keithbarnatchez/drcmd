@@ -24,12 +24,12 @@ URL: https://github.com/keithbarnatchez/drcmd
 BugReports: https://github.com/keithbarnatchez/drcmd/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports: SuperLearner, ggplot2
 Suggests: gam, hal9001, nnls, testthat (>= 3.0.0)
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2026-04-01 12:13:50 UTC; kbarnatchez
+Packaged: 2026-04-28 21:55:12 UTC; kbarnatchez
 Author: Keith Barnatchez [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-1451-9335>),
   Griffin DesRoches [aut]

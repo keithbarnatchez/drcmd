@@ -14,10 +14,6 @@ find_missing_pattern(Y, A, X, W)
 \item{X}{A data frame containing covariate values}
 
 \item{W}{A data frame containing proxy variable values}
-
-\item{data}{A data frame}
-
-\item{R}{A vector containing missingness indicator variable}
 }
 \value{
 A character string containing the missing pattern
@@ -26,6 +22,7 @@ A character string containing the missing pattern
 Find the missing pattern in the data
 }
 \examples{
+\dontrun{
 n <- 200
 X <- data.frame(X1 = rnorm(n))
 A <- rbinom(n, 1, 0.5)
@@ -38,3 +35,5 @@ result$Z  # variables without missingness
 result$U  # variables with missingness
 result$R  # complete case indicator
 }
+}
+\keyword{internal}

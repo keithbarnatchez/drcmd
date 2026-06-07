@@ -4,13 +4,15 @@
 \alias{plot.drcmd}
 \title{Plot results from drcmd object}
 \usage{
-\method{plot}{drcmd}(x, type = "All")
+\method{plot}{drcmd}(x, type = "All", ...)
 }
 \arguments{
 \item{x}{An object of class drcmd}
 
 \item{type}{Character denoting type of plot to generate. Must be one of 'All', 'PO',
 'IC', 'g_hat', 'r_hat'}
+
+\item{...}{Additional arguments (unused)}
 }
 \value{
 No return value. Called for plotting results from drcmd object

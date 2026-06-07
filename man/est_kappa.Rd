@@ -32,3 +32,4 @@ kappa_hat <- est_kappa(idx = 1:n, Z = Z, R = R,
                        r_learners = r_learners)
 }
 }
+\keyword{internal}

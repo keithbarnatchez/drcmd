@@ -22,6 +22,7 @@ Checks if the arguments to main function drcmd are correctly specified.
 Returns TRUE if all checks are passed, throws an error with message otherwise.
 }
 \examples{
+\dontrun{
 n <- 200
 X <- data.frame(X1 = rnorm(n))
 W <- data.frame(W1 = rnorm(n))
@@ -30,3 +31,5 @@ Y <- rnorm(n)
 R <- rbinom(n, 1, 0.7)
 check_entry_errors(Y, A, X, W, R, eem_ind = FALSE, Rprobs = NA, k = 1)
 }
+}
+\keyword{internal}

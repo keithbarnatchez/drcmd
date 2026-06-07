@@ -18,3 +18,4 @@ libs <- get_sl_libraries()
 head(libs)
 }
 }
+\keyword{internal}

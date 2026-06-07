@@ -29,21 +29,31 @@ est_varphi_main(
 
 \item{Z}{Dataframe containing all non-missing variables}
 
+\item{phi_1_hat}{Vector of pseudo-outcome values under A=1}
+
+\item{phi_0_hat}{Vector of pseudo-outcome values under A=0}
+
+\item{kappa_hat}{A numeric vector containing the fitted values of kappa}
+
 \item{eem_ind}{A logical value indicating whether to estimate via EEM}
+
+\item{po_learners}{A character vector containing the names of the SuperLearner algorithms}
 
 \item{Y}{Outcome variable. Can be continuous or binary}
 
-\item{A}{A binary treatment variable (1=treated, 0=control)}
+\item{cv_folds}{Number of cross-validation folds for SuperLearner}
 
-\item{X}{Dataframe containing baseline covariates}
+\item{quiet}{Logical indicating whether to suppress progress messages}
 
-\item{phi_hat}{A list containing the estimate of phi}
+\item{att}{Logical indicating whether to compute pseudo-outcome regression for ATT}
+
+\item{atc}{Logical indicating whether to compute pseudo-outcome regression for ATC}
 }
 \value{
-A list containing the estimate of E\link{phi_a|Z} for a=0 and a=1
+A list containing the estimate of \code{E[phi_a | Z]} for a=0 and a=1
 }
 \description{
-Function for obtaining estimate of E\link{phi_a|Z} through pseudo-outcome
+Function for obtaining estimate of \code{E[phi_a | Z]} through pseudo-outcome
 regression. Calls inner function to perform estimation, depending on whether
 user wishes to perform empirical efficiency maximization or not
 }
@@ -61,3 +71,4 @@ varphi <- est_varphi_main(1:n, R, Z, phi_1_hat, phi_0_hat,
                           po_learners = "SL.glm", Y = Y)
 }
 }
+\keyword{internal}

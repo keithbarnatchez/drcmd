@@ -26,6 +26,7 @@ A logical value
 Check if the missingness indicator R is defined correctly
 }
 \examples{
+\dontrun{
 n <- 200
 R <- rbinom(n, 1, 0.7)
 data <- data.frame(
@@ -36,3 +37,5 @@ data <- data.frame(
 )
 check_r_ind(data, Y = "Y", A = "A", X = "X1", W = character(0), R = "R")
 }
+}
+\keyword{internal}

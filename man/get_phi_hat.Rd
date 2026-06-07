@@ -42,3 +42,4 @@ phi <- get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat)
 }
 
 }
+\keyword{internal}

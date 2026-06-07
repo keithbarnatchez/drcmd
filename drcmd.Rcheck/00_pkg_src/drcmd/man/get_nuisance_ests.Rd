@@ -45,7 +45,11 @@ SuperLearner libraries}
 
 \item{Rprobs}{A vector of probabilities for R}
 
-\item{eem_ind}{A logical indicating whether to use empirical efficiency maximization}
+\item{cutoff}{Cutoff for propensity score truncation}
+
+\item{cv_folds}{Number of cross-validation folds for SuperLearner}
+
+\item{quiet}{Logical indicating whether to suppress progress messages}
 }
 \value{
 A list of nuisance estimates
@@ -69,3 +73,4 @@ nuis <- get_nuisance_ests(1:n, Y, A, X, Z, R,
                           Rprobs = NA, cutoff = 0.025)
 }
 }
+\keyword{internal}

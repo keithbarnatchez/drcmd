@@ -8,6 +8,11 @@
 }
 \arguments{
 \item{x}{An object of class drcmd}
+
+\item{...}{Additional arguments (unused)}
+}
+\value{
+No return value. Called for printing a concise results summary
 }
 \description{
 S3 method for printing drcmd objects. Provides concise summary

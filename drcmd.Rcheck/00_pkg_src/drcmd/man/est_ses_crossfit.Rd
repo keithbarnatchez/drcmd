@@ -7,7 +7,14 @@
 est_ses_crossfit(res, y_bin, att = FALSE, atc = FALSE)
 }
 \arguments{
-\item{ics}{A list of influence curves for each fold, obtained within drcmd_est}
+\item{res}{A list of per-fold results from drcmd_est_fold, each containing
+an \code{ics} data frame of influence curve contributions}
+
+\item{y_bin}{Logical indicating whether the outcome is binary}
+
+\item{att}{Logical indicating whether to compute SEs for the ATT}
+
+\item{atc}{Logical indicating whether to compute SEs for the ATC}
 }
 \value{
 A list of cross-fit SEs
@@ -23,3 +30,4 @@ of each fold
 # containing an $ics data frame of influence curve contributions.
 }
 }
+\keyword{internal}

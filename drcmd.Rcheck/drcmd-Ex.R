@@ -1,0 +1,776 @@
+pkgname <- "drcmd"
+source(file.path(R.home("share"), "R", "examples-header.R"))
+options(warn = 1)
+base::assign(".ExTimings", "drcmd-Ex.timings", pos = 'CheckExEnv')
+base::cat("name\tuser\tsystem\telapsed\n", file=base::get(".ExTimings", pos = 'CheckExEnv'))
+base::assign(".format_ptime",
+function(x) {
+  if(!is.na(x[4L])) x[1L] <- x[1L] + x[4L]
+  if(!is.na(x[5L])) x[2L] <- x[2L] + x[5L]
+  options(OutDec = '.')
+  format(x[1L:3L], digits = 7L)
+},
+pos = 'CheckExEnv')
+
+### * </HEADER>
+library('drcmd')
+
+base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+cleanEx()
+nameEx("SL.hal9001")
+### * SL.hal9001
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: SL.hal9001
+### Title: SuperLearner wrapper for the highly-adaptive lasso
+### Aliases: SL.hal9001
+
+### ** Examples
+
+## Not run: 
+##D n <- 200
+##D X <- data.frame(X1 = rnorm(n))
+##D Y <- X$X1 + rnorm(n)
+##D fit <- SL.hal9001(Y, X, newX = X, family = gaussian(),
+##D                   obsWeights = rep(1, n))
+##D head(fit$pred)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("SL.hal9001", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("check_entry_errors")
+### * check_entry_errors
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: check_entry_errors
+### Title: Check arguments to drcmd for entry errors
+### Aliases: check_entry_errors
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 200
+##D X <- data.frame(X1 = rnorm(n))
+##D W <- data.frame(W1 = rnorm(n))
+##D A <- rbinom(n, 1, 0.5)
+##D Y <- rnorm(n)
+##D R <- rbinom(n, 1, 0.7)
+##D check_entry_errors(Y, A, X, W, R, eem_ind = FALSE, Rprobs = NA, k = 1)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("check_entry_errors", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("check_r_ind")
+### * check_r_ind
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: check_r_ind
+### Title: check_r_ind
+### Aliases: check_r_ind
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 200
+##D R <- rbinom(n, 1, 0.7)
+##D data <- data.frame(
+##D   Y = ifelse(R == 1, rnorm(n), NA),
+##D   A = ifelse(R == 1, rbinom(n, 1, 0.5), NA),
+##D   X1 = rnorm(n),
+##D   R = R
+##D )
+##D check_r_ind(data, Y = "Y", A = "A", X = "X1", W = character(0), R = "R")
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("check_r_ind", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("drcmd")
+### * drcmd
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: drcmd
+### Title: Doubly-robust causal inference with missing data
+### Aliases: drcmd
+
+### ** Examples
+
+set.seed(1)
+n <- 200
+X <- rnorm(n)
+A <- rbinom(n, 1, plogis(X))
+Y <- rnorm(n) + A + X
+R_ind <- rbinom(n, 1, plogis(X))
+Y[R_ind == 0] <- NA
+covariates <- data.frame(X = X)
+
+fit <- drcmd(Y, A, covariates,
+             default_learners = "SL.glm",
+             k = 1)
+fit
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("drcmd", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("drcmd_est")
+### * drcmd_est
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: drcmd_est
+### Title: Obtain doubly-robust counterfactual mean estimates through
+###   cross-fitting
+### Aliases: drcmd_est
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D X <- data.frame(X1 = rnorm(n))
+##D A <- rbinom(n, 1, plogis(X$X1))
+##D Y <- A + X$X1 + rnorm(n)
+##D R <- rbinom(n, 1, plogis(X$X1))
+##D Y[R == 0] <- 0; A[R == 0] <- 0
+##D Z <- X
+##D res <- drcmd_est(Y, A, X, Z, R,
+##D                  m_learners = "SL.glm", g_learners = "SL.glm",
+##D                  r_learners = "SL.glm", po_learners = "SL.glm",
+##D                  eem_ind = FALSE, tml = FALSE,
+##D                  Rprobs = NA, k = 1, cutoff = 0.025,
+##D                  y_bin = FALSE, yscaled = FALSE)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("drcmd_est", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("drcmd_est_fold")
+### * drcmd_est_fold
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: drcmd_est_fold
+### Title: Calculate point estimates within a single cross-fitting fold
+### Aliases: drcmd_est_fold
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D X <- data.frame(X1 = rnorm(n))
+##D A <- rbinom(n, 1, plogis(X$X1))
+##D Y <- A + X$X1 + rnorm(n)
+##D R <- rbinom(n, 1, plogis(X$X1))
+##D Y[R == 0] <- 0; A[R == 0] <- 0
+##D Z <- X
+##D splits <- list(train = 1:n, test = 1:n)
+##D fold_res <- drcmd_est_fold(splits, Y, A, X, Z, R,
+##D                            m_learners = "SL.glm", g_learners = "SL.glm",
+##D                            r_learners = "SL.glm", po_learners = "SL.glm",
+##D                            eem_ind = FALSE, tml = FALSE,
+##D                            Rprobs = NA, cutoff = 0.025, y_bin = FALSE)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("drcmd_est_fold", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("est_g")
+### * est_g
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: est_g
+### Title: Estimate the propensity score
+### Aliases: est_g
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D X <- rnorm(n)
+##D A <- rbinom(n, 1, plogis(X))
+##D R <- rbinom(n, 1, plogis(X))
+##D A[R == 0] <- 0
+##D X <- data.frame(X)
+##D kappa_hat <- rep(1, n)
+##D g_learners <- c('SL.glm')
+##D g_hat <- est_g(idx = 1:n, A = A, X = X, R = R,
+##D                kappa_hat = kappa_hat, g_learners = g_learners)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("est_g", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("est_kappa")
+### * est_kappa
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: est_kappa
+### Title: Estimate complete case propensity scores
+### Aliases: est_kappa
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D Z <- rnorm(n)
+##D R <- rbinom(n, 1, plogis(Z))
+##D Z <- data.frame(Z)
+##D r_learners <- c('SL.glm')
+##D kappa_hat <- est_kappa(idx = 1:n, Z = Z, R = R,
+##D                        r_learners = r_learners)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("est_kappa", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("est_m_a")
+### * est_m_a
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: est_m_a
+### Title: Estimating outcome regression
+### Aliases: est_m_a
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D X <- rnorm(n)
+##D A <- rbinom(n, 1, plogis(X))
+##D R <- rbinom(n, 1, plogis(X))
+##D Y <- A + X + rnorm(n)
+##D Y[R == 0] <- 0; A[R == 0] <- 0
+##D X <- data.frame(X)
+##D kappa_hat <- rep(1, n)
+##D m_learners <- c('SL.glm')
+##D m_hat <- est_m_a(idx = 1:n, Y = Y, A = A, X = X, R = R,
+##D                  kappa_hat = kappa_hat, m_learners = m_learners)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("est_m_a", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("est_psi")
+### * est_psi
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: est_psi
+### Title: Obtain estimates for current cross fitting fold
+### Aliases: est_psi
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D # Typically called internally by drcmd_est_fold() after obtaining
+##D # nuisance estimates, phi_hat, and varphi_hat.
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("est_psi", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("est_psi_tml")
+### * est_psi_tml
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: est_psi_tml
+### Title: Estimate causal effects through targeted maximum likelihood
+### Aliases: est_psi_tml
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D # Typically called internally by drcmd_est_fold() when tml = TRUE.
+##D # Requires nuisance estimates from get_nuisance_ests() and
+##D # pseudo-outcome estimates from est_varphi_main().
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("est_psi_tml", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("est_ses_crossfit")
+### * est_ses_crossfit
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: est_ses_crossfit
+### Title: Cross-fit SE estimation via influence curve contributions
+### Aliases: est_ses_crossfit
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D # Typically called internally by drcmd_est() after cross-fitting.
+##D # res is a list of per-fold results from drcmd_est_fold(), each
+##D # containing an $ics data frame of influence curve contributions.
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("est_ses_crossfit", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("est_varphi")
+### * est_varphi
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: est_varphi
+### Title: Perform pseudo-outcome regression with conventional loss
+###   function
+### Aliases: est_varphi
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D Z <- data.frame(Z1 = rnorm(n))
+##D R <- rbinom(n, 1, 0.7)
+##D phi_1_hat <- rnorm(n)
+##D phi_0_hat <- rnorm(n)
+##D Y <- rnorm(n)
+##D varphi <- est_varphi(1:n, R, Z, phi_1_hat, phi_0_hat,
+##D                      po_learners = "SL.glm", Y = Y)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("est_varphi", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("est_varphi_eem")
+### * est_varphi_eem
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: est_varphi_eem
+### Title: Perform pseudo-outcome regression with empirical efficiency
+###   maximization
+### Aliases: est_varphi_eem
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D Z <- data.frame(Z1 = rnorm(n))
+##D R <- rbinom(n, 1, 0.7)
+##D phi_1_hat <- rnorm(n)
+##D phi_0_hat <- rnorm(n)
+##D kappa_hat <- rep(0.7, n)
+##D Y <- rnorm(n)
+##D varphi <- est_varphi_eem(1:n, R, Z, phi_1_hat, phi_0_hat,
+##D                          kappa_hat, po_learners = "SL.glm", Y = Y)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("est_varphi_eem", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("est_varphi_main")
+### * est_varphi_main
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: est_varphi_main
+### Title: Perform pseudo-outcome regression
+### Aliases: est_varphi_main
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D Z <- data.frame(Z1 = rnorm(n))
+##D R <- rbinom(n, 1, 0.7)
+##D phi_1_hat <- rnorm(n)
+##D phi_0_hat <- rnorm(n)
+##D kappa_hat <- rep(0.7, n)
+##D Y <- rnorm(n)
+##D varphi <- est_varphi_main(1:n, R, Z, phi_1_hat, phi_0_hat,
+##D                           kappa_hat, eem_ind = FALSE,
+##D                           po_learners = "SL.glm", Y = Y)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("est_varphi_main", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("find_missing_pattern")
+### * find_missing_pattern
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: find_missing_pattern
+### Title: find_missing_pattern
+### Aliases: find_missing_pattern
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 200
+##D X <- data.frame(X1 = rnorm(n))
+##D A <- rbinom(n, 1, 0.5)
+##D Y <- rnorm(n)
+##D R <- rbinom(n, 1, 0.7)
+##D Y[R == 0] <- NA
+##D W <- X[, 0]
+##D result <- find_missing_pattern(Y, A, X, W)
+##D result$Z  # variables without missingness
+##D result$U  # variables with missingness
+##D result$R  # complete case indicator
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("find_missing_pattern", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("get_nuisance_ests")
+### * get_nuisance_ests
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: get_nuisance_ests
+### Title: Obtain nuisance function estimates
+### Aliases: get_nuisance_ests
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D X <- data.frame(X1 = rnorm(n))
+##D A <- rbinom(n, 1, plogis(X$X1))
+##D Y <- A + X$X1 + rnorm(n)
+##D R <- rbinom(n, 1, plogis(X$X1))
+##D Y[R == 0] <- 0; A[R == 0] <- 0
+##D Z <- X
+##D nuis <- get_nuisance_ests(1:n, Y, A, X, Z, R,
+##D                           m_learners = "SL.glm",
+##D                           g_learners = "SL.glm",
+##D                           r_learners = "SL.glm",
+##D                           Rprobs = NA, cutoff = 0.025)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("get_nuisance_ests", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("get_phi_hat")
+### * get_phi_hat
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: get_phi_hat
+### Title: Contruct full data EIF estimate
+### Aliases: get_phi_hat
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D n <- 500
+##D X <- data.frame(X1 = rnorm(n))
+##D A <- rbinom(n, 1, plogis(X$X1))
+##D Y <- A + X$X1 + rnorm(n)
+##D R <- rep(1, n)
+##D Z <- X
+##D g_hat <- plogis(X$X1)
+##D m_a_hat <- list(m_1_hat = 1 + X$X1, m_0_hat = X$X1)
+##D kappa_hat <- rep(1, n)
+##D phi <- get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat)
+## End(Not run)
+
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("get_phi_hat", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("get_sl_libraries")
+### * get_sl_libraries
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: get_sl_libraries
+### Title: List SuperLearner libraries
+### Aliases: get_sl_libraries
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D libs <- get_sl_libraries()
+##D head(libs)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("get_sl_libraries", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("plot.drcmd")
+### * plot.drcmd
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: plot.drcmd
+### Title: Plot results from drcmd object
+### Aliases: plot.drcmd
+
+### ** Examples
+
+## Not run: 
+##D n <- 2500
+##D X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
+##D Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
+##D Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+##D 
+##D # Make A NA if R==0
+##D A[R==0] <- NA
+##D 
+##D # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
+##D # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
+##D drcmd_res <- drcmd(Y,A,covariates,
+##D                    default_learners= c('SL.gam','SL.glm'),
+##D                    po_learners = 'SL.gam')
+##D plot(drcmd_res,type='PO')
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("plot.drcmd", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("predict.SL.hal9001")
+### * predict.SL.hal9001
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: predict.SL.hal9001
+### Title: Prediction wrapper for the highly-adaptive lasso
+### Aliases: predict.SL.hal9001
+
+### ** Examples
+
+## Not run: 
+##D n <- 200
+##D X <- data.frame(X1 = rnorm(n))
+##D Y <- X$X1 + rnorm(n)
+##D fit <- SL.hal9001(Y, X, newX = X, family = gaussian(),
+##D                   obsWeights = rep(1, n))
+##D preds <- predict(fit$fit, newdata = X)
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("predict.SL.hal9001", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("print.drcmd")
+### * print.drcmd
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: print.drcmd
+### Title: Print drcmd object
+### Aliases: print.drcmd
+
+### ** Examples
+
+set.seed(1)
+n <- 200
+X <- rnorm(n)
+A <- rbinom(n, 1, plogis(X))
+Y <- rnorm(n) + A + X
+R_ind <- rbinom(n, 1, plogis(X))
+Y[R_ind == 0] <- NA
+covariates <- data.frame(X = X)
+
+fit <- drcmd(Y, A, covariates, default_learners = "SL.glm", k = 1)
+print(fit)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("print.drcmd", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("summary.drcmd")
+### * summary.drcmd
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: summary.drcmd
+### Title: Summarize results from drcmd
+### Aliases: summary.drcmd
+
+### ** Examples
+
+set.seed(1)
+n <- 200
+X <- rnorm(n)
+A <- rbinom(n, 1, plogis(X))
+Y <- rnorm(n) + A + X
+R_ind <- rbinom(n, 1, plogis(X))
+Y[R_ind == 0] <- NA
+covariates <- data.frame(X = X)
+
+fit <- drcmd(Y, A, covariates, default_learners = "SL.glm", k = 1)
+summary(fit)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("summary.drcmd", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("tml_updates")
+### * tml_updates
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: tml_updates
+### Title: Update nuisance functions with TML
+### Aliases: tml_updates
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D # Typically called internally by est_psi_tml() to perform the TML
+##D # targeting step on outcome and missingness nuisance functions.
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("tml_updates", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("truncate_g")
+### * truncate_g
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: truncate_g
+### Title: Truncate treatment propensity scores
+### Aliases: truncate_g
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D x <- c(0.001, 0.3, 0.5, 0.7, 0.999)
+##D suppressWarnings(truncate_g(x, cutoff = 0.025))
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("truncate_g", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("truncate_r")
+### * truncate_r
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: truncate_r
+### Title: Truncate complete case propensity scores
+### Aliases: truncate_r
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D x <- c(0.001, 0.3, 0.5, 0.7, 0.999)
+##D suppressWarnings(truncate_r(x, cutoff = 0.01))
+## End(Not run)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("truncate_r", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+### * <FOOTER>
+###
+cleanEx()
+options(digits = 7L)
+base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+grDevices::dev.off()
+###
+### Local variables: ***
+### mode: outline-minor ***
+### outline-regexp: "\\(> \\)?### [*]+" ***
+### End: ***
+quit('no')

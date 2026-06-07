@@ -46,21 +46,21 @@ for estimating all nuisance functions. User can alternatively specify libraries
 for each nuisance function for added flexibility}
 
 \item{m_learners}{A character vector containing learners to be used for the
-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
+outcome regression. A vector of SuperLearner library names}
 
 \item{g_learners}{A character vector containing learners to be used for the
-propensity score. User can specify 'hal' or a vector of SuperLearner libraries}
+propensity score. A vector of SuperLearner library names}
 
 \item{r_learners}{A character vector containing learners to be used for the
-missingness indicator regression. User can specify 'hal' or a vector of
-SuperLearner libraries}
+missingness indicator regression. A vector of SuperLearner library
+names}
 
 \item{po_learners}{A character vector containing learners to be used for the
-pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
+pseudo-outcome regression. A vector of SuperLearner library names}
 
 \item{eem_ind}{A logical indicating whether to use empirical efficiency maximization}
 
-\item{tml}{A logicial indicating whether to obtain estimates through targeted
+\item{tml}{A logical indicating whether to obtain estimates through targeted
 maximum likelihood estimation (TML). If TRUE, estimates obtained by TML. If
 FALSE (default setting), estimates are obtained through a one-step estimator}
 
@@ -82,6 +82,12 @@ for model selection. Default is 5. Lower values speed up estimation.}
 
 \item{parallel}{Logical indicating whether to run cross-fitting folds in parallel
 using \code{parallel::mclapply}. Only used when k > 1. Note: not supported on Windows.}
+
+\item{att}{Logical indicating whether to additionally estimate the average
+treatment effect on the treated (ATT). Default is FALSE.}
+
+\item{atc}{Logical indicating whether to additionally estimate the average
+treatment effect on the controls (ATC). Default is FALSE.}
 }
 \value{
 An S3 object of class \code{"drcmd"} containing estimation results, information
@@ -97,6 +103,7 @@ standard errors, and (iii) nuisance function estimates}
 }
 \description{
 Doubly-robust estimation of counterfactual means in the presence of missing
+data. The drcmd() function estimates counterfactual means for binary point treatments
 and reports average treatment effects, as well as causal risk ratios and odds ratios
 for binary outcomes. General missingness patterns in the data are allowed and automatically
 determined by the function -- the only requirement is that any missingness occurs at random

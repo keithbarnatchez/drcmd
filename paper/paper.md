@@ -15,7 +15,7 @@ affiliations:
     index: 1
   - name: University of Massachusetts Amherst
     index: 2
-date: 5 March 2026
+date: 28 April 2026
 bibliography: references.bib
 ---
 
@@ -25,6 +25,10 @@ The `drcmd` `R` package performs semi-parametric efficient estimation of causal 
 
 # Statement of Need
 The use of doubly-robust methods for performing causal inference of point exposures on outcomes of interest has surged over the past decade, and numerous software packages have been developed for implementing these estimators. While these packages are well-suited for use on complete, missingness-free data, leading statistical software packages provide little to no support for missing data. The lack of a centralized package for performing doubly-robust causal inference has functioned as a severe impediment for researchers, as missing data is ubiquitous in real-world data, and the specific patterns of missingness can greatly vary across applications. `drcmd` addresses this shortcoming by providing a single R package for performing doubly-robust causal inference in the presence of general missing data patterns.
+
+# State of the Field
+
+# Software Design
 
 # Examples of Missing Data
 
@@ -58,6 +62,8 @@ where $S_i$ is an always-observed surrogate outcome that serves as a proxy for t
 
 # Availability 
 `drcmd` is publicly available for download on [GitHub](https://github.com/keithbarnatchez/drcmd). Further information on the use of the package can be found in the package vignette and user manual.
+
+# AI usage disclosure
 
 # References
 

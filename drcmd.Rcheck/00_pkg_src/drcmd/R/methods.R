@@ -3,24 +3,20 @@
 #' of results, and prints values of optional arguments. Use summary() function for
 #' more detailed summary of results.
 #' @param x An object of class drcmd
+#' @param ... Additional arguments (unused)
+#' @return No return value. Called for printing a concise results summary
 #' @examples
-#' \dontrun{
-#' n <- 2500
-#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-#' Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
-#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+#' set.seed(1)
+#' n <- 200
+#' X <- rnorm(n)
+#' A <- rbinom(n, 1, plogis(X))
+#' Y <- rnorm(n) + A + X
+#' R_ind <- rbinom(n, 1, plogis(X))
+#' Y[R_ind == 0] <- NA
+#' covariates <- data.frame(X = X)
 #'
-#' # Make A NA if R==0
-#' A[R==0] <- NA
-#' covariates <- data.frame(X1=X,X2=X2)
-#'
-#' # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
-#' # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-#' drcmd_res <- drcmd(Y,A,covariates,
-#'                    default_learners= c('SL.gam','SL.glm'),
-#'                    po_learners = 'SL.gam')
-#' print(drcmd_res)
-#' }
+#' fit <- drcmd(Y, A, covariates, default_learners = "SL.glm", k = 1)
+#' print(fit)
 #' @export
 print.drcmd <- function(x, ...) {
   cat("drcmd results\n")
@@ -48,31 +44,27 @@ print.drcmd <- function(x, ...) {
 #' mechanism. Can optionally print out values of user-supplied arguments by setting
 #' detail=TRUE
 #'
-#' @param results An object of class drcmd
+#' @param object An object of class drcmd
 #' @param detail Logical. If TRUE, print out values of user-supplied arguments
+#' @param ... Additional arguments (unused)
 #'
 #' @return No return value. Called for printing a detailed results summary
 #' @examples
-#' \dontrun{
-#' n <- 2500
-#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-#' Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
-#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+#' set.seed(1)
+#' n <- 200
+#' X <- rnorm(n)
+#' A <- rbinom(n, 1, plogis(X))
+#' Y <- rnorm(n) + A + X
+#' R_ind <- rbinom(n, 1, plogis(X))
+#' Y[R_ind == 0] <- NA
+#' covariates <- data.frame(X = X)
 #'
-#' # Make A NA if R==0
-#' A[R==0] <- NA
-#' covariates <- data.frame(X1=X,X2=X2)
-#'
-#' # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
-#' # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-#' drcmd_res <- drcmd(Y,A,covariates,
-#'                    default_learners= c('SL.gam','SL.glm'),
-#'                    po_learners = 'SL.gam')
-#' print(drcmd_res)
-#' }
+#' fit <- drcmd(Y, A, covariates, default_learners = "SL.glm", k = 1)
+#' summary(fit)
 #' @export
-summary.drcmd <- function(x, detail=FALSE, ...) {
+summary.drcmd <- function(object, detail=FALSE, ...) {
 
+  x <- object
   if (!is.logical(detail)) {
     stop("Argument 'detail' must be logical (TRUE or FALSE)")
   }
@@ -149,6 +141,8 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
   }
 }
 
+utils::globalVariables(c("varphi_hat", "phi_hat", "A", "IC", "g_hat", "kappa_hat"))
+
 #' @title Plot results from drcmd object
 #' @description S3 method for plotting results from drcmd object. Plots are
 #' available for the following: (1) psuedo outcome regression fit, (2) influence
@@ -159,6 +153,7 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
 #' @param x An object of class drcmd
 #' @param type Character denoting type of plot to generate. Must be one of 'All', 'PO',
 #'  'IC', 'g_hat', 'r_hat'
+#' @param ... Additional arguments (unused)
 #'
 #' @return No return value. Called for plotting results from drcmd object
 #' @examples
@@ -179,17 +174,18 @@ summary.drcmd <- function(x, detail=FALSE, ...) {
 #' plot(drcmd_res,type='PO')
 #' }
 #' @export
-plot.drcmd <- function(x, type = "All") {
+plot.drcmd <- function(x, type = "All", ...) {
 
   # First check if type is valid
   if (!(type %in% c('PO', 'IC', 'g_hat', 'r_hat','All'))) {
     stop("Invalid type argument. Must be one of 'All', PO', 'IC', 'ghat' or 'r_hat'")
   }
 
-  if (type == "PO" | type=='All') {
+  nuis <- x$results$nuis
+  R <- x$R
+  kappa_hat <- nuis$kappa_hat
 
-    nuis <- x$results$nuis
-    R <- x$R
+  if (type == "PO" | type=='All') {
 
     phis <- rbind(data.frame(phi_hat=nuis$phi_1_hat[R==1], varphi_hat=nuis$varphi_1_hat[R==1],A=1),
                   data.frame(phi_hat=nuis$phi_0_hat[R==1], varphi_hat=nuis$varphi_0_hat[R==1],A=0))
@@ -217,11 +213,10 @@ plot.drcmd <- function(x, type = "All") {
   }
 
   if (type=='IC' | type=='All') {
-    R <- x$R
-    IC1 <- (R*x$results$nuis$kappa_hat)*(x$results$nuis$phi_1_hat -
-            x$results$nuis$varphi_1_hat) + x$results$nuis$varphi_1_hat
-    ICO <- (R*x$results$nuis$kappa_hat)*(x$results$nuis$phi_0_hat -
-            x$results$nuis$varphi_0_hat) + x$results$nuis$varphi_0_hat
+    IC1 <- (R/kappa_hat)*(nuis$phi_1_hat -
+            nuis$varphi_1_hat) + nuis$varphi_1_hat
+    ICO <- (R/kappa_hat)*(nuis$phi_0_hat -
+            nuis$varphi_0_hat) + nuis$varphi_0_hat
 
 
     ICs <- rbind(data.frame(IC=IC1, A='E[Y(1)]'),

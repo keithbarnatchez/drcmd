@@ -15,9 +15,11 @@ est_g(idx, A, X, R, kappa_hat, g_learners, cv_folds = 5)
 
 \item{R}{Binary missingness indicator, where 0 indicates missing data}
 
+\item{kappa_hat}{A numeric vector containing the fitted values of kappa}
+
 \item{g_learners}{A character vector containing the names of the learners for estimation}
 
-\item{Y}{Outcome variable. Can be continuous or binary}
+\item{cv_folds}{Number of cross-validation folds for SuperLearner}
 }
 \value{
 A list containing the estimate of \verb{E[Y | A=a, X, W]}
@@ -39,3 +41,4 @@ g_hat <- est_g(idx = 1:n, A = A, X = X, R = R,
                kappa_hat = kappa_hat, g_learners = g_learners)
 }
 }
+\keyword{internal}

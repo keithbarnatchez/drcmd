@@ -40,25 +40,23 @@ drcmd_est(
 \item{R}{Binary missingness indicator}
 
 \item{m_learners}{A character vector containing learners to be used for the
-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
+outcome regression. A vector of SuperLearner library names}
 
 \item{g_learners}{A character vector containing learners to be used for the
-propensity score. User can specify 'hal' or a vector of SuperLearner libraries}
+propensity score. A vector of SuperLearner library names}
 
 \item{r_learners}{A character vector containing learners to be used for the
-missingness indicator regression. User can specify 'hal' or a vector of
-SuperLearner libraries}
+missingness indicator regression. A vector of SuperLearner library
+names}
 
 \item{po_learners}{A character vector containing learners to be used for the
-pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner libraries}
+pseudo-outcome regression. A vector of SuperLearner library names}
 
 \item{eem_ind}{A logical indicating whether to use empirical efficiency maximization}
 
 \item{Rprobs}{A vector of probabilities for R}
 
 \item{k}{A numeric indicating the number of folds for cross-fitting}
-
-\item{data}{A data frame}
 }
 \value{
 A list of point estimates and standard errors for all estimands considered
@@ -84,3 +82,4 @@ res <- drcmd_est(Y, A, X, Z, R,
                  y_bin = FALSE, yscaled = FALSE)
 }
 }
+\keyword{internal}

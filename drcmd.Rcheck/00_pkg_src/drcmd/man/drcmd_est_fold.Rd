@@ -55,8 +55,6 @@ pseudo-outcome regression. User can specify 'hal' or a vector of SuperLearner li
 \item{eem_ind}{A logical indicating whether to use empirical efficiency maximization}
 
 \item{Rprobs}{A vector of probabilities for R}
-
-\item{c}{}
 }
 \value{
 A list of results from estimation on current fold
@@ -81,3 +79,4 @@ fold_res <- drcmd_est_fold(splits, Y, A, X, Z, R,
                            Rprobs = NA, cutoff = 0.025, y_bin = FALSE)
 }
 }
+\keyword{internal}
