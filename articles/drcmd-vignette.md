@@ -88,15 +88,15 @@ head(df)
     ## 6        NA 1  1.148411606  4.5822774 0
 
 The main function from the `drcmd` package is
-[`drcmd()`](https://keithbarnatchez.github.io/drcmd/reference/drcmd.md).
-The core arguments are `Y`, `A` and `X`, representing the outcome,
-binary treatment and covariates. Users can optionally specify proxy
-variables `W` that are (i) predictive of the missing variables, (ii)
-possibly influence the missingness mechanism, and (iii) wouldn’t be
-involved in the causal analysis under the presence of complete data.
-Such variables commonly arise in semi-supervised inference, where cheap
-proxies are often available for expensive-to-measure variables. In our
-running example, we have that $`Y^*=W`$. In practice, $`W`$ can be
+[`drcmd()`](https://kbarnatchez.com/drcmd/reference/drcmd.md). The core
+arguments are `Y`, `A` and `X`, representing the outcome, binary
+treatment and covariates. Users can optionally specify proxy variables
+`W` that are (i) predictive of the missing variables, (ii) possibly
+influence the missingness mechanism, and (iii) wouldn’t be involved in
+the causal analysis under the presence of complete data. Such variables
+commonly arise in semi-supervised inference, where cheap proxies are
+often available for expensive-to-measure variables. In our running
+example, we have that $`Y^*=W`$. In practice, $`W`$ can be
 multi-dimensional when multiple proxies are available. `W` defaults to
 `NA` when not specified by the user, consistent with settings where
 proxies are not available.
@@ -152,7 +152,7 @@ them through `default_learners`. A nuisance-specific argument overrides
 Each argument takes a vector of `SuperLearner` library names, using the
 same syntax one passes directly into `SuperLearner`. To see the base
 libraries available, users can run
-[`get_sl_libraries()`](https://keithbarnatchez.github.io/drcmd/reference/get_sl_libraries.md):
+[`get_sl_libraries()`](https://kbarnatchez.com/drcmd/reference/get_sl_libraries.md):
 
 ``` r
 
@@ -192,8 +192,8 @@ ensure all libraries used support weights.
 ### Calling the `drcmd` function
 
 Below we demonstrate an example call of
-[`drcmd()`](https://keithbarnatchez.github.io/drcmd/reference/drcmd.md),
-which requires users to provide an outcome `Y`, binary treatment `A`,
+[`drcmd()`](https://kbarnatchez.com/drcmd/reference/drcmd.md), which
+requires users to provide an outcome `Y`, binary treatment `A`,
 covariate dataframe `X`, and SuperLearner libraries. We make use of the
 `default_learners` argument to specify SuperLearner libraries for all
 nuisance functions, estimating each through an ensemble of generalized
@@ -208,8 +208,8 @@ res <- drcmd::drcmd(Y=Y, A=A, X=X,
 
 To make use of the additional proxy variable, we can simply specify the
 `W` argument in the call to
-[`drcmd()`](https://keithbarnatchez.github.io/drcmd/reference/drcmd.md).
-In general, `W` can be multidimensional. In our running example, we have
+[`drcmd()`](https://kbarnatchez.com/drcmd/reference/drcmd.md). In
+general, `W` can be multidimensional. In our running example, we have
 that $`Y^*=W`$.
 
 ``` r
@@ -224,7 +224,7 @@ that particular nuisance function if `default_learners` is specified.
 For example, to estimate the pseudo-outcome regression through GAMs, and
 all other nuisance functions with a Super Learner ensemble of GLMs and
 splines, we can make the following call to
-[`drcmd()`](https://keithbarnatchez.github.io/drcmd/reference/drcmd.md):
+[`drcmd()`](https://kbarnatchez.com/drcmd/reference/drcmd.md):
 
 ``` r
 
@@ -281,15 +281,15 @@ summary(res)
 ### Extracting output
 
 After running
-[`drcmd()`](https://keithbarnatchez.github.io/drcmd/reference/drcmd.md),
-numerous objects are stored within the resulting output, including
+[`drcmd()`](https://kbarnatchez.com/drcmd/reference/drcmd.md), numerous
+objects are stored within the resulting output, including
 
 - `results`: A list containing (i) parameter estimates stored in a
   dataframe named `estimates`, (ii) standard errors stored in a
   dataframe named `ses`, and (iii) nuisance function estimates stored in
   a dataframe named `nuis`
 - `params`: A list containing all parameter values used by
-  [`drcmd()`](https://keithbarnatchez.github.io/drcmd/reference/drcmd.md)
+  [`drcmd()`](https://kbarnatchez.com/drcmd/reference/drcmd.md)
 - `R`: Binary complete case indicator, where 1 denotes a complete case
 - `U`: Names of variables with partially missing values
 - `Z`: Names of variables with no missing values
