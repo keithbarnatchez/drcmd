@@ -259,7 +259,7 @@ test_that("ATT/ATC work with cross-fitting (k>1)", {
 
 })
 
-test_that("ATT/ATC are NA under TML path", {
+test_that("ATT/ATC error under TML path", {
 
   set.seed(5555)
   n <- 3000
@@ -269,11 +269,12 @@ test_that("ATT/ATC are NA under TML path", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X, default_learners='SL.glm',
-                   tml=TRUE, att=TRUE, atc=TRUE)
-
-  expect_true(is.na(results$results$estimates$psi_hat_att))
-  expect_true(is.na(results$results$estimates$psi_hat_atc))
+  # ATT/ATC are only supported under the one-step estimator
+  expect_error(
+    drcmd(Y,A,X, default_learners='SL.glm',
+          tml=TRUE, att=TRUE, atc=TRUE),
+    "ATT/ATC estimation is only supported with one-step estimation"
+  )
 
 })
 
@@ -372,13 +373,14 @@ test_that("tml_updates returns updated nuisance estimates", {
                          phi_hat$phi_1_hat, phi_hat$phi_0_hat,
                          varphi_hat)
 
-  expect_true("m_1_hat_star" %in% names(updated))
-  expect_true("m_0_hat_star" %in% names(updated))
-  expect_true("plugin_ate_star" %in% names(updated))
-  expect_true("kappa_hat_ate_star" %in% names(updated))
-  expect_equal(length(updated$m_1_hat_star), n)
+  # tml_updates runs a separate fluctuation per estimand
+  expect_true(all(c("ate", "psi_1", "psi_0") %in% names(updated)))
+  expect_true("m_1_hat_star" %in% names(updated$ate))
+  expect_true("m_0_hat_star" %in% names(updated$ate))
+  expect_true("kappa_hat_star" %in% names(updated$ate))
+  expect_equal(length(updated$ate$m_1_hat_star), n)
   # Updated m predictions should be in (0,1) since Y is binary
-  expect_true(all(updated$m_1_hat_star >= 0 & updated$m_1_hat_star <= 1))
-  expect_true(all(updated$m_0_hat_star >= 0 & updated$m_0_hat_star <= 1))
+  expect_true(all(updated$ate$m_1_hat_star >= 0 & updated$ate$m_1_hat_star <= 1))
+  expect_true(all(updated$ate$m_0_hat_star >= 0 & updated$ate$m_0_hat_star <= 1))
 
 })

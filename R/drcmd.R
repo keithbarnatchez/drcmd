@@ -647,7 +647,7 @@ est_psi <- function(idx, R, Z,
 #'
 #' @description Function for obtaining estimates of causal estimands through
 #' targeted maximum likelihood. To be called within drcmd_est_fold(). Runs a
-#' separate TML fluctuation for each of the ATE, E[Y(1)] and E[Y(0)], so each
+#' separate TML fluctuation for each of the ATE, `E[Y(1)]` and `E[Y(0)]`, so each
 #' estimand is debiased directly. ATT/ATC are not supported here -- use the
 #' one-step option (tml=FALSE) for those.
 #'
@@ -668,7 +668,7 @@ est_psi <- function(idx, R, Z,
 #' @param atc Logical. Not supported under TML; must be FALSE
 #'
 #' @return A list with point estimates, variances, and influence-curve
-#'   contributions for E[Y(1)], E[Y(0)], and ATE
+#'   contributions for `E[Y(1)]`, `E[Y(0)]`, and ATE
 #' @keywords internal
 #' @examples
 #' \dontrun{

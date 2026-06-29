@@ -1,6 +1,6 @@
 Package: drcmd
 Title: Doubly-Robust Causal Inference with Missing Data
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: c(
     person("Keith", "Barnatchez",
            email = "keithbarnatchez@gmail.com",
@@ -20,7 +20,7 @@ Description: Doubly-robust estimation of counterfactual means in the presence of
     functions through either highly-adaptive LASSO (HAL) or SuperLearner, the latter of which
     the user must specify libraries.
 License: GPL (>= 3)
-URL: https://github.com/keithbarnatchez/drcmd
+URL: https://github.com/keithbarnatchez/drcmd, https://keithbarnatchez.github.io/drcmd/
 BugReports: https://github.com/keithbarnatchez/drcmd/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

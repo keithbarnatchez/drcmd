@@ -55,12 +55,12 @@ est_psi_tml(
 }
 \value{
 A list with point estimates, variances, and influence-curve
-contributions for E\link{Y(1)}, E\link{Y(0)}, and ATE
+contributions for \code{E[Y(1)]}, \code{E[Y(0)]}, and ATE
 }
 \description{
 Function for obtaining estimates of causal estimands through
 targeted maximum likelihood. To be called within drcmd_est_fold(). Runs a
-separate TML fluctuation for each of the ATE, E\link{Y(1)} and E\link{Y(0)}, so each
+separate TML fluctuation for each of the ATE, \code{E[Y(1)]} and \code{E[Y(0)]}, so each
 estimand is debiased directly. ATT/ATC are not supported here -- use the
 one-step option (tml=FALSE) for those.
 }

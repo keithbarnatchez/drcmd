@@ -1,0 +1,28 @@
+url: https://keithbarnatchez.github.io/drcmd
+
+template:
+  bootstrap: 5
+
+reference:
+- title: Estimation
+  desc: Main entry point for doubly-robust estimation with missing data.
+  contents:
+  - drcmd
+- title: Nuisance estimation
+  desc: Helpers for specifying and fitting nuisance functions.
+  contents:
+  - get_sl_libraries
+  - SL.hal9001
+- title: Methods
+  desc: S3 methods for drcmd objects.
+  contents:
+  - plot.drcmd
+  - print.drcmd
+  - summary.drcmd
+  - predict.SL.hal9001
+- title: internal
+  contents:
+  - check_binary
+  - clean_learners
+  - create_folds
+  - trim

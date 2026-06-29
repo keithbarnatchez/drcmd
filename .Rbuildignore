@@ -11,3 +11,6 @@
 ^.*\.Rhistory$
 ^\.github$
 ^\.claude$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
