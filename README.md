@@ -8,7 +8,7 @@
 
 Users can fit nuisance functions through Super Learner (a stacking algorithm). 
 
-Please see the package vignette and documentation for further details. Full documentation is available at the [package website](https://keithbarnatchez.github.io/drcmd/).
+Please see the package vignette and documentation for further details. Full documentation is available at the [package website](https://kbarnatchez.com/drcmd/).
 ------------------------------------------------------------------------
 ## Installation
 
