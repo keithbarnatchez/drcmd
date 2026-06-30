@@ -9,14 +9,13 @@
 Users can fit nuisance functions through Super Learner (a stacking algorithm). 
 
 Please see the package vignette and documentation for further details. Full documentation is available at the [package website](https://kbarnatchez.com/drcmd/).
-------------------------------------------------------------------------
+
 ## Installation
 
 ```r
 devtools::install_github('keithbarnatchez/drcmd')
 ```
 
-------------------------------------------------------------------------
 ## Example
 
 ```r
@@ -38,7 +37,6 @@ default_learners=default_learners,
 eem_ind=eem_ind,k=k)
 ```
 
-------------------------------------------------------------------------
 ## Citation
 
 Kennedy, E. H. (2016). *Semiparametric theory and empirical processes in causal inference*. Statistical causal inferences and their applications in public health research, 141-167.
@@ -47,7 +45,6 @@ Tsiatis, A. A. (2006). *Semiparametric theory and missing data* (Vol. 4). New Yo
 
 van der Laan, M. J., & Robins, J. M. (2003). *Unified methods for censored longitudinal data and causality*. Springer New York.
 
-------------------------------------------------------------------------
 ## Contributing, reporting issues
 
  - **Bugs/feature requests**: open an issue at https://github.com/keithbarnatchez/drcmd/issues                                                            
