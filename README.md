@@ -39,6 +39,18 @@ eem_ind=eem_ind,k=k)
 
 ## Citation
 
+If you use `drcmd` in your work, please cite the package:
+
+Barnatchez, K. and DesRoches, G. (2026). *drcmd: Doubly-Robust Causal Inference with Missing Data*. R package version 0.1.0. https://github.com/keithbarnatchez/drcmd
+
+A BibTeX entry is available from R:
+
+```r
+citation('drcmd')
+```
+
+## References
+
 Kennedy, E. H. (2016). *Semiparametric theory and empirical processes in causal inference*. Statistical causal inferences and their applications in public health research, 141-167.
 
 Tsiatis, A. A. (2006). *Semiparametric theory and missing data* (Vol. 4). New York: Springer.

@@ -6,7 +6,6 @@
 ^examples$
 ^drcmd_.*\.tar\.gz$
 ^drcmd\.Rcheck$
-^vignettes$
 ^\.Rhistory$
 ^.*\.Rhistory$
 ^\.github$

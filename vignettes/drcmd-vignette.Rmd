@@ -18,6 +18,10 @@ output:
     toc: true
     df_print: paged
 bibliography: sources.bib
+vignette: >
+  %\VignetteIndexEntry{drcmd: Doubly-Robust Causal Inference with Missing Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 <script>

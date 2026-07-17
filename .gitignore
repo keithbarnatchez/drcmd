@@ -2,3 +2,6 @@
 paper/paper.pdf
 paper/paper.jats
 docs/
+vignettes/*.html
+vignettes/*.R
+inst/doc
