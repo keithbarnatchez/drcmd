@@ -6,7 +6,7 @@ propensity score and outcome model fits
 ## Usage
 
 ``` r
-get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat)
+get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat, idx = seq_along(Y))
 ```
 
 ## Arguments
@@ -43,6 +43,12 @@ get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat)
 - kappa_hat:
 
   Missingness probabilities
+
+- idx:
+
+  Indices used to compute the plug-in estimates. Defaults to all
+  observations; during cross-fitting these are the training-fold
+  indices.
 
 ## Examples
 

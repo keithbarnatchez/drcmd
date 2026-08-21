@@ -7,7 +7,7 @@ otherwise.
 ## Usage
 
 ``` r
-check_entry_errors(Y, A, X, W, R, eem_ind, Rprobs, k)
+check_entry_errors(Y, A, X, W, eem_ind, Rprobs, k)
 ```
 
 ## Arguments
@@ -28,10 +28,6 @@ check_entry_errors(Y, A, X, W, R, eem_ind, Rprobs, k)
 
   A data frame containing proxy variable values
 
-- R:
-
-  A vector containing missingness indicator variable
-
 ## Examples
 
 ``` r
@@ -41,7 +37,6 @@ X <- data.frame(X1 = rnorm(n))
 W <- data.frame(W1 = rnorm(n))
 A <- rbinom(n, 1, 0.5)
 Y <- rnorm(n)
-R <- rbinom(n, 1, 0.7)
-check_entry_errors(Y, A, X, W, R, eem_ind = FALSE, Rprobs = NA, k = 1)
+check_entry_errors(Y, A, X, W, eem_ind = FALSE, Rprobs = NA, k = 1)
 } # }
 ```

@@ -21,7 +21,6 @@ drcmd(
   A,
   X,
   W = NA,
-  R = NA,
   default_learners = NULL,
   m_learners = NULL,
   g_learners = NULL,
@@ -58,13 +57,6 @@ drcmd(
 
   (optional) Dataframe containing variables solely predictive of
   missingness, but not a cause of the outcome or exposure.
-
-- R:
-
-  (optional) A character string specifying the missingness indicator,
-  where 0 indicates missing data. If not specified, the function will
-  create the missingness indicator by identifying the missingness
-  pattern in the data
 
 - default_learners:
 

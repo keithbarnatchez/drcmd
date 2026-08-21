@@ -32,7 +32,7 @@ est_psi_tml(
 
 - idx:
 
-  Indices of the training set
+  Indices of the held-out evaluation fold
 
 - Y:
 

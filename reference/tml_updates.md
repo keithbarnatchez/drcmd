@@ -26,7 +26,7 @@ tml_updates(
 
 - idx:
 
-  Indices of the training set
+  Indices of the held-out evaluation fold used for targeting
 
 - Y:
 

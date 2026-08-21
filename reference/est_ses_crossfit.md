@@ -6,7 +6,7 @@ each fold
 ## Usage
 
 ``` r
-est_ses_crossfit(res, y_bin, att = FALSE, atc = FALSE)
+est_ses_crossfit(res, ests, y_bin, att = FALSE, atc = FALSE)
 ```
 
 ## Arguments
@@ -15,6 +15,10 @@ est_ses_crossfit(res, y_bin, att = FALSE, atc = FALSE)
 
   A list of per-fold results from drcmd_est_fold, each containing an
   `ics` data frame of influence curve contributions
+
+- ests:
+
+  Combined cross-fitted point estimates
 
 - y_bin:
 

@@ -45,7 +45,7 @@ of each fold</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">est_ses_crossfit</span><span class="op">(</span><span class="va">res</span>, <span class="va">y_bin</span>, att <span class="op">=</span> <span class="cn">FALSE</span>, atc <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">est_ses_crossfit</span><span class="op">(</span><span class="va">res</span>, <span class="va">ests</span>, <span class="va">y_bin</span>, att <span class="op">=</span> <span class="cn">FALSE</span>, atc <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -55,6 +55,10 @@ of each fold</p>
 <dl><dt id="arg-res">res<a class="anchor" aria-label="anchor" href="#arg-res"></a></dt>
 <dd><p>A list of per-fold results from drcmd_est_fold, each containing
 an <code>ics</code> data frame of influence curve contributions</p></dd>
+
+
+<dt id="arg-ests">ests<a class="anchor" aria-label="anchor" href="#arg-ests"></a></dt>
+<dd><p>Combined cross-fitted point estimates</p></dd>
 
 
 <dt id="arg-y-bin">y_bin<a class="anchor" aria-label="anchor" href="#arg-y-bin"></a></dt>

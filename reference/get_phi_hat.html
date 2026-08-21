@@ -45,7 +45,7 @@ propensity score and outcome model fits</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_phi_hat</span><span class="op">(</span><span class="va">Y</span>, <span class="va">A</span>, <span class="va">X</span>, <span class="va">R</span>, <span class="va">Z</span>, <span class="va">g_hat</span>, <span class="va">m_a_hat</span>, <span class="va">kappa_hat</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_phi_hat</span><span class="op">(</span><span class="va">Y</span>, <span class="va">A</span>, <span class="va">X</span>, <span class="va">R</span>, <span class="va">Z</span>, <span class="va">g_hat</span>, <span class="va">m_a_hat</span>, <span class="va">kappa_hat</span>, idx <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">Y</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -82,6 +82,11 @@ propensity score and outcome model fits</p>
 
 <dt id="arg-kappa-hat">kappa_hat<a class="anchor" aria-label="anchor" href="#arg-kappa-hat"></a></dt>
 <dd><p>Missingness probabilities</p></dd>
+
+
+<dt id="arg-idx">idx<a class="anchor" aria-label="anchor" href="#arg-idx"></a></dt>
+<dd><p>Indices used to compute the plug-in estimates. Defaults to all
+observations; during cross-fitting these are the training-fold indices.</p></dd>
 
 </dl></div>
 

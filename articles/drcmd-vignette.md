@@ -1,9 +1,5 @@
 # \`drcmd\`: Doubly-Robust Causal Inference with Missing Data
 
-**Note**: Package is still in development. *Exercise caution* while
-using this package until it’s been fully developed, and please check
-back frequently for updates.
-
 ## Introduction
 
 The `drcmd` `R` package performs semi-parametric efficient estimation of
