@@ -129,7 +129,6 @@ check_r_ind <- function(data,
 #' @param A A vector or data frame  containing treatment variable values
 #' @param X A data frame containing covariate values
 #' @param W A data frame containing proxy variable values
-#' @param R A vector containing missingness indicator variable
 #'
 #' @keywords internal
 #' @examples
@@ -139,10 +138,9 @@ check_r_ind <- function(data,
 #' W <- data.frame(W1 = rnorm(n))
 #' A <- rbinom(n, 1, 0.5)
 #' Y <- rnorm(n)
-#' R <- rbinom(n, 1, 0.7)
-#' check_entry_errors(Y, A, X, W, R, eem_ind = FALSE, Rprobs = NA, k = 1)
+#' check_entry_errors(Y, A, X, W, eem_ind = FALSE, Rprobs = NA, k = 1)
 #' }
-check_entry_errors <- function(Y,A,X,W,R,
+check_entry_errors <- function(Y,A,X,W,
                                eem_ind,Rprobs,
                                k) {
 
@@ -389,4 +387,3 @@ get_clean_context <- function(calls) {
   }
   return("unknown")
 }
-

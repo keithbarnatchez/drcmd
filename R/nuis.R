@@ -276,11 +276,6 @@ est_varphi_main <- function(idx, R,Z,
 
   if (!quiet) message("  Fitting pseudo-outcome regression E[phi|Z]...")
 
-  # Suppress SuperLearner metalearner warnings in pseudo-outcome fits.
-  # These occur when the learner(s) can't improve over the intercept for
-  # predicting E[phi|Z], which is common (e.g. when the treatment effect
-  # EIF has little conditional variation given Z). SuperLearner correctly
-  # falls back to the intercept model in this case — no bias is introduced.
   result <- withCallingHandlers({
 
     if (eem_ind==TRUE) { # estimate via EEM
@@ -452,7 +447,6 @@ est_varphi_eem <- function(idx, R, Z,
   ytilde0 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_0_hat
 
   # Estimate E[phi|Z] via EEM
-  #### ***** need to update hal code below
   varphi_1_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
                                            family=gaussian(),SL.library=po_learners,
                                            obsWeights=(R[idx]/kappa_hat[idx] - 1)^2,
@@ -496,8 +490,7 @@ est_varphi_eem <- function(idx, R, Z,
 #' head(fit$pred)
 #' }
 SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
-  # Fit HAL model (let HAL select lambda via CV rather than hardcoding a single value,
-  # which causes "Need more than one value of lambda for cv.glmnet" errors)
+
   fit <- hal9001::fit_hal(X = X, Y = Y, family = family$family,
                           max_degree=2,num_knots=3,
                           reduce_basis=TRUE,

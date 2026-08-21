@@ -9,7 +9,6 @@ drcmd(
   A,
   X,
   W = NA,
-  R = NA,
   default_learners = NULL,
   m_learners = NULL,
   g_learners = NULL,
@@ -36,10 +35,6 @@ drcmd(
 
 \item{W}{(optional) Dataframe containing variables solely predictive of missingness,
 but not a cause of the outcome or exposure.}
-
-\item{R}{(optional) A character string specifying the missingness indicator,
-where 0 indicates missing data. If not specified, the function will create the
-missingness indicator by identifying the missingness pattern in the data}
 
 \item{default_learners}{A character vector containing SuperLearner libraries to use
 for estimating all nuisance functions. User can alternatively specify libraries

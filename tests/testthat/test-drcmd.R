@@ -101,6 +101,128 @@ test_that("drcmd works with cross-fitting (k>1)", {
 
 })
 
+test_that("cross-fitted binary contrasts and standard errors are well formed", {
+
+  set.seed(20260821)
+  n <- 800
+  X <- rnorm(n)
+  A <- rbinom(n, 1, plogis(X))
+  Y <- rbinom(n, 1, plogis(-0.5 + 0.8 * A + 0.5 * X))
+  R <- rbinom(n, 1, plogis(0.6 + 0.3 * X))
+  Y[R == 0] <- NA
+  X <- data.frame(X = X)
+
+  one_step <- drcmd(Y, A, X, default_learners = "SL.glm",
+                    k = 2, cv_folds = 2)
+  set.seed(20260821)
+  tml_fit <- drcmd(Y, A, X, default_learners = "SL.glm",
+                   k = 2, cv_folds = 2, tml = TRUE)
+
+  for (fit in list(one_step, tml_fit)) {
+    est <- fit$results$estimates
+    se <- fit$results$ses
+
+    expect_equal(est$psi_hat_rr, est$psi_1_hat / est$psi_0_hat)
+    expect_equal(
+      est$psi_hat_or,
+      (est$psi_1_hat / (1 - est$psi_1_hat)) /
+        (est$psi_0_hat / (1 - est$psi_0_hat))
+    )
+    expect_true(all(is.finite(unlist(se[c("psi_hat_rr", "psi_hat_or")]))))
+    expect_lt(se$psi_hat_rr, 2)
+    expect_lt(se$psi_hat_or, 2)
+    expect_equal(nrow(fit$results$nuis), n)
+  }
+
+})
+
+test_that("cross-fitted TML does not report binary contrasts for continuous outcomes", {
+
+  set.seed(20260822)
+  n <- 400
+  X <- rnorm(n)
+  A <- rbinom(n, 1, plogis(X))
+  Y <- A + X + rnorm(n)
+  X <- data.frame(X = X)
+
+  fit <- drcmd(Y, A, X, default_learners = "SL.glm",
+               k = 2, cv_folds = 2, tml = TRUE)
+
+  expect_true(is.na(fit$results$estimates$psi_hat_rr))
+  expect_true(is.na(fit$results$estimates$psi_hat_or))
+  expect_true(is.na(fit$results$ses$psi_hat_rr))
+  expect_true(is.na(fit$results$ses$psi_hat_or))
+
+})
+
+test_that("cross-fitted delta-method variances use point estimates", {
+
+  fold_1 <- list(ics = data.frame(
+    psi_1_ic = c(-0.2, 0.1),
+    psi_0_ic = c(-0.1, 0.05),
+    psi_ate_ic = c(-0.1, 0.05),
+    psi_att_ic = NA_real_,
+    psi_atc_ic = NA_real_
+  ))
+  fold_2 <- list(ics = data.frame(
+    psi_1_ic = c(0.05, 0.05),
+    psi_0_ic = c(0.02, 0.03),
+    psi_ate_ic = c(0.03, 0.02),
+    psi_att_ic = NA_real_,
+    psi_atc_ic = NA_real_
+  ))
+  ests <- c(psi_1_hat = 0.6, psi_0_hat = 0.3)
+
+  got <- est_ses_crossfit(list(fold_1, fold_2), ests, y_bin = TRUE)
+  ic <- rbind(fold_1$ics, fold_2$ics)
+  sig <- cov(ic[, c("psi_1_ic", "psi_0_ic")])
+  expected_rr_var <- (sig[1, 1] / ests["psi_0_hat"]^2 -
+                        2 * sig[1, 2] * ests["psi_1_hat"] /
+                          ests["psi_0_hat"]^3 +
+                        sig[2, 2] * ests["psi_1_hat"]^2 /
+                          ests["psi_0_hat"]^4) / nrow(ic)
+
+  expect_equal(got$psi_hat_rr, unname(expected_rr_var))
+
+})
+
+test_that("pseudo-outcome nuisance fitting does not use held-out outcomes", {
+
+  set.seed(8201)
+  n <- 400
+  X <- data.frame(X = rnorm(n))
+  A <- rbinom(n, 1, plogis(X$X))
+  Y <- A + X$X + rnorm(n)
+  R <- rbinom(n, 1, plogis(0.5 + X$X))
+  Y[R == 0] <- 0
+  Z <- X
+  splits <- list(train = 1:300, test = 301:400)
+
+  set.seed(8202)
+  fit_1 <- drcmd_est_fold(
+    splits, Y, A, X, Z, R,
+    m_learners = "SL.glm", g_learners = "SL.glm",
+    r_learners = "SL.glm", po_learners = "SL.glm",
+    eem_ind = FALSE, tml = FALSE, Rprobs = NA,
+    cutoff = 0.025, y_bin = FALSE, cv_folds = 2
+  )
+
+  Y_changed <- Y
+  Y_changed[splits$test] <- Y_changed[splits$test] + 100
+  set.seed(8202)
+  fit_2 <- drcmd_est_fold(
+    splits, Y_changed, A, X, Z, R,
+    m_learners = "SL.glm", g_learners = "SL.glm",
+    r_learners = "SL.glm", po_learners = "SL.glm",
+    eem_ind = FALSE, tml = FALSE, Rprobs = NA,
+    cutoff = 0.025, y_bin = FALSE, cv_folds = 2
+  )
+
+  expect_equal(fit_1$nuis$varphi_1_hat, fit_2$nuis$varphi_1_hat)
+  expect_equal(fit_1$nuis$varphi_0_hat, fit_2$nuis$varphi_0_hat)
+
+})
+
 test_that("drcmd works with user-supplied Rprobs", {
 
   set.seed(4410)

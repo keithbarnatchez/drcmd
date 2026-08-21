@@ -21,7 +21,7 @@ tml_updates(
 )
 }
 \arguments{
-\item{idx}{Indices of the training set}
+\item{idx}{Indices of the held-out evaluation fold used for targeting}
 
 \item{Y}{Outcome vector}
 

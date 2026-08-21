@@ -4,7 +4,7 @@
 \alias{get_phi_hat}
 \title{Contruct full data EIF estimate}
 \usage{
-get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat)
+get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat, idx = seq_along(Y))
 }
 \arguments{
 \item{Y}{Outcome variable. Can be continuous or binary}
@@ -22,6 +22,9 @@ get_phi_hat(Y, A, X, R, Z, g_hat, m_a_hat, kappa_hat)
 \item{m_a_hat}{List of outcome predictions under A=0/1}
 
 \item{kappa_hat}{Missingness probabilities}
+
+\item{idx}{Indices used to compute the plug-in estimates. Defaults to all
+observations; during cross-fitting these are the training-fold indices.}
 }
 \description{
 Function for constructing estimate of the full data EIF, given

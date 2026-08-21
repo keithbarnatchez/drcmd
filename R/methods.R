@@ -73,7 +73,6 @@ summary.drcmd <- function(object, detail=FALSE, ...) {
   cat("                        Summary of drcmd results                      \n")
   cat("======================================================================\n")
 
-  # Define the header for the table with better spacing
   cat(sprintf("%-15s %12s %12s %26s\n", "Estimand", "Estimate", "SE", "95% CI"))
   cat("----------------------------------------------------------------------\n")
 
@@ -84,7 +83,7 @@ summary.drcmd <- function(object, detail=FALSE, ...) {
     sprintf("[%.3f, %.3f]", lower, upper)
   }
 
-  # Print estimates, SEs, and CIs with improved formatting
+  # Print estimates, SEs, and CIs
   cat(sprintf("%-15s %12.3f %12.3f %26s\n",
               "ATE:", x$results$estimates$psi_hat_ate, x$results$ses$psi_hat_ate,
               compute_CI(x$results$estimates$psi_hat_ate, x$results$ses$psi_hat_ate)))

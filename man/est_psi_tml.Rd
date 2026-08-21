@@ -23,7 +23,7 @@ est_psi_tml(
 )
 }
 \arguments{
-\item{idx}{Indices of the training set}
+\item{idx}{Indices of the held-out evaluation fold}
 
 \item{Y}{Outcome vector}
 

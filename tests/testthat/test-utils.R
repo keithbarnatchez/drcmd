@@ -48,33 +48,33 @@ test_that('check_entry_errors catches issue upfront', {
 
 
   # too large of a cross-fitting value
-  expect_error(check_entry_errors(Y,A,X,W,R,
+  expect_error(check_entry_errors(Y,A,X,W,
                                   eem_ind,Rprobs,
                                   k=n+10))
 
   # X not in df format
   expect_error(check_entry_errors(Y,A,as.vector(X),
-                                  W,R,
+                                  W,
                                   eem_ind,Rprobs,
                                   k=1))
 
   # W not in df format
   expect_error(check_entry_errors(Y,A,X,
-                                  as.vector(W),R,
+                                  as.vector(W),
                                   eem_ind,Rprobs,
                                   k=1))
 
   # Y not a numeric vector
   Ybad <- Y
   Ybad[1] <- 'a'
-  expect_error(check_entry_errors(Ybad,A,X,W,R,
+  expect_error(check_entry_errors(Ybad,A,X,W,
                                   eem_ind,Rprobs,
                                   k=1))
 
   # A not a numeric vector
   Abad <- A
   Abad[1] <- 'a'
-  expect_error(check_entry_errors(Y,Abad,X,W,R,
+  expect_error(check_entry_errors(Y,Abad,X,W,
                                   eem_ind,Rprobs,
                                   k=1))
 
@@ -82,7 +82,7 @@ test_that('check_entry_errors catches issue upfront', {
   for (bad_name in c('y','Y','A')) {
     colnames(X) <- bad_name
 
-    expect_error(check_entry_errors(Y,A,X,W,R,
+    expect_error(check_entry_errors(Y,A,X,W,
                                     eem_ind,Rprobs,
                                     k=1))
   }
@@ -90,21 +90,21 @@ test_that('check_entry_errors catches issue upfront', {
 
   # User-supplied probs need to be valid probabilities
   expect_error(
-    check_entry_errors(Y,A,X,W,R,
+    check_entry_errors(Y,A,X,W,
                                   eem_ind,Rprobs=rnorm(n),
                                   k=1)
   )
 
   # catches differences in length
-  expect_error(check_entry_errors(rnorm(n-10),A,X,W,R,
+  expect_error(check_entry_errors(rnorm(n-10),A,X,W,
                                   eem_ind,Rprobs,
                                   k=1))
-  expect_error(check_entry_errors(Y,rnorm(n-10),X,W,R,
+  expect_error(check_entry_errors(Y,rnorm(n-10),X,W,
                                   eem_ind,Rprobs,
                                   k=1))
 
   # enforces eem_ind to be a logical
-  expect_error(check_entry_errors(Y,A,X,W,R,
+  expect_error(check_entry_errors(Y,A,X,W,
                                   'this should be a logical',Rprobs,
                                   k=1))
 
@@ -215,4 +215,3 @@ test_that("clean_learners preserves specific learners over defaults", {
   expect_equal(result$m_learners, 'SL.gam')
   expect_equal(result$g_learners, 'SL.glm')
 })
-

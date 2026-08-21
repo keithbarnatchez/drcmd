@@ -4,11 +4,13 @@
 \alias{est_ses_crossfit}
 \title{Cross-fit SE estimation via influence curve contributions}
 \usage{
-est_ses_crossfit(res, y_bin, att = FALSE, atc = FALSE)
+est_ses_crossfit(res, ests, y_bin, att = FALSE, atc = FALSE)
 }
 \arguments{
 \item{res}{A list of per-fold results from drcmd_est_fold, each containing
 an \code{ics} data frame of influence curve contributions}
+
+\item{ests}{Combined cross-fitted point estimates}
 
 \item{y_bin}{Logical indicating whether the outcome is binary}
 

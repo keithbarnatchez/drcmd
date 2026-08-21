@@ -40,8 +40,6 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 # source('../R/methods.R')
 ```
 
-**Note**: Package is still in development. *Exercise caution* while using this package until it's been fully developed, and please check back frequently for updates.
-
 # Introduction {#intro}
 
 The `drcmd` `R` package performs semi-parametric efficient estimation of causal effects of point exposures in settings where the data available to the researcher is subject to missingness. By implementing methods from semi-parametric theory and missing data (see, e.g. @robins1994estimation and @kennedy2022semiparametric), `drcmd` accommodates general patterns of missing data, while enabling users to estimate nuisance functions with flexible machine learning methods. `drcmd` automatically determines the missingness patterns present in user-supplied data, and provides information on assumptions that must hold regarding the missingness mechanisms in order for point estimates and inferences to be valid. By accommodating *general* patterns of missingness, `drcmd` serves as a centralized library for researchers aiming to perform causal inference with missing data.

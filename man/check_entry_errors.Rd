@@ -4,7 +4,7 @@
 \alias{check_entry_errors}
 \title{Check arguments to drcmd for entry errors}
 \usage{
-check_entry_errors(Y, A, X, W, R, eem_ind, Rprobs, k)
+check_entry_errors(Y, A, X, W, eem_ind, Rprobs, k)
 }
 \arguments{
 \item{Y}{A vector or data frame containing outcome values}
@@ -14,8 +14,6 @@ check_entry_errors(Y, A, X, W, R, eem_ind, Rprobs, k)
 \item{X}{A data frame containing covariate values}
 
 \item{W}{A data frame containing proxy variable values}
-
-\item{R}{A vector containing missingness indicator variable}
 }
 \description{
 Checks if the arguments to main function drcmd are correctly specified.
@@ -28,8 +26,7 @@ X <- data.frame(X1 = rnorm(n))
 W <- data.frame(W1 = rnorm(n))
 A <- rbinom(n, 1, 0.5)
 Y <- rnorm(n)
-R <- rbinom(n, 1, 0.7)
-check_entry_errors(Y, A, X, W, R, eem_ind = FALSE, Rprobs = NA, k = 1)
+check_entry_errors(Y, A, X, W, eem_ind = FALSE, Rprobs = NA, k = 1)
 }
 }
 \keyword{internal}
