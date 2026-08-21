@@ -31,6 +31,20 @@ test_that('drcmd throws error if no columns are fully non-missing', {
              default_learners = 'SL.glm'))
 })
 
+test_that('drcmd rejects missing values in a supplied W', {
+  n <- 20
+  X <- data.frame(X = rnorm(n))
+  A <- rbinom(n, 1, 0.5)
+  Y <- rnorm(n)
+  W <- data.frame(W = rnorm(n))
+  W$W[1] <- NA_real_
+
+  expect_error(
+    drcmd(Y, A, X, W, default_learners = 'SL.glm'),
+    'W must not contain missing values'
+  )
+})
+
 test_that('check_entry_errors catches issue upfront', {
   n <- 3000
   X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))

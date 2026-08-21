@@ -33,8 +33,8 @@ drcmd(
 
 \item{X}{Dataframe containing baseline covariates}
 
-\item{W}{(optional) Dataframe containing variables solely predictive of missingness,
-but not a cause of the outcome or exposure.}
+\item{W}{(optional) Dataframe containing fully observed variables solely predictive
+of missingness, but not a cause of the outcome or exposure.}
 
 \item{default_learners}{A character vector containing SuperLearner libraries to use
 for estimating all nuisance functions. User can alternatively specify libraries

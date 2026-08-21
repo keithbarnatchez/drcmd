@@ -169,6 +169,11 @@ check_entry_errors <- function(Y,A,X,W,
     stop('W must be a data frame')
   }
 
+  # W contains variables that must be available for every observation
+  if (anyNA(W)) {
+    stop('W must not contain missing values')
+  }
+
   # Make sure no vars in X are named 'Y' or 'A'
   if (any(colnames(X) %in% c('Y','A','y'))) {
     stop('No variables in X can be named "Y" "y" or "A", which are reserved for outcome and treatment')

@@ -19,7 +19,7 @@ Description: Doubly-robust estimation of counterfactual means in the presence of
     the non-missingness probabilities through the Rprobs argument. Users can fit nuisance
     functions through either highly-adaptive LASSO (HAL) or SuperLearner, the latter of which
     the user must specify libraries.
-License: GPL (>= 3)
+License: GPL (>= 3) + file LICENSE
 URL: https://github.com/keithbarnatchez/drcmd, https://kbarnatchez.com/drcmd/
 BugReports: https://github.com/keithbarnatchez/drcmd/issues
 Encoding: UTF-8

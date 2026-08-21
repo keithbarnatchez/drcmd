@@ -1,6 +1,15 @@
 .Rproj.user
+.Rhistory
+.DS_Store
+*.Rcheck/
+/*.tar.gz
+Rplots.pdf
+manual/*.pdf
 paper/paper.pdf
 paper/paper.jats
+paper/paper.html
+paper/core
+paper/jats/
 docs/
 vignettes/*.html
 vignettes/*.R

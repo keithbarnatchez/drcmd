@@ -14,8 +14,8 @@
 #' @param Y Outcome variable. Can be continuous or binary
 #' @param A A binary treatment variable (1=treated, 0=control)
 #' @param X Dataframe containing baseline covariates
-#' @param W (optional) Dataframe containing variables solely predictive of missingness,
-#'  but not a cause of the outcome or exposure.
+#' @param W (optional) Dataframe containing fully observed variables solely predictive
+#'  of missingness, but not a cause of the outcome or exposure.
 #' @param default_learners A character vector containing SuperLearner libraries to use
 #' for estimating all nuisance functions. User can alternatively specify libraries
 #' for each nuisance function for added flexibility
@@ -89,9 +89,9 @@ drcmd <- function(Y, A, X, W=NA,
 
   loadNamespace("SuperLearner")
 
-  # Proxy variables may be empty
-  if (any(is.na(W))) {
-    W <- X[,0]
+  # Use an empty data frame when no proxy variables are supplied
+  if (missing(W) || (is.logical(W) && length(W) == 1L && is.na(W))) {
+    W <- X[, 0, drop = FALSE]
   }
 
   # If estimating via TML, and outcome is continuous, scale Y to unit interval
