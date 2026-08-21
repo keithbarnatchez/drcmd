@@ -55,8 +55,8 @@ drcmd(
 
 - W:
 
-  (optional) Dataframe containing variables solely predictive of
-  missingness, but not a cause of the outcome or exposure.
+  (optional) Dataframe containing fully observed variables solely
+  predictive of missingness, but not a cause of the outcome or exposure.
 
 - default_learners:
 
