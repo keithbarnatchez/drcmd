@@ -363,31 +363,13 @@ est_varphi <- function(idx, R, Z,
                                                 obsWeights=R[idx],
                                                 cvControl=list(V=cv_folds))
 
-  # if Y binary or all in (0,1), shift and scale IFs
-  fam <- gaussian()
-  if (check_binary(Y)) { # will treat [0,1] bounded outcome as binary
-    fam <- binomial()
-
-    max1 <- max(phi_1_hat)
-    min1 <- min(phi_1_hat)
-    max0 <- max(phi_0_hat)
-    min0 <- min(phi_0_hat)
-    mindiff <- min(phi_1_hat - phi_0_hat)
-    maxdiff <- max(phi_1_hat - phi_0_hat)
-
-    phi_1_hat <- (phi_1_hat - min1)/(max1 - min1)
-    phi_0_hat <- (phi_0_hat - min0)/(max0 - min0)
-    phi_diff_hat <- (phi_1_hat - phi_0_hat - mindiff)/(maxdiff - mindiff)
-
-  }
-
   varphi_1_hat <- SuperLearner::SuperLearner(Y=phi_1_hat[idx],X=Z[idx,,drop=FALSE],
-                                             family=fam,
+                                             family=gaussian(),
                                              SL.library=po_learners,
                                              obsWeights=R[idx],
                                              cvControl=list(V=cv_folds))
    varphi_0_hat <- SuperLearner::SuperLearner(Y=phi_0_hat[idx],X=Z[idx,,drop=FALSE],
-                                             family=fam,
+                                             family=gaussian(),
                                              SL.library=po_learners,
                                              obsWeights=R[idx],
                                              cvControl=list(V=cv_folds))
@@ -395,13 +377,6 @@ est_varphi <- function(idx, R, Z,
   varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
   varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
   varphi_diff_hat <- predict(varphi_diff_hat, newdata=Z)$pred
-
-  # rescale varphi_1_hat and varphi_0_hat if Y was binary
-  if (check_binary(Y)) {
-    varphi_1_hat <- varphi_1_hat * (max1 - min1) + min1
-    varphi_0_hat <- varphi_0_hat * (max0 - min0) + min0
-  }
-
 
   return(list(varphi_1_hat=varphi_1_hat,varphi_0_hat=varphi_0_hat,
               varphi_diff_hat=varphi_diff_hat))
@@ -525,5 +500,4 @@ SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
 predict.SL.hal9001 <- function(object, newdata, ...) {
   predict(object$object, new_data = newdata)
 }
-
 

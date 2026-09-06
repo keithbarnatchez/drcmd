@@ -63,6 +63,36 @@ test_that("drcmd works with binary outcome and reports RR/OR", {
 
 })
 
+test_that("SL.ranger fits binary-outcome pseudo-outcome regressions", {
+
+  skip_if_not_installed("ranger")
+
+  set.seed(9106)
+  n <- 240
+  X <- data.frame(X = rnorm(n))
+  A <- rbinom(n, 1, plogis(0.2 + 0.5 * X$X))
+  Y <- rbinom(n, 1, plogis(-0.4 + 0.8 * A + 0.6 * X$X))
+  R <- rbinom(n, 1, plogis(0.7 - 0.4 * X$X))
+  Y[R == 0] <- NA
+
+  for (k in c(1, 2)) {
+    set.seed(9106)
+    fit <- drcmd(
+      Y, A, X,
+      m_learners = "SL.glm",
+      g_learners = "SL.glm",
+      r_learners = "SL.glm",
+      po_learners = "SL.ranger",
+      k = k,
+      cv_folds = 2
+    )
+
+    expect_s3_class(fit, "drcmd")
+    expect_true(all(is.finite(fit$results$nuis$varphi_1_hat)))
+    expect_true(all(is.finite(fit$results$nuis$varphi_0_hat)))
+  }
+})
+
 test_that("drcmd works with no missing data", {
 
   set.seed(9123)

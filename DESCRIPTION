@@ -33,6 +33,7 @@ Suggests:
     hal9001,
     knitr,
     nnls,
+    ranger,
     rmarkdown,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr

@@ -50,10 +50,11 @@ The use of doubly-robust methods for performing causal inference of point exposu
 
 ## Installation
 
-`drcmd` is hosted on GitHub. The latest version be installed through the `devtools` package:
+`drcmd` is hosted on GitHub. Install the latest version with `remotes`:
 
 ```{r install, eval=FALSE} 
-devtools::install_github('keithbarnatchez/drcmd')
+install.packages("remotes")
+remotes::install_github("keithbarnatchez/drcmd")
 ```
 
 ## Illustrative example
@@ -212,7 +213,7 @@ Further details on the EEM procedure are provided in the Technical Details secti
 
 ## Targeted maximum likelihood estimation
 
-By default, `drcmd` constructs debiased machine learning estimators (often called one-step debiased estimators) of counterfactual means and treatment effects. A alternative, asymptotically equivalent framework based on targeted maximum likelihood (TML) to construct the final estimators can be used by setting the `tml` argument to `TRUE`:
+By default, `drcmd` constructs debiased machine learning estimators (often called one-step debiased estimators) of counterfactual means and treatment effects. An alternative, asymptotically equivalent framework based on targeted maximum likelihood (TML) can be used to construct the final estimators by setting the `tml` argument to `TRUE`:
 
 ```{r drcmd_tml, eval=FALSE}
 res <- drcmd::drcmd(Y=Y, A=A, X=X,
