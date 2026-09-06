@@ -7,7 +7,22 @@ otherwise.
 ## Usage
 
 ``` r
-check_entry_errors(Y, A, X, W, eem_ind, Rprobs, k)
+check_entry_errors(
+  Y,
+  A,
+  X,
+  W,
+  eem_ind,
+  Rprobs,
+  k,
+  cutoff = 0.025,
+  cv_folds = 5,
+  tml = FALSE,
+  quiet = TRUE,
+  parallel = FALSE,
+  att = FALSE,
+  atc = FALSE
+)
 ```
 
 ## Arguments

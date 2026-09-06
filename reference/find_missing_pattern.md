@@ -5,7 +5,7 @@ Find the missing pattern in the data
 ## Usage
 
 ``` r
-find_missing_pattern(Y, A, X, W)
+find_missing_pattern(Y, A, X, W, min_complete = 10L)
 ```
 
 ## Arguments
@@ -25,6 +25,10 @@ find_missing_pattern(Y, A, X, W)
 - W:
 
   A data frame containing proxy variable values
+
+- min_complete:
+
+  Number of complete cases below which to issue a warning
 
 ## Value
 
