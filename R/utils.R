@@ -55,9 +55,12 @@ find_missing_pattern <- function(Y,A,X,W) {
     colnames(Z)[colnames(Z) == 'Y'] <- 'y'
   }
 
-  # If any values of Y, X or Z equal NA, set them to 0
-  # Doing this since some learners don't support NAs (these obs get 0 weight anyway)
-  X[is.na(X)] <- 0
+  X[] <- lapply(X, function(x) {
+    if (!anyNA(x)) return(x)
+    replacement <- if (is.numeric(x)) 0 else x[which(!is.na(x))[1L]]
+    x[is.na(x)] <- replacement
+    x
+  })
   Y[is.na(Y)] <- 0
   A[is.na(A)] <- 0
 
@@ -264,10 +267,8 @@ truncate_r <- function(x, cutoff=0.01) {
 #' @param val A small value to add to 0 and subtract from 1
 #' @return A vector with values trimmed to avoid numerical instability
 #' @keywords Internal
-trim <- function(x,val=.Machine$double.neg.eps) {
-  x[x==0] <- val
-  x[x==1] <- 1 - val
-  return(x)
+trim <- function(x,val=.Machine$double.eps) {
+  pmin(pmax(x, val), 1 - val)
 }
 
 
@@ -317,15 +318,8 @@ clean_learners <- function(default_learners,
 #' @param x A numeric vector
 #' @return A logical value
 check_binary <- function(x) {
-  # check if x is binary
-  if(all(x %in% c(0,1))) {
-    return(TRUE)
-  } else {
-    if (min(x) == 0 & max(x) == 1) { # if y normed to unit interval, treat as binary
-      return(TRUE)
-    }
-    return(FALSE)
-  }
+  x <- x[!is.na(x)]
+  length(x) > 0 && all(x %in% c(0, 1))
 }
 
 

@@ -100,10 +100,8 @@ est_m_a <- function(idx, Y, A, X, R,
                     cv_folds=5) {
 
   yfam <- gaussian()
-  # method <- 'method.NNLS'
-  if (check_binary(Y)) { # will treat [0,1] bounded outcome as binary
+  if (check_binary(Y)) {
     yfam <- binomial()
-    # method <- 'method.NNloglik'
   }
 
   data <- cbind(X,A)
@@ -417,25 +415,33 @@ est_varphi_eem <- function(idx, R, Z,
                            Y,
                            cv_folds=5) {
 
-  # Make pseudo outcomes
-  ytilde1 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_1_hat
-  ytilde0 <- (R/kappa_hat -1)^(-1) * (R/kappa_hat) * phi_0_hat
+  if (any(!is.finite(kappa_hat[idx]) | kappa_hat[idx] <= 0)) {
+    stop("EEM requires positive, finite complete-case probabilities")
+  }
+
+  ratio <- R / kappa_hat
+  eem_term <- ratio - 1
+  eem_weights <- eem_term^2
+  ytilde1 <- ytilde0 <- numeric(length(R))
+  active <- is.finite(eem_term) & eem_term != 0
+  ytilde1[active] <- ratio[active] * phi_1_hat[active] / eem_term[active]
+  ytilde0[active] <- ratio[active] * phi_0_hat[active] / eem_term[active]
 
   # Estimate E[phi|Z] via EEM
   varphi_1_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx],X=Z[idx,,drop=FALSE],
                                            family=gaussian(),SL.library=po_learners,
-                                           obsWeights=(R[idx]/kappa_hat[idx] - 1)^2,
+                                           obsWeights=eem_weights[idx],
                                            cvControl=list(V=cv_folds))
   varphi_0_hat <- SuperLearner::SuperLearner(Y=ytilde0[idx],X=Z[idx,,drop=FALSE],
                                              family=gaussian(),SL.library=po_learners,
-                                             obsWeights=(R[idx]/kappa_hat[idx] - 1)^2,
+                                             obsWeights=eem_weights[idx],
                                              cvControl=list(V=cv_folds))
   varphi_1_hat <- predict(varphi_1_hat, newdata=Z)$pred
   varphi_0_hat <- predict(varphi_0_hat, newdata=Z)$pred
 
   varphi_diff_hat <- SuperLearner::SuperLearner(Y=ytilde1[idx]-ytilde0[idx],X=Z[idx,,drop=FALSE],
                                                 family=gaussian(),SL.library=po_learners,
-                                                obsWeights=(R[idx]/kappa_hat[idx] - 1)^2,
+                                                obsWeights=eem_weights[idx],
                                                 cvControl=list(V=cv_folds))
   varphi_diff_hat <- predict(varphi_diff_hat, newdata=Z)$pred
 
@@ -500,4 +506,3 @@ SL.hal9001 <- function(Y, X, newX, family, obsWeights, ...) {
 predict.SL.hal9001 <- function(object, newdata, ...) {
   predict(object$object, new_data = newdata)
 }
-

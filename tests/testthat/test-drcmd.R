@@ -185,6 +185,29 @@ test_that("cross-fitted TML does not report binary contrasts for continuous outc
 
 })
 
+test_that("TML fits bounded continuous outcomes with SL.ranger", {
+
+  skip_if_not_installed("ranger")
+
+  set.seed(20260906)
+  n <- 240
+  X <- data.frame(X = runif(n))
+  A <- rbinom(n, 1, plogis(-0.2 + X$X))
+  Y <- pmin(pmax(0.2 + 0.3 * A + 0.2 * X$X + rnorm(n, sd = 0.08), 0), 1)
+  Y[1] <- 0
+  Y[2] <- 1
+
+  for (k in c(1, 2)) {
+    set.seed(20260906)
+    fit <- drcmd(Y, A, X, default_learners = "SL.ranger",
+                 k = k, cv_folds = 2, tml = TRUE)
+
+    expect_s3_class(fit, "drcmd")
+    expect_true(is.finite(fit$results$estimates$psi_hat_ate))
+    expect_true(is.na(fit$results$estimates$psi_hat_rr))
+  }
+})
+
 test_that("cross-fitted delta-method variances use point estimates", {
 
   fold_1 <- list(ics = data.frame(

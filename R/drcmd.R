@@ -102,7 +102,6 @@ drcmd <- function(Y, A, X, W=NA,
     minY <- min(Y,na.rm=T)
     maxY <- max(Y,na.rm=T)
     Y <- (Y - minY) / (maxY - minY)
-    y_bin <- TRUE # want nuisance learners to treat Y as binary so predictions stay in [0,1]
     yscaled <- TRUE
   }
 

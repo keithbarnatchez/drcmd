@@ -162,7 +162,7 @@ test_that("create_folds returns k folds for k>1", {
 
 test_that("check_binary identifies binary and non-binary", {
   expect_true(check_binary(c(0,1,0,1,1)))
-  expect_true(check_binary(c(0, 0.5, 1))) # unit interval
+  expect_false(check_binary(c(0, 0.5, 1)))
   expect_false(check_binary(c(-1, 0, 1)))
   expect_false(check_binary(c(0, 1, 2)))
 })
@@ -202,6 +202,18 @@ test_that("find_missing_pattern correctly identifies Z and U", {
   expect_true("Y" %in% res$U | "y" %in% colnames(res$Z))
   expect_true("X1" %in% colnames(res$Z))
   expect_equal(sum(res$R), n - 10)
+})
+
+test_that("find_missing_pattern preserves factors with missing values", {
+  X <- data.frame(group = factor(c("a", "b", NA, "a")), x = c(1, NA, 3, 4))
+  Y <- c(1, 2, 3, 4)
+  A <- c(0, 1, 0, 1)
+
+  res <- find_missing_pattern(Y, A, X, X[, 0, drop = FALSE])
+
+  expect_true(is.factor(res$X$group))
+  expect_false(anyNA(res$X))
+  expect_true(all(levels(res$X$group) == c("a", "b")))
 })
 
 test_that("find_missing_pattern warns on very few complete cases", {

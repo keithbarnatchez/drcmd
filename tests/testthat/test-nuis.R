@@ -125,6 +125,24 @@ test_that("est_varphi_eem returns correct structure", {
   expect_equal(length(out$varphi_1_hat), n)
 })
 
+test_that("est_varphi_eem handles complete-case probabilities equal to one", {
+  set.seed(504)
+  n <- 200
+  Z <- data.frame(z1 = rnorm(n))
+  kappa_hat <- ifelse(Z$z1 > 0, 1, 0.6)
+  R <- rbinom(n, 1, kappa_hat)
+  phi_1_hat <- rnorm(n)
+  phi_0_hat <- rnorm(n)
+
+  out <- est_varphi_eem(1:n, R, Z, phi_1_hat, phi_0_hat,
+                        kappa_hat, po_learners = "SL.glm", Y = rnorm(n),
+                        cv_folds = 2)
+
+  expect_true(all(is.finite(out$varphi_1_hat)))
+  expect_true(all(is.finite(out$varphi_0_hat)))
+  expect_true(all(is.finite(out$varphi_diff_hat)))
+})
+
 # --- est_varphi_main tests ---
 
 test_that("est_varphi_main returns zeros when R is all 1", {

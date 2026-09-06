@@ -4,7 +4,7 @@
 \alias{trim}
 \title{Trim vector (for numerical stability)}
 \usage{
-trim(x, val = .Machine$double.neg.eps)
+trim(x, val = .Machine$double.eps)
 }
 \arguments{
 \item{x}{A vector of values}
