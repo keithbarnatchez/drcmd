@@ -5,7 +5,7 @@ Trims values of a vector to avoid numerical instability
 ## Usage
 
 ``` r
-trim(x, val = .Machine$double.neg.eps)
+trim(x, val = .Machine$double.eps)
 ```
 
 ## Arguments
