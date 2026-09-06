@@ -33,12 +33,12 @@ inference in the presence of general missing data patterns.
 
 ### Installation
 
-`drcmd` is hosted on GitHub. The latest version be installed through the
-`devtools` package:
+`drcmd` is hosted on GitHub. Install the latest version with `remotes`:
 
 ``` r
 
-devtools::install_github('keithbarnatchez/drcmd')
+install.packages("remotes")
+remotes::install_github("keithbarnatchez/drcmd")
 ```
 
 ### Illustrative example
@@ -375,9 +375,9 @@ Details section.
 
 By default, `drcmd` constructs debiased machine learning estimators
 (often called one-step debiased estimators) of counterfactual means and
-treatment effects. A alternative, asymptotically equivalent framework
-based on targeted maximum likelihood (TML) to construct the final
-estimators can be used by setting the `tml` argument to `TRUE`:
+treatment effects. An alternative, asymptotically equivalent framework
+based on targeted maximum likelihood (TML) can be used to construct the
+final estimators by setting the `tml` argument to `TRUE`:
 
 ``` r
 

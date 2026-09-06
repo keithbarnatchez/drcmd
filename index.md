@@ -2,6 +2,8 @@
 
 **D**oubly **R**obust **C**ausal Inference with **M**issing **D**ata
 
+[![R-CMD-check](https://github.com/keithbarnatchez/drcmd/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/keithbarnatchez/drcmd/actions/workflows/R-CMD-check.yaml)
+
 **Authors**: Keith Barnatchez and Griffin DesRoches
 
 `drcmd` is an R package for implementing doubly-robust estimators of
@@ -21,31 +23,47 @@ website](https://kbarnatchez.com/drcmd/).
 
 ## Installation
 
+Install the development version from GitHub with `remotes`:
+
 ``` r
 
-devtools::install_github('keithbarnatchez/drcmd')
+install.packages("remotes")
+remotes::install_github("keithbarnatchez/drcmd")
 ```
+
+Core dependencies are installed automatically. Some optional Super
+Learner libraries require suggested packages such as `gam`, `hal9001`,
+or `nnls`; install the package corresponding to any optional learner you
+include.
 
 ## Example
 
 ``` r
 
-# Params for functions
-eem_ind <- FALSE # TRUE = fit pseudo-outcome regression with empirical efficiency maximiztion
-default_learners <- c('SL.glm','SL.gam') # default learners used for nuisance functions 
-k <- 1 # number of cross-fitting folds
-#-------------------------------------------------------------------------------
-# Simulate simple missing outcome data structure
-n <- 1e3
-X <- rnorm(n) ; A <- rbinom(n,1,plogis(X)) ; Y <- rnorm(n) + A + X
-Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) ; X <- as.data.frame(X)
+set.seed(1)
 
-# Make Y NA if R==0
-Y[R==0] <- NA
+# Simulate a simple missing-outcome setting
+n <- 1000
+X <- rnorm(n)
+A <- rbinom(n, 1, plogis(X / 2))
+Y <- rnorm(n) + A + X
+Ystar <- Y + rnorm(n) / 2
+R <- rbinom(n, 1, plogis(X / 2))
 
-drcmd_res <- drcmd::drcmd(Y,A,X, 
-default_learners=default_learners,
-eem_ind=eem_ind,k=k)
+# The outcome is observed only for complete cases
+Y[R == 0] <- NA
+
+fit <- drcmd::drcmd(
+  Y = Y,
+  A = A,
+  X = data.frame(X = X),
+  W = data.frame(Ystar = Ystar),
+  default_learners = c("SL.glm", "SL.gam"),
+  eem_ind = FALSE,
+  k = 1 # Set greater than 1 to enable cross-fitting
+)
+
+summary(fit)
 ```
 
 ## Citation
@@ -77,8 +95,8 @@ censored longitudinal data and causality*. Springer New York.
 
 ## Contributing, reporting issues
 
-- **Bugs/feature requests**: open an issue at
-  <https://github.com/keithbarnatchez/drcmd/issues>  
-- **Contributions**: PRs welcome — please run `devtools::check()` and
-  `devtools::test()` before opening one  
-- **Questions**: email <keithbarnatchez@gmail.com> or open a discussion
+- **Bugs and feature requests**: open an issue at
+  <https://github.com/keithbarnatchez/drcmd/issues>
+- **Contributions**: pull requests are welcome; please run
+  `devtools::check()` and `devtools::test()` before opening one
+- **Questions and support**: email <keithbarnatchez@gmail.com>

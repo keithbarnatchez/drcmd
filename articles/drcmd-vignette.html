@@ -112,10 +112,11 @@ inference in the presence of general missing data patterns.</p>
 <div class="section level3">
 <h3 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h3>
-<p><code>drcmd</code> is hosted on GitHub. The latest version be
-installed through the <code>devtools</code> package:</p>
+<p><code>drcmd</code> is hosted on GitHub. Install the latest version
+with <code>remotes</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'keithbarnatchez/drcmd'</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"keithbarnatchez/drcmd"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="illustrative-example">Illustrative example<a class="anchor" aria-label="anchor" href="#illustrative-example"></a>
@@ -487,10 +488,10 @@ Details section.</p>
 </h3>
 <p>By default, <code>drcmd</code> constructs debiased machine learning
 estimators (often called one-step debiased estimators) of counterfactual
-means and treatment effects. A alternative, asymptotically equivalent
-framework based on targeted maximum likelihood (TML) to construct the
-final estimators can be used by setting the <code>tml</code> argument to
-<code>TRUE</code>:</p>
+means and treatment effects. An alternative, asymptotically equivalent
+framework based on targeted maximum likelihood (TML) can be used to
+construct the final estimators by setting the <code>tml</code> argument
+to <code>TRUE</code>:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">drcmd</span><span class="fu">::</span><span class="fu"><a href="../reference/drcmd.html">drcmd</a></span><span class="op">(</span>Y<span class="op">=</span><span class="va">Y</span>, A<span class="op">=</span><span class="va">A</span>, X<span class="op">=</span><span class="va">X</span>,</span>
 <span>             default_learners<span class="op">=</span><span class="st">'SL.glm'</span>,</span>
