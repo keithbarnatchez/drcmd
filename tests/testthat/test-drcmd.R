@@ -131,6 +131,20 @@ test_that("drcmd works with cross-fitting (k>1)", {
 
 })
 
+test_that("cross-fitting identifies insufficient binary nuisance classes", {
+
+  set.seed(5532)
+  n <- 40
+  X <- data.frame(X = rnorm(n))
+  A <- c(1, rep(0, n - 1))
+  Y <- A + X$X + rnorm(n)
+
+  expect_error(
+    drcmd(Y, A, X, default_learners = "SL.glm", k = 2, cv_folds = 2),
+    "Cross-fitting fold 1: Treatment regression requires at least two"
+  )
+})
+
 test_that("cross-fitted binary contrasts and standard errors are well formed", {
 
   set.seed(20260821)

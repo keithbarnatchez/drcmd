@@ -6,6 +6,7 @@
 #' @param A A vector or data frame  containing treatment variable values
 #' @param X A data frame containing covariate values
 #' @param W A data frame containing proxy variable values
+#' @param min_complete Number of complete cases below which to issue a warning
 #'
 #' @return A character string containing the missing pattern
 #' @keywords internal
@@ -23,7 +24,7 @@
 #' result$U  # variables with missingness
 #' result$R  # complete case indicator
 #' }
-find_missing_pattern <- function(Y,A,X,W) {
+find_missing_pattern <- function(Y,A,X,W,min_complete=10L) {
 
   # Combine variables into a single data frame
   data <- cbind(X,W,
@@ -44,8 +45,8 @@ find_missing_pattern <- function(Y,A,X,W) {
   if (all(R == 0)) {
     stop("Error: drcmd requires data to have at least one complete case")
   }
-  if (mean(R) < 0.01) {
-    warning('Small number of complete cases. Results may be unstable')
+  if (sum(R) < min_complete || mean(R) < 0.01) {
+    warning('Only ', sum(R), ' complete cases are available. Results may be unstable')
   }
 
   Z <- data[, never_missing, drop=FALSE]
@@ -145,16 +146,27 @@ check_r_ind <- function(data,
 #' }
 check_entry_errors <- function(Y,A,X,W,
                                eem_ind,Rprobs,
-                               k) {
+                               k,cutoff=0.025,cv_folds=5,
+                               tml=FALSE,quiet=TRUE,parallel=FALSE,
+                               att=FALSE,atc=FALSE) {
 
  # Make sure Y is a vector
-  if (!is.double(Y) & !is.integer(Y)) {
+ if (!is.numeric(Y) || !is.null(dim(Y))) {
     stop('Y must be a numeric vector')
+  }
+  if (any(!is.na(Y) & !is.finite(Y))) {
+    stop('Y must contain only finite values or NA')
+  }
+  if (length(unique(Y[!is.na(Y)])) < 2L) {
+    stop('Y must contain at least two distinct observed values')
   }
 
   # Make sure A is a vector
-  if (!is.vector(A) & !is.integer(A) ) {
+  if (!is.numeric(A) || !is.null(dim(A))) {
     stop('A must be a numeric vector and 0/1 binary')
+  }
+  if (any(!is.na(A) & !is.finite(A))) {
+    stop('A must contain only finite values or NA')
   }
 
   # Make sure A is 0/1 binary
@@ -166,10 +178,41 @@ check_entry_errors <- function(Y,A,X,W,
   if (!is.data.frame(X) ) {
     stop('X must be a data frame')
   }
+  if (ncol(X) == 0L) {
+    stop('X must contain at least one column')
+  }
 
   # Make sure W is a data frame
   if (!is.data.frame(W)  ) {
     stop('W must be a data frame')
+  }
+
+  has_nonfinite <- function(data) {
+    any(vapply(data, function(x) {
+      is.numeric(x) && any(!is.na(x) & !is.finite(x))
+    }, logical(1)))
+  }
+  if (has_nonfinite(X)) {
+    stop('Numeric columns in X must contain only finite values or NA')
+  }
+  if (has_nonfinite(W)) {
+    stop('Numeric columns in W must contain only finite values')
+  }
+
+  constant_columns <- function(data) {
+    names(data)[vapply(data, function(x) {
+      length(unique(x[!is.na(x)])) < 2L
+    }, logical(1))]
+  }
+  constant_X <- constant_columns(X)
+  constant_W <- constant_columns(W)
+  if (length(constant_X) > 0L) {
+    stop('Columns in X must contain at least two distinct observed values: ',
+         paste(constant_X, collapse = ', '))
+  }
+  if (length(constant_W) > 0L) {
+    stop('Columns in W must contain at least two distinct observed values: ',
+         paste(constant_W, collapse = ', '))
   }
 
   # W contains variables that must be available for every observation
@@ -192,28 +235,39 @@ check_entry_errors <- function(Y,A,X,W,
     stop('Y, A, X and W must have the same number of observations')
   }
 
-  # check that eem_ind is a logical
-  if (!is.logical(eem_ind) | (length(eem_ind)>1) ) {
-    stop('eem_ind must be a logical')
-  }
-
-  # check that Rprobs is a vector of values between 0 and 1 inclusive
-  if (!any(is.na(Rprobs))) {
-    if (!is.numeric(Rprobs) | any(Rprobs < 0) | any(Rprobs > 1)  | length(Rprobs)!=length(A) ) {
-      stop('When specicified, Rprobs must be a vector of sampling probabilities between 0 and 1 inclusive')
-    }
-  }
-  # make sure cross-fitting folds is an integer
-  if (!is.numeric(k)) {
-    stop('k must be a an integer')
-  } else{
-    if (floor(k) != k) {
-      stop('k must be an integer')
+  logical_args <- list(eem_ind=eem_ind,tml=tml,quiet=quiet,
+                       parallel=parallel,att=att,atc=atc)
+  for (name in names(logical_args)) {
+    value <- logical_args[[name]]
+    if (!is.logical(value) || length(value) != 1L || is.na(value)) {
+      stop(name, ' must be TRUE or FALSE')
     }
   }
 
-  if (k > length(Y)) {
-    stop('k must be less than the number of observations')
+  Rprobs_missing <- length(Rprobs) == 1L && is.atomic(Rprobs) && is.na(Rprobs)
+  if (!Rprobs_missing &&
+      (!is.numeric(Rprobs) || length(Rprobs) != length(A) ||
+       anyNA(Rprobs) || any(!is.finite(Rprobs)) ||
+       any(Rprobs <= 0) || any(Rprobs > 1))) {
+    stop('Rprobs must be NA or a vector of probabilities in (0, 1]')
+  }
+
+  if (!is.numeric(k) || length(k) != 1L || !is.finite(k) ||
+      k < 1 || k != floor(k) || k > length(Y)) {
+    stop('k must be a positive integer no greater than the number of observations')
+  }
+
+  max_cv_folds <- if (k == 1L) length(Y) else length(Y) - ceiling(length(Y) / k)
+  if (!is.numeric(cv_folds) || length(cv_folds) != 1L ||
+      !is.finite(cv_folds) || cv_folds < 2 ||
+      cv_folds != floor(cv_folds) || cv_folds > max_cv_folds) {
+    stop('cv_folds must be an integer between 2 and the cross-fitting training-sample size')
+  }
+
+  if (!is.null(cutoff) &&
+      (!is.numeric(cutoff) || length(cutoff) != 1L ||
+       !is.finite(cutoff) || cutoff < 0 || cutoff >= 0.5)) {
+    stop('cutoff must be NULL or a single number in [0, 0.5)')
   }
 
   return(TRUE)
@@ -320,6 +374,33 @@ clean_learners <- function(default_learners,
 check_binary <- function(x) {
   x <- x[!is.na(x)]
   length(x) > 0 && all(x %in% c(0, 1))
+}
+
+binary_cv_control <- function(y, weights, V, model) {
+  shuffle <- function(x) if (length(x) > 1L) sample(x) else x
+  rows <- which(is.finite(weights) & weights > 0)
+  counts <- tabulate(y[rows] + 1L, nbins = 2L)
+  if (any(counts < 2L)) {
+    stop(model, " requires at least two positive-weight training observations ",
+         "in each class for cross-validation", call. = FALSE)
+  }
+
+  valid_rows <- vector("list", V)
+  for (value in 0:1) {
+    class_rows <- shuffle(rows[y[rows] == value])
+    fold <- rep(seq_len(V), length.out = length(class_rows))
+    for (i in seq_len(V)) {
+      valid_rows[[i]] <- c(valid_rows[[i]], class_rows[fold == i])
+    }
+  }
+
+  remaining <- shuffle(setdiff(seq_along(y), rows))
+  fold <- rep(seq_len(V), length.out = length(remaining))
+  for (i in seq_len(V)) {
+    valid_rows[[i]] <- shuffle(c(valid_rows[[i]], remaining[fold == i]))
+  }
+
+  list(V = V, validRows = valid_rows)
 }
 
 

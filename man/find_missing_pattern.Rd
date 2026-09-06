@@ -4,7 +4,7 @@
 \alias{find_missing_pattern}
 \title{find_missing_pattern}
 \usage{
-find_missing_pattern(Y, A, X, W)
+find_missing_pattern(Y, A, X, W, min_complete = 10L)
 }
 \arguments{
 \item{Y}{A vector or data frame containing outcome values}
@@ -14,6 +14,8 @@ find_missing_pattern(Y, A, X, W)
 \item{X}{A data frame containing covariate values}
 
 \item{W}{A data frame containing proxy variable values}
+
+\item{min_complete}{Number of complete cases below which to issue a warning}
 }
 \value{
 A character string containing the missing pattern

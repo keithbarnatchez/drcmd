@@ -4,7 +4,22 @@
 \alias{check_entry_errors}
 \title{Check arguments to drcmd for entry errors}
 \usage{
-check_entry_errors(Y, A, X, W, eem_ind, Rprobs, k)
+check_entry_errors(
+  Y,
+  A,
+  X,
+  W,
+  eem_ind,
+  Rprobs,
+  k,
+  cutoff = 0.025,
+  cv_folds = 5,
+  tml = FALSE,
+  quiet = TRUE,
+  parallel = FALSE,
+  att = FALSE,
+  atc = FALSE
+)
 }
 \arguments{
 \item{Y}{A vector or data frame containing outcome values}

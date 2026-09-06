@@ -45,6 +45,97 @@ test_that('drcmd rejects missing values in a supplied W', {
   )
 })
 
+test_that('drcmd rejects constant outcomes and predictors', {
+  n <- 20
+  Y <- rnorm(n)
+  A <- rep(c(0, 1), length.out = n)
+  X <- data.frame(x = rnorm(n))
+  W <- data.frame(w = rnorm(n))
+
+  for (tml in c(FALSE, TRUE)) {
+    expect_error(
+      drcmd(rep(1, n), A, X, default_learners = 'SL.glm', tml = tml),
+      'Y must contain at least two distinct observed values'
+    )
+  }
+  expect_error(
+    drcmd(Y, A, data.frame(x = rep(1, n)), default_learners = 'SL.glm'),
+    'Columns in X must contain at least two distinct observed values: x'
+  )
+  expect_error(
+    drcmd(Y, A, X, data.frame(w = rep(1, n)), default_learners = 'SL.glm'),
+    'Columns in W must contain at least two distinct observed values: w'
+  )
+  expect_error(
+    drcmd(Y, A, data.frame(row.names = seq_len(n)),
+          default_learners = 'SL.glm'),
+    'X must contain at least one column'
+  )
+})
+
+test_that('drcmd validates control arguments', {
+  n <- 20
+  args <- list(
+    Y = rnorm(n), A = rep(c(0, 1), length.out = n),
+    X = data.frame(x = rnorm(n)), W = data.frame(row.names = seq_len(n)),
+    eem_ind = FALSE, Rprobs = NA, k = 1, cutoff = 0.025,
+    cv_folds = 5, tml = FALSE, quiet = TRUE, parallel = FALSE,
+    att = FALSE, atc = FALSE
+  )
+
+  for (name in c('eem_ind', 'tml', 'quiet', 'parallel', 'att', 'atc')) {
+    bad <- args
+    bad[[name]] <- NA
+    expect_error(do.call(check_entry_errors, bad),
+                 paste0(name, ' must be TRUE or FALSE'))
+  }
+
+  for (value in list(0, -1, NA_real_, 1.5, c(1, 2), Inf)) {
+    bad <- args
+    bad$k <- value
+    expect_error(do.call(check_entry_errors, bad), 'k must be a positive integer')
+  }
+
+  for (value in list(1, NA_real_, 2.5, c(2, 3), Inf, n + 1)) {
+    bad <- args
+    bad$cv_folds <- value
+    expect_error(do.call(check_entry_errors, bad), 'cv_folds must be an integer')
+  }
+
+  for (value in list(NA_real_, -0.1, 0.5, c(0.1, 0.2), Inf)) {
+    bad <- args
+    bad$cutoff <- value
+    expect_error(do.call(check_entry_errors, bad), 'cutoff must be NULL or')
+  }
+  args$cutoff <- 0
+  expect_true(do.call(check_entry_errors, args))
+
+  bad <- args
+  bad$Rprobs <- c(rep(0.5, n - 1), NA)
+  expect_error(do.call(check_entry_errors, bad), 'Rprobs must be NA or')
+  bad$Rprobs <- c(0, rep(0.5, n - 1))
+  expect_error(do.call(check_entry_errors, bad), 'Rprobs must be NA or')
+})
+
+test_that('drcmd rejects nonfinite data values', {
+  n <- 20
+  Y <- rnorm(n)
+  A <- rep(c(0, 1), length.out = n)
+  X <- data.frame(x = rnorm(n))
+  W <- data.frame(w = rnorm(n))
+
+  Y[1] <- Inf
+  expect_error(drcmd(Y, A, X, default_learners = 'SL.glm'),
+               'Y must contain only finite values or NA')
+  X$x[1] <- Inf
+  expect_error(drcmd(rnorm(n), A, X, default_learners = 'SL.glm'),
+               'Numeric columns in X must contain only finite values or NA')
+  W$w[1] <- Inf
+  expect_error(drcmd(rnorm(n), A, data.frame(x = rnorm(n)), W,
+                     default_learners = 'SL.glm'),
+               'Numeric columns in W must contain only finite values')
+})
+
 test_that('check_entry_errors catches issue upfront', {
   n <- 3000
   X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
@@ -209,7 +300,7 @@ test_that("find_missing_pattern preserves factors with missing values", {
   Y <- c(1, 2, 3, 4)
   A <- c(0, 1, 0, 1)
 
-  res <- find_missing_pattern(Y, A, X, X[, 0, drop = FALSE])
+  res <- suppressWarnings(find_missing_pattern(Y, A, X, X[, 0, drop = FALSE]))
 
   expect_true(is.factor(res$X$group))
   expect_false(anyNA(res$X))
@@ -217,7 +308,7 @@ test_that("find_missing_pattern preserves factors with missing values", {
 })
 
 test_that("find_missing_pattern warns on very few complete cases", {
-  n <- 1000
+  n <- 100
   X <- data.frame(X1 = rnorm(n))
   A <- rbinom(n,1,0.5)
   Y <- rnorm(n)
@@ -225,7 +316,7 @@ test_that("find_missing_pattern warns on very few complete cases", {
   W <- X[,0]
 
   expect_warning(find_missing_pattern(Y, A, X, W),
-                 'Small number of complete cases')
+                 'Only 5 complete cases are available')
 })
 
 test_that("clean_learners fills in defaults", {

@@ -40,6 +40,66 @@ test_that("est_kappa returns predictions in (0,1)", {
   expect_true(all(out > 0 & out < 1))
 })
 
+test_that("binary nuisance cross-validation retains both classes", {
+  set.seed(401)
+  y <- c(0, 0, rep(1, 18), 0, 0)
+  weights <- c(rep(1, 20), 0, 0)
+  control <- binary_cv_control(y, weights, V = 5, model = "Test regression")
+
+  for (validation in control$validRows) {
+    training <- setdiff(seq_along(y), validation)
+    effective <- training[weights[training] > 0]
+    expect_setequal(unique(y[effective]), c(0, 1))
+  }
+})
+
+test_that("binary nuisance regressions reject insufficient classes", {
+  n <- 40
+  X <- data.frame(x1 = rnorm(n))
+  A <- c(1, rep(0, n - 1))
+  Y <- c(1, rep(0, n - 1))
+  R <- c(1, rep(0, n - 1))
+
+  expect_error(
+    est_m_a(1:n, Y, rep(c(0, 1), length.out = n), X, rep(1, n),
+            rep(1, n), "SL.glm"),
+    "Outcome regression requires at least two"
+  )
+  expect_error(
+    est_g(1:n, A, X, rep(1, n), rep(1, n), "SL.glm"),
+    "Treatment regression requires at least two"
+  )
+  expect_error(
+    est_kappa(1:n, X, R, "SL.glm"),
+    "Complete-case regression requires at least two"
+  )
+})
+
+test_that("rare binary classes work with SL.ranger when estimable", {
+  skip_if_not_installed("ranger")
+
+  set.seed(402)
+  n <- 80
+  X <- data.frame(x1 = rnorm(n))
+  A <- rep(0, n)
+  A[c(1, 2)] <- 1
+  R <- rep(1, n)
+  Y <- rep(0, n)
+  Y[c(3, 4)] <- 1
+
+  m <- est_m_a(1:n, Y, A, X, R, rep(1, n), "SL.ranger", cv_folds = 5)
+  g <- est_g(1:n, A, X, R, rep(1, n), "SL.ranger", cv_folds = 5)
+
+  R <- rep(0, n)
+  R[c(1, 2)] <- 1
+  r <- est_kappa(1:n, X, R, "SL.ranger", cv_folds = 5)
+
+  expect_true(all(is.finite(m$m_1_hat)))
+  expect_true(all(is.finite(m$m_0_hat)))
+  expect_true(all(is.finite(g)))
+  expect_true(all(is.finite(r)))
+})
+
 test_that("get_nuisance_ests returns all components", {
   n <- 200
   X <- data.frame(x1 = rnorm(n))

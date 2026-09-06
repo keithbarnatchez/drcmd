@@ -91,8 +91,11 @@ drcmd <- function(Y, A, X, W=NA,
 
   # Use an empty data frame when no proxy variables are supplied
   if (missing(W) || (is.logical(W) && length(W) == 1L && is.na(W))) {
-    W <- X[, 0, drop = FALSE]
+    W <- data.frame(row.names = seq_along(Y))
   }
+
+  check_entry_errors(Y,A,X,W,eem_ind,Rprobs,k,cutoff,cv_folds,
+                     tml,quiet,parallel,att,atc)
 
   # If estimating via TML, and outcome is continuous, scale Y to unit interval
   yscaled <- FALSE
@@ -109,18 +112,13 @@ drcmd <- function(Y, A, X, W=NA,
   learners <- clean_learners(default_learners,m_learners,g_learners,r_learners,
                              po_learners)
 
-  # Throw errors if anything is entered incorrectly
-  check_entry_errors(Y,A,X,W,eem_ind,Rprobs,k)
-
-  # Validate att/atc
-  if (!is.logical(att) || length(att) != 1) stop("att must be a single logical value")
-  if (!is.logical(atc) || length(atc) != 1) stop("atc must be a single logical value")
   if (tml && (att || atc)) {
     stop("ATT/ATC estimation is only supported with one-step estimation (tml=FALSE)")
   }
 
   # Identify missing data structure
-  V <- find_missing_pattern(Y,A,X,W)
+  V <- find_missing_pattern(Y,A,X,W,
+                            min_complete=max(10L,2L*cv_folds))
   Z <- V$Z ; R <- as.integer(V$R) ; X <- V$X ; Y <- V$Y ; A <- as.integer(V$A)
 
   # Obtain estimates
@@ -231,11 +229,17 @@ drcmd_est <- function(Y,A,X,Z,R,
     # Function to estimate a single fold
     fold_fn <- function(i) {
       if (!quiet && !parallel) message("--- Fold ", i, " / ", k, " ---")
-      drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
-                     m_learners,g_learners,
-                     r_learners,po_learners,
-                     eem_ind,tml,Rprobs,cutoff,
-                     y_bin,cv_folds,quiet || parallel,att,atc)
+      tryCatch(
+        drcmd_est_fold(splits[[i]],Y,A,X,Z,R,
+                       m_learners,g_learners,
+                       r_learners,po_learners,
+                       eem_ind,tml,Rprobs,cutoff,
+                       y_bin,cv_folds,quiet || parallel,att,atc),
+        error = function(e) {
+          stop("Cross-fitting fold ", i, ": ", conditionMessage(e),
+               call. = FALSE)
+        }
+      )
     }
 
     # Run folds in parallel or sequentially

@@ -105,6 +105,12 @@ est_m_a <- function(idx, Y, A, X, R,
   }
 
   data <- cbind(X,A)
+  weights <- R[idx] / kappa_hat[idx]
+  cv_control <- list(V = cv_folds)
+  if (yfam$family == "binomial") {
+    cv_control <- binary_cv_control(Y[idx], weights, cv_folds,
+                                    "Outcome regression")
+  }
 
   # if outcome is binary, weights will generate unecessary warnings
   m_a_hat <- withCallingHandlers(
@@ -112,9 +118,8 @@ est_m_a <- function(idx, Y, A, X, R,
                               X=data[idx,],
                               SL.library=m_learners,
                               family=yfam,
-                              # method=method,
-                              obsWeights=R[idx]/kappa_hat[idx],
-                              cvControl=list(V=cv_folds)),
+                              obsWeights=weights,
+                              cvControl=cv_control),
     warning = function(w) {
       if (conditionMessage(w) == "non-integer #successes in a binomial glm!") {
         invokeRestart("muffleWarning")
@@ -161,6 +166,10 @@ est_g <- function(idx,A, X, R, kappa_hat,
                   g_learners,
                   cv_folds=5) {
 
+  weights <- R[idx] / kappa_hat[idx]
+  cv_control <- binary_cv_control(A[idx], weights, cv_folds,
+                                  "Treatment regression")
+
   # regression with weights + binary outcome can create unnecessary warnings
   g_hat <- withCallingHandlers(
     SuperLearner::SuperLearner(
@@ -168,8 +177,8 @@ est_g <- function(idx,A, X, R, kappa_hat,
       X = X[idx, , drop = FALSE],
       family = binomial(),
       SL.library = g_learners,
-      obsWeights = R[idx] / kappa_hat[idx],
-      cvControl = list(V = cv_folds)
+      obsWeights = weights,
+      cvControl = cv_control
     ),
     warning = function(w) {
       if (conditionMessage(w) == "non-integer #successes in a binomial glm!") {
@@ -209,10 +218,12 @@ est_kappa <- function (idx,Z, R,
                        cv_folds=5) {
 
   loadNamespace("SuperLearner")
+  cv_control <- binary_cv_control(R[idx], rep(1, length(idx)), cv_folds,
+                                  "Complete-case regression")
   kappa_hat <- SuperLearner::SuperLearner(Y=R[idx],X=Z[idx,,drop=FALSE],
                                           family=binomial(),
                                           SL.library=r_learners,
-                                          cvControl=list(V=cv_folds))
+                                          cvControl=cv_control)
   kappa_hat <- predict(kappa_hat, newdata=Z)$pred
 
   return(kappa_hat)
