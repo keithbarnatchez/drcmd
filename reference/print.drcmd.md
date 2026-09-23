@@ -38,6 +38,7 @@ Y[R_ind == 0] <- NA
 covariates <- data.frame(X = X)
 
 fit <- drcmd(Y, A, covariates, default_learners = "SL.glm", k = 1)
+#> Warning: Augmentation regression selected an all-zero ensemble; its predictions are zero. Consider revising the learner library.
 print(fit)
 #> drcmd results
 #> -------------------------------------------------
