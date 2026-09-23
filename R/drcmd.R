@@ -1,21 +1,45 @@
 #' @title Doubly-robust causal inference with missing data
 #'
-#' @description Doubly-robust estimation of counterfactual means in the presence of missing
-#'  data. The drcmd() function estimates counterfactual means for binary point treatments
-#'  and reports average treatment effects, as well as causal risk ratios and odds ratios
-#'  for binary outcomes. General missingness patterns in the data are allowed and automatically
-#'  determined by the function -- the only requirement is that any missingness occurs at random
-#'  conditional on variables that are always available. For scenarios where non-missingness
-#'  probabilities are known, as is common in two-phase sampling designs, users can provide
-#'  the non-missingness probabilities through the Rprobs argument. Users can fit nuisance
-#'  functions through either highly-adaptive LASSO (HAL) or SuperLearner, the latter of which
-#'  the user must specify libraries.
+#' @description Doubly-robust estimation of counterfactual means and average treatment
+#' effects for binary point treatments when outcomes, treatments, or covariates
+#' are incompletely observed, with risk ratios and odds ratios available for
+#' binary outcomes. Identification relies on consistency, conditional treatment
+#' exchangeability given `X`, treatment positivity, and independence of the
+#' complete-case indicator and partially observed variables conditional on fully
+#' observed variables, with positive complete-case probabilities. Missing-data
+#' methods follow the semiparametric framework described by Tsiatis (2006).
+#' Nuisance functions are estimated using 'SuperLearner' with user-specified
+#' libraries and optional cross-fitting. Known complete-case probabilities can
+#' be supplied through `Rprobs` for two-phase sampling designs, and fully observed
+#' auxiliary variables can be included in the missingness and augmentation
+#' regressions through `W`.
+#'
+#' @details Treatment and complete-case regressions stop with an error if the
+#' fitted ensemble has only zero coefficients or predicts only zeros or only
+#' ones. Such fits are rejected before probability truncation. A zero-valued
+#' augmentation fit is permitted, but emits a `drcmd_zero_augmentation` warning
+#' so that the learner specification can be reviewed.
+#'
+#' TML omits the missingness update when all observations are complete and
+#' complete-case probabilities equal one. An update with a zero clever
+#' covariate on all informative evaluation observations is also left unchanged.
+#' Other targeting fits must converge to an identifiable finite coefficient;
+#' otherwise estimation stops. Outcome targeting uses a quasibinomial logit
+#' regression, which retains the binomial estimating equation for fractional
+#' outcomes and inverse-probability weights without interpreting them as
+#' binomial counts.
+#'
+#' @references Tsiatis, A. A. (2006). Semiparametric Theory and Missing Data.
+#' Springer. \doi{10.1007/0-387-37345-4}.
 #'
 #' @param Y Outcome variable. Can be continuous or binary
 #' @param A A binary treatment variable (1=treated, 0=control)
 #' @param X Dataframe containing baseline covariates
-#' @param W (optional) Dataframe containing fully observed variables solely predictive
-#'  of missingness, but not a cause of the outcome or exposure.
+#' @param W (optional) Dataframe containing fully observed auxiliary variables,
+#' such as proxy measurements of partially observed variables. These variables
+#' enter the missingness and augmentation regressions, but not the outcome or
+#' treatment regressions conditional on `X`; covariates needed for treatment
+#' exchangeability should therefore be included in `X`.
 #' @param default_learners A character vector containing SuperLearner libraries to use
 #' for estimating all nuisance functions. User can alternatively specify libraries
 #' for each nuisance function for added flexibility
@@ -872,25 +896,37 @@ tml_updates <- function(idx, Y, A, X, R, Z,
     stop("Internal error: unknown TML target")
   }
 
-  # update kappa
-  kappa_update <- glm(R[idx] ~ -1 + H_kappa[idx],
+  # No missingness model needs targeting when complete-case probabilities
+  # are identically one. A zero clever covariate is also a genuine no-op.
+  kappa_star <- kappa_hat
+  if (!(all(R == 1) && all(kappa_hat == 1)) && any(H_kappa[idx] != 0)) {
+    kappa_update <- glm(R[idx] ~ -1 + H_kappa[idx],
                       offset = qlogis(trim(kappa_hat[idx],
                                             .Machine$double.eps)),
                       family = binomial)
-  eps_kappa <- as.double(coef(kappa_update))
-  if (length(eps_kappa) != 1 || !is.finite(eps_kappa)) eps_kappa <- 0
-  kappa_star <- plogis(qlogis(trim(kappa_hat, .Machine$double.eps)) +
+    eps_kappa <- targeting_coefficient(kappa_update, target, "missingness")
+    kappa_star <- plogis(qlogis(trim(kappa_hat, .Machine$double.eps)) +
                          eps_kappa * H_kappa)
+  }
+
+  if (any(!is.finite(kappa_star) | kappa_star <= 0 | kappa_star > 1)) {
+    stop("TML ", target, " missingness update produced invalid probabilities",
+         call. = FALSE)
+  }
 
   # update m_a
   m_a_obs <- m_1_hat * A + m_0_hat * (1 - A)
-  m_update <- glm(Y[idx] ~ -1 + H[idx],
+  eps <- 0
+  if (any(H[idx] != 0 & R[idx] > 0)) {
+    m_update <- glm(Y[idx] ~ -1 + H[idx],
                   weights = (R / kappa_star)[idx],
                   offset  = qlogis(trim(m_a_obs[idx],
                                          .Machine$double.eps)),
-                  family  = binomial)
-  eps <- as.double(coef(m_update))
-  if (length(eps) != 1 || !is.finite(eps)) eps <- 0
+                  # Same logit estimating equation, without treating fractional
+                  # outcomes or inverse-probability weights as trial counts.
+                  family  = stats::quasibinomial())
+    eps <- targeting_coefficient(m_update, target, "outcome")
+  }
 
   m_1_star <- plogis(qlogis(trim(m_1_hat, .Machine$double.eps)) +
                        eps * H_1_pred)
@@ -900,4 +936,15 @@ tml_updates <- function(idx, Y, A, X, R, Z,
   list(m_1_hat_star = m_1_star,
        m_0_hat_star = m_0_star,
        kappa_hat_star = kappa_star)
+}
+
+targeting_coefficient <- function(fit, target, component) {
+  eps <- as.double(coef(fit))
+  if (!isTRUE(fit$converged) || fit$rank != 1L ||
+      length(eps) != 1L || !is.finite(eps)) {
+    stop("TML ", target, " ", component,
+         " update failed: the fit did not converge to an identifiable finite coefficient",
+         call. = FALSE)
+  }
+  eps
 }

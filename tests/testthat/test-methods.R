@@ -9,7 +9,7 @@ R <- rbinom(n,1,0.5*plogis(X)) # error-prone outcome measurements
 Y[R==0] <- NA
 X <- as.data.frame(X)
 
-results <- drcmd(Y,A,X,
+results <- drcmd_test_fit(Y,A,X,
                  default_learners = 'SL.glm')
 
 test_that('error thrown if non-standard plot type provided', {

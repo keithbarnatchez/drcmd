@@ -376,6 +376,65 @@ check_binary <- function(x) {
   length(x) > 0 && all(x %in% c(0, 1))
 }
 
+# Fractional observation weights do not represent binomial trial counts.
+# An all-zero ensemble, however, is not an acceptable probability model.
+with_probability_fit_checks <- function(expr, model) {
+  withCallingHandlers(expr, warning = function(w) {
+    msg <- conditionMessage(w)
+    if (msg %in% c("All algorithms have zero weight",
+                   "All metalearner coefficients are zero, predictions will all be equal to 0")) {
+      stop(model, " produced an all-zero SuperLearner ensemble; ",
+           "revise the learner library or the cross-validation specification. ",
+           "Probability truncation cannot repair this fit.", call. = FALSE)
+    }
+    if (identical(msg, "non-integer #successes in a binomial glm!")) {
+      invokeRestart("muffleWarning")
+    }
+  })
+}
+
+# Consolidate SuperLearner's repeated zero-coefficient warnings into one
+# diagnostic per augmentation fit. Other fitting warnings remain visible.
+fit_augmentation_sl <- function(...) {
+  fit <- withCallingHandlers(SuperLearner::SuperLearner(...), warning = function(w) {
+    if (conditionMessage(w) %in% c("All algorithms have zero weight",
+        "All metalearner coefficients are zero, predictions will all be equal to 0")) {
+      invokeRestart("muffleWarning")
+    }
+  })
+  if (!length(fit$coef) || any(!is.finite(fit$coef))) {
+    stop("Augmentation regression produced invalid ensemble coefficients", call. = FALSE)
+  }
+  if (all(fit$coef == 0)) {
+    warning(structure(list(
+      message = paste("Augmentation regression selected an all-zero ensemble;",
+                      "its predictions are zero. Consider revising the learner library."),
+      call = NULL), class = c("drcmd_zero_augmentation", "warning", "condition")))
+  }
+  fit
+}
+
+predict_augmentation_sl <- function(fit, newdata) {
+  if (all(fit$coef == 0)) return(rep(0, nrow(newdata)))
+  pred <- predict(fit, newdata = newdata)$pred
+  if (any(!is.finite(pred))) {
+    stop("Augmentation regression produced nonfinite predictions", call. = FALSE)
+  }
+  pred
+}
+
+check_probability_predictions <- function(x, model) {
+  if (!length(x) || any(!is.finite(x) | x < 0 | x > 1)) {
+    stop(model, " produced invalid probability predictions", call. = FALSE)
+  }
+  if (all(x == 0) || all(x == 1)) {
+    stop(model, " produced only boundary probabilities; ",
+         "revise the learner library or the cross-validation specification. ",
+         "Probability truncation cannot repair this fit.", call. = FALSE)
+  }
+  invisible(x)
+}
+
 binary_cv_control <- function(y, weights, V, model) {
   shuffle <- function(x) if (length(x) > 1L) sample(x) else x
   rows <- which(is.finite(weights) & weights > 0)

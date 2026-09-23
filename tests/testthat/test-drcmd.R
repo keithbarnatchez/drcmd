@@ -1,4 +1,3 @@
-context('Main functions of drcmd package')
 set.seed(84123)
 
 
@@ -14,7 +13,7 @@ X <- as.data.frame(X)
 
 test_that("drcmd works with default parameters", {
 
-  results <- drcmd(Y,A,X,
+  results <- drcmd_test_fit(Y,A,X,
                    default_learners = 'SL.glm')
 
   expect_s3_class(results,"drcmd")
@@ -23,16 +22,16 @@ test_that("drcmd works with default parameters", {
 
 test_that('drcmd throws error for non-recognized SL libraries', {
 
-  expect_error(drcmd(Y,A,X,
+  expect_error(drcmd_test_fit(Y,A,X,
                      default_learners = 'SL.notanactuallibrary'))
 })
 
 test_that("one-step and tml give similar results", {
 
-  results_onestep <- drcmd(Y,A,X,
+  results_onestep <- drcmd_test_fit(Y,A,X,
                              default_learners = 'SL.glm')
 
-  results_tml <- drcmd(Y,A,X,
+  results_tml <- drcmd_test_fit(Y,A,X,
                         default_learners = 'SL.glm',
                         tml = TRUE)
 
@@ -52,7 +51,7 @@ test_that("drcmd works with binary outcome and reports RR/OR", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X,
+  results <- drcmd_test_fit(Y,A,X,
                    default_learners = 'SL.glm')
 
   expect_s3_class(results,"drcmd")
@@ -77,7 +76,7 @@ test_that("SL.ranger fits binary-outcome pseudo-outcome regressions", {
 
   for (k in c(1, 2)) {
     set.seed(9106)
-    fit <- drcmd(
+    fit <- drcmd_test_fit(
       Y, A, X,
       m_learners = "SL.glm",
       g_learners = "SL.glm",
@@ -101,7 +100,7 @@ test_that("drcmd works with no missing data", {
   Y <- A + X + rnorm(n)/10
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X,
+  results <- drcmd_test_fit(Y,A,X,
                    default_learners = 'SL.glm')
 
   expect_s3_class(results,"drcmd")
@@ -119,9 +118,9 @@ test_that("drcmd works with cross-fitting (k>1)", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results_k1 <- drcmd(Y,A,X,
+  results_k1 <- drcmd_test_fit(Y,A,X,
                        default_learners = 'SL.glm', k = 1)
-  results_k2 <- drcmd(Y,A,X,
+  results_k2 <- drcmd_test_fit(Y,A,X,
                        default_learners = 'SL.glm', k = 2)
 
   expect_s3_class(results_k2,"drcmd")
@@ -139,10 +138,10 @@ test_that("cross-fitting identifies insufficient binary nuisance classes", {
   A <- c(1, rep(0, n - 1))
   Y <- A + X$X + rnorm(n)
 
-  expect_error(
-    drcmd(Y, A, X, default_learners = "SL.glm", k = 2, cv_folds = 2),
+  expect_warning(expect_error(
+    drcmd_test_fit(Y, A, X, default_learners = "SL.glm", k = 2, cv_folds = 2),
     "Cross-fitting fold 1: Treatment regression requires at least two"
-  )
+  ), "prediction from rank-deficient fit")
 })
 
 test_that("cross-fitted binary contrasts and standard errors are well formed", {
@@ -156,10 +155,10 @@ test_that("cross-fitted binary contrasts and standard errors are well formed", {
   Y[R == 0] <- NA
   X <- data.frame(X = X)
 
-  one_step <- drcmd(Y, A, X, default_learners = "SL.glm",
+  one_step <- drcmd_test_fit(Y, A, X, default_learners = "SL.glm",
                     k = 2, cv_folds = 2)
   set.seed(20260821)
-  tml_fit <- drcmd(Y, A, X, default_learners = "SL.glm",
+  tml_fit <- drcmd_test_fit(Y, A, X, default_learners = "SL.glm",
                    k = 2, cv_folds = 2, tml = TRUE)
 
   for (fit in list(one_step, tml_fit)) {
@@ -189,7 +188,7 @@ test_that("cross-fitted TML does not report binary contrasts for continuous outc
   Y <- A + X + rnorm(n)
   X <- data.frame(X = X)
 
-  fit <- drcmd(Y, A, X, default_learners = "SL.glm",
+  fit <- drcmd_test_fit(Y, A, X, default_learners = "SL.glm",
                k = 2, cv_folds = 2, tml = TRUE)
 
   expect_true(is.na(fit$results$estimates$psi_hat_rr))
@@ -213,7 +212,7 @@ test_that("TML fits bounded continuous outcomes with SL.ranger", {
 
   for (k in c(1, 2)) {
     set.seed(20260906)
-    fit <- drcmd(Y, A, X, default_learners = "SL.ranger",
+    fit <- drcmd_test_fit(Y, A, X, default_learners = "SL.ranger",
                  k = k, cv_folds = 2, tml = TRUE)
 
     expect_s3_class(fit, "drcmd")
@@ -266,24 +265,24 @@ test_that("pseudo-outcome nuisance fitting does not use held-out outcomes", {
   splits <- list(train = 1:300, test = 301:400)
 
   set.seed(8202)
-  fit_1 <- drcmd_est_fold(
+  fit_1 <- expect_fit_diagnostics(drcmd_est_fold(
     splits, Y, A, X, Z, R,
     m_learners = "SL.glm", g_learners = "SL.glm",
     r_learners = "SL.glm", po_learners = "SL.glm",
     eem_ind = FALSE, tml = FALSE, Rprobs = NA,
     cutoff = 0.025, y_bin = FALSE, cv_folds = 2
-  )
+  ), truncation = TRUE, augmentation = TRUE)
 
   Y_changed <- Y
   Y_changed[splits$test] <- Y_changed[splits$test] + 100
   set.seed(8202)
-  fit_2 <- drcmd_est_fold(
+  fit_2 <- expect_fit_diagnostics(drcmd_est_fold(
     splits, Y_changed, A, X, Z, R,
     m_learners = "SL.glm", g_learners = "SL.glm",
     r_learners = "SL.glm", po_learners = "SL.glm",
     eem_ind = FALSE, tml = FALSE, Rprobs = NA,
     cutoff = 0.025, y_bin = FALSE, cv_folds = 2
-  )
+  ), truncation = TRUE, augmentation = TRUE)
 
   expect_equal(fit_1$nuis$varphi_1_hat, fit_2$nuis$varphi_1_hat)
   expect_equal(fit_1$nuis$varphi_0_hat, fit_2$nuis$varphi_0_hat)
@@ -301,7 +300,7 @@ test_that("drcmd works with user-supplied Rprobs", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X,
+  results <- drcmd_test_fit(Y,A,X,
                    default_learners = 'SL.glm',
                    Rprobs = rprobs)
 
@@ -320,7 +319,7 @@ test_that("drcmd works with multiple covariates", {
   Y[R==0] <- NA
   X <- data.frame(X1=X1,X2=X2)
 
-  results <- drcmd(Y,A,X,
+  results <- drcmd_test_fit(Y,A,X,
                    default_learners = 'SL.glm')
 
   expect_s3_class(results,"drcmd")
@@ -337,7 +336,7 @@ test_that("ATE estimate is close to truth in well-specified case", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X,
+  results <- drcmd_test_fit(Y,A,X,
                    default_learners = 'SL.glm')
 
   expect_equal(results$results$estimates$psi_hat_ate, 1,
@@ -355,7 +354,7 @@ test_that("returned object has expected structure", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X,
+  results <- drcmd_test_fit(Y,A,X,
                    default_learners = 'SL.glm')
 
   expect_true("results" %in% names(results))
@@ -385,7 +384,7 @@ test_that("ATT/ATC are NA by default", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X, default_learners='SL.glm')
+  results <- drcmd_test_fit(Y,A,X, default_learners='SL.glm')
 
   expect_true(is.na(results$results$estimates$psi_hat_att))
   expect_true(is.na(results$results$estimates$psi_hat_atc))
@@ -404,7 +403,7 @@ test_that("ATT estimate is close to truth", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X, default_learners='SL.glm', att=TRUE)
+  results <- drcmd_test_fit(Y,A,X, default_learners='SL.glm', att=TRUE)
 
   expect_false(is.na(results$results$estimates$psi_hat_att))
   expect_equal(results$results$estimates$psi_hat_att, 1, tolerance=0.15)
@@ -421,7 +420,7 @@ test_that("ATC estimate is close to truth", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X, default_learners='SL.glm', atc=TRUE)
+  results <- drcmd_test_fit(Y,A,X, default_learners='SL.glm', atc=TRUE)
 
   expect_false(is.na(results$results$estimates$psi_hat_atc))
   expect_equal(results$results$estimates$psi_hat_atc, 1, tolerance=0.15)
@@ -438,7 +437,7 @@ test_that("ATT/ATC work with cross-fitting (k>1)", {
   Y[R==0] <- NA
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X, default_learners='SL.glm', k=2,
+  results <- drcmd_test_fit(Y,A,X, default_learners='SL.glm', k=2,
                    att=TRUE, atc=TRUE)
 
   expect_false(is.na(results$results$estimates$psi_hat_att))
@@ -460,7 +459,7 @@ test_that("ATT/ATC error under TML path", {
 
   # ATT/ATC are only supported under the one-step estimator
   expect_error(
-    drcmd(Y,A,X, default_learners='SL.glm',
+    drcmd_test_fit(Y,A,X, default_learners='SL.glm',
           tml=TRUE, att=TRUE, atc=TRUE),
     "ATT/ATC estimation is only supported with one-step estimation"
   )
@@ -475,7 +474,7 @@ test_that("ATT/ATC work with no missing data", {
   Y <- A + X + rnorm(n)/10
   X <- as.data.frame(X)
 
-  results <- drcmd(Y,A,X, default_learners='SL.glm',
+  results <- drcmd_test_fit(Y,A,X, default_learners='SL.glm',
                    att=TRUE, atc=TRUE)
 
   expect_false(is.na(results$results$estimates$psi_hat_att))
@@ -551,10 +550,10 @@ test_that("tml_updates returns updated nuisance estimates", {
   phi_hat <- get_phi_hat(Y, A, X, R, Z,
                          nuis$g_hat, nuis$m_a_hat, nuis$kappa_hat)
 
-  varphi_hat <- est_varphi_main(1:n, R, Z,
+  varphi_hat <- expect_fit_diagnostics(est_varphi_main(1:n, R, Z,
                                 phi_hat$phi_1_hat, phi_hat$phi_0_hat,
                                 nuis$kappa_hat, eem_ind = FALSE,
-                                po_learners = "SL.glm", Y = Y)
+                                po_learners = "SL.glm", Y = Y), augmentation = TRUE)
 
   updated <- tml_updates(1:n, Y, A, X, R, Z,
                          nuis$m_a_hat$m_1_hat, nuis$m_a_hat$m_0_hat,

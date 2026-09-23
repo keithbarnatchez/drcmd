@@ -2,6 +2,9 @@
 ^\.Rproj\.user$
 ^demo$
 ^paper$
+^LICENSE$
+^output$
+(^|/)Rplots\.pdf$
 ^manual$
 ^examples$
 ^drcmd_.*\.tar\.gz$

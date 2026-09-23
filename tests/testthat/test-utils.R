@@ -1,4 +1,3 @@
-context('Helper functions of drcmd package')
 
 test_that('drcmd throws error if no complete cases', {
   n <- 3000
@@ -260,14 +259,14 @@ test_that("check_binary identifies binary and non-binary", {
 
 test_that("truncate_g clips extreme values", {
   x <- c(0.001, 0.5, 0.999)
-  result <- suppressWarnings(truncate_g(x, cutoff = 0.025))
+  expect_warning(result <- truncate_g(x, cutoff = 0.025), "Propensity scores outside")
   expect_true(all(result >= 0.025))
   expect_true(all(result <= 0.975))
 })
 
 test_that("truncate_r clips extreme values", {
   x <- c(0.001, 0.5, 0.999)
-  result <- suppressWarnings(truncate_r(x, cutoff = 0.01))
+  expect_warning(result <- truncate_r(x, cutoff = 0.01), "Complete case probabilities outside")
   expect_true(all(result >= 0.01))
   expect_true(all(result <= 0.99))
 })

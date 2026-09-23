@@ -75,7 +75,7 @@ test_that("binary nuisance regressions reject insufficient classes", {
   )
 })
 
-test_that("rare binary classes work with SL.ranger when estimable", {
+test_that("rare binary classes reject degenerate probability ensembles", {
   skip_if_not_installed("ranger")
 
   set.seed(402)
@@ -88,16 +88,18 @@ test_that("rare binary classes work with SL.ranger when estimable", {
   Y[c(3, 4)] <- 1
 
   m <- est_m_a(1:n, Y, A, X, R, rep(1, n), "SL.ranger", cv_folds = 5)
-  g <- est_g(1:n, A, X, R, rep(1, n), "SL.ranger", cv_folds = 5)
+  expect_error(est_g(1:n, A, X, R, rep(1, n), "SL.ranger", cv_folds = 5),
+               "Treatment regression produced an all-zero")
 
   R <- rep(0, n)
   R[c(1, 2)] <- 1
-  r <- est_kappa(1:n, X, R, "SL.ranger", cv_folds = 5)
+  expect_error(est_kappa(1:n, X, R, "SL.ranger", cv_folds = 5),
+               "Complete-case regression produced an all-zero")
 
   expect_true(all(is.finite(m$m_1_hat)))
   expect_true(all(is.finite(m$m_0_hat)))
-  expect_true(all(is.finite(g)))
-  expect_true(all(is.finite(r)))
+  expect_true(any(m$m_1_hat > 0 & m$m_1_hat < 1))
+  expect_true(any(m$m_0_hat > 0 & m$m_0_hat < 1))
 })
 
 test_that("get_nuisance_ests returns all components", {
@@ -110,9 +112,9 @@ test_that("get_nuisance_ests returns all components", {
   Z <- X
   idx <- 1:n
 
-  out <- get_nuisance_ests(idx, Y, A, X, Z, R,
+  out <- expect_fit_diagnostics(get_nuisance_ests(idx, Y, A, X, Z, R,
                            'SL.glm', 'SL.glm', 'SL.glm',
-                           Rprobs=NA, cutoff=0.025)
+                           Rprobs=NA, cutoff=0.025), truncation = TRUE)
 
   expect_true("kappa_hat" %in% names(out))
   expect_true("m_a_hat" %in% names(out))
@@ -133,8 +135,8 @@ test_that("est_varphi returns correct structure for continuous Y", {
   Y <- rnorm(n)
   idx <- 1:n
 
-  out <- est_varphi(idx, R, Z, phi_1_hat, phi_0_hat,
-                    po_learners = "SL.glm", Y = Y)
+  out <- expect_fit_diagnostics(est_varphi(idx, R, Z, phi_1_hat, phi_0_hat,
+                    po_learners = "SL.glm", Y = Y), augmentation = TRUE)
 
   expect_true("varphi_1_hat" %in% names(out))
   expect_true("varphi_0_hat" %in% names(out))
@@ -154,8 +156,8 @@ test_that("est_varphi handles binary Y (rescaling path)", {
   Y <- rbinom(n, 1, 0.5)
   idx <- 1:n
 
-  out <- est_varphi(idx, R, Z, phi_1_hat, phi_0_hat,
-                    po_learners = "SL.glm", Y = Y)
+  out <- expect_fit_diagnostics(est_varphi(idx, R, Z, phi_1_hat, phi_0_hat,
+                    po_learners = "SL.glm", Y = Y), augmentation = TRUE)
 
   expect_equal(length(out$varphi_1_hat), n)
   expect_equal(length(out$varphi_0_hat), n)
@@ -176,8 +178,8 @@ test_that("est_varphi_eem returns correct structure", {
   Y <- rnorm(n)
   idx <- 1:n
 
-  out <- est_varphi_eem(idx, R, Z, phi_1_hat, phi_0_hat,
-                        kappa_hat, po_learners = "SL.glm", Y = Y)
+  out <- expect_fit_diagnostics(est_varphi_eem(idx, R, Z, phi_1_hat, phi_0_hat,
+                        kappa_hat, po_learners = "SL.glm", Y = Y), augmentation = TRUE)
 
   expect_true("varphi_1_hat" %in% names(out))
   expect_true("varphi_0_hat" %in% names(out))
@@ -194,9 +196,9 @@ test_that("est_varphi_eem handles complete-case probabilities equal to one", {
   phi_1_hat <- rnorm(n)
   phi_0_hat <- rnorm(n)
 
-  out <- est_varphi_eem(1:n, R, Z, phi_1_hat, phi_0_hat,
+  out <- expect_fit_diagnostics(est_varphi_eem(1:n, R, Z, phi_1_hat, phi_0_hat,
                         kappa_hat, po_learners = "SL.glm", Y = rnorm(n),
-                        cv_folds = 2)
+                        cv_folds = 2), augmentation = TRUE)
 
   expect_true(all(is.finite(out$varphi_1_hat)))
   expect_true(all(is.finite(out$varphi_0_hat)))
@@ -256,9 +258,9 @@ test_that("est_varphi_main delegates to est_varphi with missing data", {
   phi_0_hat <- rnorm(n)
   Y <- rnorm(n)
 
-  out <- est_varphi_main(1:n, R, Z, phi_1_hat, phi_0_hat,
+  out <- expect_fit_diagnostics(est_varphi_main(1:n, R, Z, phi_1_hat, phi_0_hat,
                          kappa_hat, eem_ind = FALSE,
-                         po_learners = "SL.glm", Y = Y)
+                         po_learners = "SL.glm", Y = Y), augmentation = TRUE)
 
   expect_true("varphi_1_hat" %in% names(out))
   expect_equal(length(out$varphi_1_hat), n)

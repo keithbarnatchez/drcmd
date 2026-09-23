@@ -33,8 +33,11 @@ drcmd(
 
 \item{X}{Dataframe containing baseline covariates}
 
-\item{W}{(optional) Dataframe containing fully observed variables solely predictive
-of missingness, but not a cause of the outcome or exposure.}
+\item{W}{(optional) Dataframe containing fully observed auxiliary variables,
+such as proxy measurements of partially observed variables. These variables
+enter the missingness and augmentation regressions, but not the outcome or
+treatment regressions conditional on \code{X}; covariates needed for treatment
+exchangeability should therefore be included in \code{X}.}
 
 \item{default_learners}{A character vector containing SuperLearner libraries to use
 for estimating all nuisance functions. User can alternatively specify libraries
@@ -97,16 +100,35 @@ standard errors, and (iii) nuisance function estimates}
 }
 }
 \description{
-Doubly-robust estimation of counterfactual means in the presence of missing
-data. The drcmd() function estimates counterfactual means for binary point treatments
-and reports average treatment effects, as well as causal risk ratios and odds ratios
-for binary outcomes. General missingness patterns in the data are allowed and automatically
-determined by the function -- the only requirement is that any missingness occurs at random
-conditional on variables that are always available. For scenarios where non-missingness
-probabilities are known, as is common in two-phase sampling designs, users can provide
-the non-missingness probabilities through the Rprobs argument. Users can fit nuisance
-functions through either highly-adaptive LASSO (HAL) or SuperLearner, the latter of which
-the user must specify libraries.
+Doubly-robust estimation of counterfactual means and average treatment
+effects for binary point treatments when outcomes, treatments, or covariates
+are incompletely observed, with risk ratios and odds ratios available for
+binary outcomes. Identification relies on consistency, conditional treatment
+exchangeability given \code{X}, treatment positivity, and independence of the
+complete-case indicator and partially observed variables conditional on fully
+observed variables, with positive complete-case probabilities. Missing-data
+methods follow the semiparametric framework described by Tsiatis (2006).
+Nuisance functions are estimated using 'SuperLearner' with user-specified
+libraries and optional cross-fitting. Known complete-case probabilities can
+be supplied through \code{Rprobs} for two-phase sampling designs, and fully observed
+auxiliary variables can be included in the missingness and augmentation
+regressions through \code{W}.
+}
+\details{
+Treatment and complete-case regressions stop with an error if the
+fitted ensemble has only zero coefficients or predicts only zeros or only
+ones. Such fits are rejected before probability truncation. A zero-valued
+augmentation fit is permitted, but emits a \code{drcmd_zero_augmentation} warning
+so that the learner specification can be reviewed.
+
+TML omits the missingness update when all observations are complete and
+complete-case probabilities equal one. An update with a zero clever
+covariate on all informative evaluation observations is also left unchanged.
+Other targeting fits must converge to an identifiable finite coefficient;
+otherwise estimation stops. Outcome targeting uses a quasibinomial logit
+regression, which retains the binomial estimating equation for fractional
+outcomes and inverse-probability weights without interpreting them as
+binomial counts.
 }
 \examples{
 set.seed(1)
@@ -122,4 +144,8 @@ fit <- drcmd(Y, A, covariates,
              default_learners = "SL.glm",
              k = 1)
 fit
+}
+\references{
+Tsiatis, A. A. (2006). Semiparametric Theory and Missing Data.
+Springer. \doi{10.1007/0-387-37345-4}.
 }

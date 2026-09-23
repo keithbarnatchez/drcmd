@@ -156,22 +156,17 @@ utils::globalVariables(c("varphi_hat", "phi_hat", "A", "IC", "g_hat", "kappa_hat
 #'
 #' @return No return value. Called for plotting results from drcmd object
 #' @examples
-#' \dontrun{
-#' n <- 2500
-#' X <- rnorm(n) ; A <- rbinom(n,1,plogis(X))
-#' Y <-  rbinom(n,1,plogis(X-A)) # rnorm(n) + A + X + X^2 + A*X + sin(X) # note: true ATE is 1
-#' Ystar <- Y + rnorm(n)/2 ; R <- rbinom(n,1,plogis(X)) # error-prone outcome measurements
+#' set.seed(1)
+#' n <- 200
+#' X <- rnorm(n)
+#' A <- rbinom(n, 1, plogis(X))
+#' Y <- rnorm(n) + A + X
+#' R_ind <- rbinom(n, 1, plogis(X))
+#' Y[R_ind == 0] <- NA
+#' covariates <- data.frame(X = X)
 #'
-#' # Make A NA if R==0
-#' A[R==0] <- NA
-#'
-#' # Obtain ATE estimates, fitting all nuisance models with ensemble of splines +
-#' # GAMs (save for the pseudo-outcome regression, which is done with XGboost)
-#' drcmd_res <- drcmd(Y,A,covariates,
-#'                    default_learners= c('SL.gam','SL.glm'),
-#'                    po_learners = 'SL.gam')
-#' plot(drcmd_res,type='PO')
-#' }
+#' fit <- drcmd(Y, A, covariates, default_learners = "SL.glm", k = 1)
+#' plot(fit, type = "PO")
 #' @export
 plot.drcmd <- function(x, type = "All", ...) {
 
